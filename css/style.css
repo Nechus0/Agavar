@@ -739,3 +739,5 @@ body.has-nav main { padding-bottom: calc(env(safe-area-inset-bottom) + 80px); }
 .move-card.on, .special.on { border-color: var(--blue); box-shadow: 0 0 0 1px var(--blue) inset; background: #15263d; }
 .seg button.on { background: var(--accent); }
 .bottom-nav { background: rgba(11,18,32,.94); }
+.atlas-silhouettes { display: flex; flex-wrap: wrap; gap: 8px; padding: 4px 6px; }
+.sil-pic { width: 42px; height: 28px; opacity: .7; }

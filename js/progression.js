@@ -11,20 +11,21 @@ export const POINTS_PER_WIN = 2;
 
 // after = Level, das gewonnen werden muss (0 = von Anfang an)
 export const UNLOCKS = [
-  { after: 0, steps: ['F', 'R', 'L', 'D', 'S'], programMax: 4 },
+  { after: 0, steps: ['F', 'R', 'L'], programMax: 4 },
   { after: 1, steps: ['P'] },
   { after: 2, steps: ['B'], programMax: 5 },
   { after: 3, steps: ['Z'] },
   { after: 4, specials: ['capsule'] },
-  { after: 5, repeat: true, programMax: 6 },
-  { after: 6, specials: ['spores'] },
+  { after: 5, steps: ['D', 'S'] },
+  { after: 6, repeat: true, programMax: 6 },
   { after: 7, steps: ['M'] },
   { after: 8, specials: ['biofilm'] },
   { after: 9, specials: ['toxin'] },
   { after: 10, title: 'Wound Healer' },
-  // later worlds (see docs/WORLDS.md): Photosynthesis in Water, Predator in Soil
+  // later worlds (see docs/WORLDS.md): Photosynthesis in Water, Spores and Predator in Soil
   { after: 45, specials: ['photo'] },
-  { after: 65, specials: ['predator'] },
+  { after: 63, specials: ['spores'] },
+  { after: 67, specials: ['predator'] },
 ];
 
 export function getLimits(won) {
@@ -81,7 +82,7 @@ export function unlockLevelOf(kind, key) {
 export function rewardsOf(level) {
   const out = [];
   for (const u of UNLOCKS.filter((x) => x.after === level)) {
-    for (const s of u.steps || []) out.push({ type: 'move', key: STEP_MOVES[s][0], text: `Movement ${moveNames(s)}`, short: moveNames(s).replace(/[“”]/g, '') });
+    for (const s of (u.steps || []).filter((x) => (STEP_MOVES[x] || []).length)) out.push({ type: 'move', key: STEP_MOVES[s][0], text: `Movement ${moveNames(s)}`, short: moveNames(s).replace(/[“”]/g, '') });
     for (const s of u.specials || []) out.push({ type: 'special', key: s, text: `Special ability “${SPECIALS[s].name}”`, short: SPECIALS[s].name });
     if (u.repeat || u.programMax) out.push({ type: 'bigger', text: 'Bigger movement patterns (more sizes)', short: 'bigger patterns' });
     if (u.title) out.push({ type: 'title', text: `Title “${u.title}”`, short: u.title });

@@ -40,7 +40,7 @@ export const MOVES = [
 export const MOVE_BY_KEY = Object.fromEntries(MOVES.map((m) => [m.key, m]));
 
 // Welche Bewegungsart wird durch welchen Schritt freigeschaltet?
-export const STEP_MOVES = { P: ['sitzen'], B: ['pendeln'], Z: ['taumeln'], M: ['schlange', 'acht'] };
+export const STEP_MOVES = { P: ['sitzen'], B: ['pendeln'], Z: ['taumeln'], D: ['ecken', 'treppe'], S: [], M: ['schlange', 'acht'] };
 
 export function actionsOf(move) {
   const m = MOVE_BY_KEY[move.type] || MOVES[0];

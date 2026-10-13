@@ -108,10 +108,10 @@ test('Freischalten: am Anfang eingeschränkt, nach Welt 1 die Haut-Fähigkeiten 
   const all = getLimits([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
   assert.equal(all.programMax, 6);
   assert.ok(all.repeat);
-  for (const k of ['spores', 'capsule', 'biofilm', 'toxin']) assert.ok(all.specials.has(k));
-  // Photosynthese und Räuber gibt es erst in späteren Welten (Teich, Boden)
-  assert.ok(!all.specials.has('photo') && !all.specials.has('predator'));
-  for (const k of ['P', 'B', 'Z', 'M']) assert.ok(all.steps.has(k));
+  for (const k of ['capsule', 'biofilm', 'toxin']) assert.ok(all.specials.has(k));
+  // Photosynthese, Sporen und Räuber gibt es erst in späteren Welten (Wasser, Boden)
+  assert.ok(!all.specials.has('photo') && !all.specials.has('predator') && !all.specials.has('spores'));
+  for (const k of ['P', 'B', 'Z', 'D', 'S', 'M']) assert.ok(all.steps.has(k));
   assert.equal(unlockLevelOf('special', 'toxin'), 9);
 });
 
@@ -150,12 +150,14 @@ test('Bewegungsarten: alle Größen lassen sich mit allen Freischaltungen erzeug
 
 test('Bewegungsarten: am Anfang nur die einfachen, Sitzen erst nach Level 1', () => {
   const start = getLimits([]);
-  for (const key of ['gerade', 'kreis', 'ecken', 'welle', 'treppe']) assert.ok(compile({ type: key, size: 0, dir: 'R' }, start).program, key);
-  for (const key of ['sitzen', 'pendeln', 'taumeln', 'schlange', 'acht']) assert.ok(compile({ type: key, size: 0, dir: 'R' }, start).locked, key);
+  for (const key of ['gerade', 'kreis', 'welle']) assert.ok(compile({ type: key, size: 0, dir: 'R' }, start).program, key);
+  for (const key of ['ecken', 'treppe', 'sitzen', 'pendeln', 'taumeln', 'schlange', 'acht']) assert.ok(compile({ type: key, size: 0, dir: 'R' }, start).locked, key);
   assert.ok(compile({ type: 'sitzen', size: 0 }, getLimits([1])).program);
-  // große Welle braucht Wiederholungen (Level 5)
-  assert.ok(compile({ type: 'welle', size: 2 }, getLimits([1, 2, 3, 4])).locked);
-  assert.ok(compile({ type: 'welle', size: 2 }, getLimits([1, 2, 3, 4, 5])).program);
+  // Ecken und Treppe nach Level 5 (Corynebacterium)
+  assert.ok(compile({ type: 'ecken', size: 0, dir: 'R' }, getLimits([1, 2, 3, 4, 5])).program);
+  // große Welle braucht Wiederholungen (Level 6)
+  assert.ok(compile({ type: 'welle', size: 2 }, getLimits([1, 2, 3, 4, 5])).locked);
+  assert.ok(compile({ type: 'welle', size: 2 }, getLimits([1, 2, 3, 4, 5, 6])).program);
   assert.deepEqual(actionsOf({ type: 'kreis', size: 1, dir: 'L' }), ['F', 'L']);
 });
 

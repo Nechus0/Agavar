@@ -1052,13 +1052,16 @@ onEnter.atlas = () => {
         known ? el('p', { class: 'small' }, germ.fact) : el('p', { class: 'small muted' }, `Beat level ${g.level} to discover this germ.`),
         known && g.ability.length ? el('p', { class: 'small atlas-ability' }, 'Unlocks: ', g.ability.map((r) => r.text).join(', ')) : null));
   };
+  // germs are sorted by the world they really live in; later worlds show silhouettes
   fill($('#atlas-list'), ...WORLDS.map((w) => {
-    const germs = list.filter((g) => worldOfLevel(g.level).n === w.n);
+    const germs = list.filter((g) => GERMS[g.germ].world === w.n);
+    const waiting = Object.entries(GERMS).filter(([k, x]) => x.world === w.n && !list.find((g) => g.germ === k));
     const head = el('div', { class: 'world-head small-head', style: `--accent-w:${w.theme.accent}` },
       el('span', { class: 'world-ico' }, w.icon),
-      el('div', {}, el('small', {}, `World ${w.n}`), el('b', {}, w.name), el('span', { class: 'small muted' }, w.playable ? w.habitat : 'Coming soon')),
+      el('div', {}, el('small', {}, `World ${w.n}`), el('b', {}, w.name), el('span', { class: 'small muted' }, w.playable ? w.habitat : `Coming soon · ${waiting.length} germs waiting here`)),
       w.playable ? el('span', { class: 'world-count' }, `${germs.filter((g) => found.has(g.germ)).length}/${germs.length}`) : el('span', { class: 'world-count' }, '🔒'));
-    return el('section', { class: `atlas-world ${w.playable ? '' : 'locked'}` }, head, ...germs.map(card));
+    return el('section', { class: `atlas-world ${w.playable ? '' : 'locked'}` }, head, ...germs.map(card),
+      waiting.length ? el('div', { class: 'atlas-silhouettes' }, waiting.map(([k]) => germPic(k, '#3a4554', 'sil-pic'))) : null);
   }));
   const got = ACHIEVEMENTS.filter((a) => store.hasAchievement(a.key)).length;
   $('#ach-count').textContent = `${got} of ${ACHIEVEMENTS.length} achievements`;

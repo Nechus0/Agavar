@@ -10,10 +10,10 @@ system fights back. More habitats follow as expansions after level 100.
 
 | World | Levels | Look | Plate mechanic | New abilities |
 |-------|--------|------|----------------|---------------|
-| 1 Skin 🖐 | 1–20 | peach / skin tone | pores (food spots), cuts (food stripe) | Sit, Shuttle, Tumble, Capsule, Spores, Snake/Eight, Biofilm, Toxins · then Sticky, Sebum eater |
+| 1 Skin 🖐 | 1–20 | peach / skin tone | pores (food spots), cuts (food stripe) | Sit, Shuttle, Tumble, Capsule, Square/Stairs, Snake/Eight, Biofilm, Toxins · then Sticky, Sebum eater |
 | 2 Mouth & Gut 🌀 | 21–40 | enamel white → warm brown | sugar waves (mouth), acid (stomach), flow (gut) | Acid, Swarming, Plasmid |
 | 3 Water 🌊 | 41–60 | green pond → blue sea | day/night light cycle, currents, salt | Photosynthesis, Magnetotaxis, Quorum sensing |
-| 4 Soil 🌱 | 61–80 | dark brown | stones block squares, roots are food lines, compost heat | Predator, Antibiotics |
+| 4 Soil 🌱 | 61–80 | dark brown | stones block squares, roots are food lines, compost heat | Spores, Predator, Antibiotics |
 | 5 Hospital & Blood 🏥🩸 | 81–100 | clinical white → dark red | antibiotic zones, then blood flow + hunting white blood cells | Resistance, Persister cells, Stealth |
 
 **Expansions after level 100:** Kitchen 🧀 (cold zones, fermentation),
@@ -39,35 +39,40 @@ Hot Springs 🌋 (heat zones, radiation), Space Station 🚀 (microgravity).
 - **Mechanic:** food layouts *Pores* (many small rich spots: hair follicles and
   sweat glands) and *Cut* (a rich stripe of blood and plasma).
 
-**Chapter A – Surface & first wounds (playable)**
+**Chapter A – Surface & first wounds (playable).** Only germs that really live on
+skin or in skin wounds appear in this world.
 
 | Lvl | Name | Special opponent | You unlock | Plate |
 |-----|------|------------------|------------|-------|
 | 1 | Skin Contact | *Staphylococcus epidermidis* – on everyone's skin, cannot move | Sit | small, even |
 | 2 | Twitching | *Acinetobacter johnsonii* – pulls itself forward and back with tiny hooks | Shuttle | small, pores |
-| 3 | Dirty Hands | *Escherichia coli* from the toilet + *Micrococcus luteus* | Tumble | medium, pores |
-| 4 | The Sore | *Streptococcus pyogenes* – slime capsule, impetigo + *Serratia* | Capsule | medium, patches |
-| 5 | Armpit | *Corynebacterium* – makes sweat smell + *Proteus mirabilis* | Bigger patterns | medium, pores |
-| 6 | Rusty Nail | *Clostridium tetani* – spores from dirt in a deep cut + *Proteus* | Spores | medium, cut, little food |
-| 7 | Tick Bite | *Borrelia burgdorferi* – corkscrew + *Acinetobacter baumannii* | Snake & Eight | medium, centre |
-| 8 | Burn Wound | *Pseudomonas aeruginosa* – biofilm + *Proteus* | Biofilm | large, patches |
-| 9 | The Boil | *Staphylococcus aureus* – toxins + *C. tetani*, *Serratia* | Toxins | medium, noise |
-| 10 | Gangrene (chapter boss) | *Clostridium perfringens* – spores **and** toxins + *S. aureus*, *Proteus* | Title "Wound Healer" | large, cut |
+| 3 | Hot Tub Rash | *Pseudomonas aeruginosa* – swims into hair follicles + *Micrococcus luteus* | Tumble | medium, pores |
+| 4 | The Sore | *Streptococcus pyogenes* – slime capsule, impetigo + *Kocuria rosea* | Capsule | medium, patches |
+| 5 | Armpit | *Corynebacterium* – makes sweat smell, snapping angular growth + *Staphylococcus hominis* | Square & Stairs | medium, pores |
+| 6 | Sweaty Feet | *Brevibacterium linens* – foot smell + *Kytococcus sedentarius* | Bigger patterns | medium, pores, little food |
+| 7 | Tick Bite | *Borrelia burgdorferi* – corkscrew + *Streptococcus agalactiae* (capsule) | Snake & Eight | medium, centre |
+| 8 | The Catheter | *S. epidermidis* returns as a biofilm strain + *S. hominis* | Biofilm | large, cut |
+| 9 | Tropical Sore | *Corynebacterium diphtheriae* – toxin + *Cutibacterium acnes*, *Kocuria* | Toxins | medium, noise |
+| 10 | The Abscess (chapter boss) | *Staphylococcus aureus* – toxins **and** capsule + *S. pyogenes*, *P. aeruginosa* | Title "Wound Healer" | large, cut |
 
 **Chapter B – Every corner of the skin (planned)**
 
 | Lvl | Name | Special opponent | Idea |
 |-----|------|------------------|------|
 | 11 | Oily Face | *Cutibacterium acnes* | lives in pores; unlocks **Sebum eater** (extra food in pores) |
-| 12 | Sweaty Feet | *Brevibacterium linens* | the germ behind foot (and cheese) smell |
+| 12 | Scalp | *Staphylococcus capitis* | dense hair-follicle pores |
 | 13 | Belly Button | *Kytococcus* + several harmless skin germs | a crowded mini-ecosystem, 3 opponents |
-| 14 | The Catheter | *S. epidermidis* biofilm strain | unlocks **Sticky** (cells hold their position) |
-| 15 | Scalp | *Staphylococcus capitis* | dense hair-follicle pores |
+| 14 | Pink Skin | *Kocuria rosea* boss | unlocks **Sticky** (cells hold their position) |
+| 15 | Bath Sponge | *Pseudomonas aeruginosa* | wet skin, fast regrowth |
 | 16 | Insect Bite | *Streptococcus pyogenes* + *S. aureus* | scratching opens the skin |
-| 17 | Diabetic Foot | *Proteus*, *Pseudomonas*, *Enterococcus* | poor healing, little food regrows |
-| 18 | Surgical Wound | MRSA | first taste of the hospital world |
+| 17 | Diabetic Foot | *Corynebacterium striatum*, *Pseudomonas* | poor healing, little food regrows |
+| 18 | Surgical Wound | MRSA (*S. aureus*) | first taste of the hospital world |
 | 19 | Deep Abscess | *S. aureus* + *Cutibacterium* | crowded, toxic |
 | 20 | Flesh-Eater (world boss) | *Streptococcus pyogenes* (necrotising) | capsule **and** toxins |
+
+**Moved out of the skin world** (they live elsewhere): *E. coli*, *Proteus mirabilis*,
+*Clostridium perfringens* → Mouth & Gut · *Clostridium tetani* → Soil (spores are now
+unlocked there) · *Serratia marcescens* → Water · *Acinetobacter baumannii* → Hospital.
 
 ## World 2 – Mouth & Gut 🌀 (levels 21–40)
 
@@ -76,7 +81,8 @@ Hot Springs 🌋 (heat zones, radiation), Space Station 🚀 (microgravity).
   *Actinomyces*, *Fusobacterium*, *Veillonella*, *Porphyromonas gingivalis* as chapter
   boss), stomach (*Helicobacter pylori*).
 - **Chapter B – Gut:** *Bacteroides*, *Bifidobacterium*, *E. coli*, *Enterococcus*,
-  *Salmonella*, *Vibrio cholerae*; world boss *Clostridioides difficile* (spores + toxins).
+  *Proteus mirabilis*, *Clostridium perfringens*, *Salmonella*; world boss
+  *Clostridioides difficile* (spores + toxins).
 - **Mechanics:** sugar waves (food floods the plate, then dries up), acid, flow
   (food drifts in one direction).
 - **Unlocks:** Acid, Swarming, Plasmid (copy a trait from killed cells).
@@ -85,7 +91,7 @@ Hot Springs 🌋 (heat zones, radiation), Space Station 🚀 (microgravity).
 
 *From the garden pond to the open sea.*
 - **Chapter A – Pond & river:** *Synechococcus*, *Anabaena*, *Caulobacter*,
-  *Magnetospirillum*, *Bdellovibrio*; chapter boss *Legionella*.
+  *Magnetospirillum*, *Serratia marcescens*, *Vibrio cholerae*; chapter boss *Legionella*.
 - **Chapter B – Ocean:** *Prochlorococcus*, *Pelagibacter*, *Aliivibrio fischeri*
   (glows), *Vibrio vulnificus*; world boss *Vibrio parahaemolyticus*.
 - **Mechanics:** day and night (photosynthesis only by day), currents, salt.
@@ -94,12 +100,12 @@ Hot Springs 🌋 (heat zones, radiation), Space Station 🚀 (microgravity).
 ## World 4 – Soil 🌱 (levels 61–80)
 
 *Crumbs, roots and chemical warfare.*
-- **Chapter A – Garden soil & roots:** *Bacillus subtilis*, *Rhizobium*,
+- **Chapter A – Garden soil & roots:** *Bacillus subtilis*, *Clostridium tetani* (spores), *Rhizobium*,
   *Pseudomonas putida*, *Myxococcus xanthus*; chapter boss *Bdellovibrio*.
 - **Chapter B – Compost & caves:** heat-loving *Thermus*, *Clostridium*,
   *Nocardia*; world boss *Streptomyces* (the antibiotic factory).
 - **Mechanics:** stones block squares, roots are lines of food, compost heat.
-- **Unlocks:** Predator, Antibiotics.
+- **Unlocks:** Spores, Predator, Antibiotics.
 
 ## World 5 – Hospital & Blood 🏥🩸 (levels 81–100)
 

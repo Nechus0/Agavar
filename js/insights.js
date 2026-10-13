@@ -53,7 +53,7 @@ export const ACHIEVEMENTS = [
   { key: 'sitter', icon: '🪑', name: 'Couch Potato', desc: 'Win with the “Sit” movement.', check: (c) => c.sim.winner === 1 && moveFromProgram(c.genome.program)?.type === 'sitzen' },
   { key: 'pure', icon: '🧫', name: 'Purist', desc: 'Win from level 3 on without a special ability.', check: (c) => c.sim.winner === 1 && c.mode === 'level' && c.level >= 3 && c.genome.special === 'none' },
   { key: 'crowd', icon: '🎪', name: 'Against All', desc: 'Win a free game against at least 4 opponents.', check: (c) => c.sim.winner === 1 && c.mode === 'free' && c.opponents >= 4 },
-  { key: 'all_specials', icon: '🧬', name: 'Toolbox', desc: 'Unlock all four special abilities of the skin world.', check: (c) => ['capsule', 'spores', 'biofilm', 'toxin'].every((k) => c.globalLimits.specials.has(k)) },
+  { key: 'all_specials', icon: '🧬', name: 'Toolbox', desc: 'Unlock all three special abilities of the skin world.', check: (c) => ['capsule', 'biofilm', 'toxin'].every((k) => c.globalLimits.specials.has(k)) },
   { key: 'collector', icon: '📖', name: 'Collector', desc: 'Discover every germ of the skin world.', check: (c) => c.atlasCount >= c.atlasTotal },
   { key: 'master', icon: '🏆', name: 'Wound Healer', desc: 'Beat the chapter boss in level 10.', check: (c) => c.sim.winner === 1 && c.mode === 'level' && c.level === 10 },
 ];
