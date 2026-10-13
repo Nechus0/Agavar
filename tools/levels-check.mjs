@@ -4,9 +4,9 @@
 //  - "clever":   per Hill-Climbing optimiertes Bakterium (gut überlegter Entwurf)
 // Aufruf: node tools/levels-check.mjs [level] [zufallsspieler] [seeds]
 import { Simulation } from '../js/sim.js';
-import { randomGenome, cost, normalize, COSTED, FREE } from '../js/genome.js';
-import { LEVELS } from '../js/levels.js';
-import { getLimits, traitCap, problems } from '../js/progression.js';
+import { randomGenome, cost, normalize, COSTED, FREE, defaultGenome, stepEntry, parseStep, MAX_REPEAT } from '../js/genome.js';
+import { LEVELS, levelOpponents } from '../js/levels.js';
+import { getLimits, problems, careerPoints } from '../js/progression.js';
 import { makeRng } from '../js/rng.js';
 
 const only = Number(process.argv[2] || 0);
@@ -14,7 +14,7 @@ const nRandom = Number(process.argv[3] || 12);
 const seeds = Number(process.argv[4] || 2);
 
 function sim(player, lv, seed) {
-  return new Simulation({ genomes: [player, ...lv.opponents.map(normalize)], ...lv.plate, seed }).run();
+  return new Simulation({ genomes: [player, ...levelOpponents(lv)], ...lv.plate, seed }).run();
 }
 const play = (player, lv, seed) => (sim(player, lv, seed).winner === 1 ? 1 : 0);
 // stetige Bewertung für die Optimierung: Sieg = 1, sonst Anteil an allen lebenden Zellen (max. 0,5)
@@ -31,16 +31,17 @@ function mutate(g, rng, lim, budget) {
   const steps = [...lim.steps];
   if (r < 0.35) {
     const from = rng.pick(COSTED.filter((t) => m[t.key] > 0));
-    const to = rng.pick(COSTED.filter((t) => m[t.key] < traitCap(t, lim)));
+    const to = rng.pick(COSTED.filter((t) => m[t.key] < t.max));
     if (from && to) { m[from.key]--; m[to.key]++; }
   } else if (r < 0.55) {
     const t = rng.pick(FREE);
     m[t.key] = Math.max(0, Math.min(t.max, m[t.key] + (rng() < 0.5 ? -1 : 1)));
   } else if (r < 0.85) {
     const p = m.program.slice();
-    const op = rng.int(3);
+    const op = rng.int(4);
     if (op === 0 && p.length < lim.programMax) p.splice(rng.int(p.length + 1), 0, rng.pick(steps));
     else if (op === 1 && p.length > 1) p.splice(rng.int(p.length), 1);
+    else if (op === 2 && lim.repeat) { const k = rng.int(p.length); p[k] = stepEntry(parseStep(p[k]).s, 1 + rng.int(MAX_REPEAT)); }
     else p[rng.int(p.length)] = rng.pick(steps);
     m.program = p;
   } else {
@@ -53,20 +54,28 @@ function mutate(g, rng, lim, budget) {
   }
   let guard = 50;
   while (cost(m) < budget && guard--) {
-    const t = rng.pick(COSTED.filter((x) => m[x.key] < traitCap(x, lim)));
+    const t = rng.pick(COSTED.filter((x) => m[x.key] < x.max));
     if (!t) break;
     m[t.key]++;
   }
   return m;
 }
 
-LEVELS.forEach((lv, i) => {
+LEVELS.forEach((lv0, i) => {
+  let lv = lv0;
   const n = i + 1;
   if (only && only !== n) return;
-  const lim = getLimits(Array.from({ length: n - 1 }, (_, k) => k + 1));
+  const won = Array.from({ length: n - 1 }, (_, k) => k + 1);
+  const lim = getLimits(won);
+  lv = { ...lv, budget: careerPoints(won) };
   const rng = makeRng(1000 + n);
   const casual = Array.from({ length: nRandom }, () => randomGenome(rng, lv.budget, lim));
-  for (const c of casual) if (problems(c, lim, lv.budget).length) throw new Error('Zufallsgenom verletzt Regeln');
+  for (const c of casual) if (problems(c, lim, lv.budget).length) throw new Error('Zufallsgenom verletzt Regeln: ' + problems(c, lim, lv.budget));
+  // „faul“: Punkte gleichmäßig verteilt, Muster nur geradeaus
+  const lazy = { ...defaultGenome(), name: 'faul' };
+  for (let k = 0; k < lv.budget; k++) { const t = COSTED[k % COSTED.length]; if (lazy[t.key] < t.max) lazy[t.key]++; }
+  let lw = 0;
+  for (let s = 0; s < 6; s++) lw += play(lazy, lv, 900 + s);
 
   let cw = 0;
   for (const p of casual) for (let s = 0; s < seeds; s++) cw += play(p, lv, 100 + s);
@@ -88,7 +97,7 @@ LEVELS.forEach((lv, i) => {
   let ew = 0;
   for (let s = 0; s < 6; s++) ew += play(best, lv, 700 + s);
 
-  const oc = lv.opponents.map((o) => cost(normalize(o))).join(',');
-  console.log(`Level ${n} (${lv.name}) budget=${lv.budget} gegner=${oc}: zufällig ${(100 * cw / (nRandom * seeds)).toFixed(0)}%  clever ${ew}/6  ` +
+  const oc = levelOpponents(lv).map((o) => cost(o)).join(',');
+  console.log(`Level ${n} (${lv.name}) budget=${lv.budget} gegner=${oc}: zufällig ${(100 * cw / (nRandom * seeds)).toFixed(0)}%  faul ${lw}/6  clever ${ew}/6  ` +
     JSON.stringify({ p: best.program.join(''), s: best.speed, l: best.lifespan, e: best.efficiency, a: best.attack, d: best.defense, div: best.division, m: best.metabolism, sp: best.special }));
 });

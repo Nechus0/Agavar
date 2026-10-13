@@ -242,11 +242,12 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 }
 
 /* ---------- Symbole, Freischalten, Bewegungs-Editor ---------- */
-.ico { display: inline-flex; width: 18px; height: 18px; flex: none; vertical-align: middle; }
-.ico.xs { width: 13px; height: 13px; }
-.ico.sm { width: 16px; height: 16px; }
-.ico.ti { width: 20px; height: 20px; color: var(--accent); }
-.ico.big { width: 30px; height: 30px; }
+.ico { display: inline-block; width: 18px; height: 18px; min-width: 18px; flex: none; vertical-align: middle; line-height: 0; }
+.ico svg { display: block; width: 100%; height: 100%; }
+.ico.xs { width: 13px; height: 13px; min-width: 13px; }
+.ico.sm { width: 16px; height: 16px; min-width: 16px; }
+.ico.ti { width: 20px; height: 20px; min-width: 20px; color: var(--accent); }
+.ico.big { width: 32px; height: 32px; min-width: 32px; }
 .ico.lock { color: var(--muted); opacity: .7; }
 .row.between { justify-content: space-between; }
 .center { text-align: center; }
@@ -313,3 +314,90 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .special-name { font-size: 13px; font-weight: 600; }
 .special-cost { font-size: 11px; color: var(--muted); }
 .legend-row .ico { margin-left: -2px; }
+
+/* ---------- Karriere, besondere Gegner, Uhr, Glückwunsch ---------- */
+.wrap { flex-wrap: wrap; }
+.pchip { display: inline-flex; align-items: flex-end; }
+.pchip sub { font-size: 10px; color: var(--accent); margin-left: -1px; line-height: 1; }
+.prog-icons { gap: 3px; }
+.sp-tag {
+  display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600;
+  padding: 3px 9px 3px 6px; border-radius: 999px; color: var(--c);
+  background: color-mix(in srgb, var(--c) 14%, transparent); border: 1px solid color-mix(in srgb, var(--c) 45%, transparent);
+}
+.germ-pic { display: inline-block; line-height: 0; flex: none; }
+.germ-pic svg { width: 100%; height: 100%; display: block; }
+.germ-pic.mini { width: 48px; height: 32px; }
+.germ-pic.large { width: 150px; height: 100px; margin: 4px auto; display: block; }
+
+.career-item { text-align: left; cursor: pointer; gap: 8px; }
+.free-pts { color: var(--good); font-weight: 600; }
+.big-dot { width: 20px; height: 20px; }
+.big-name { font-size: 18px; }
+#cr-card { display: flex; flex-direction: column; gap: 10px; }
+#cr-card .title .cost, #ld-me .title .cost, #su-me .title .cost { margin-left: auto; color: var(--muted); font-size: 13px; }
+#ld-me, #su-me { display: flex; flex-direction: column; gap: 8px; }
+#ld-me .btn, #su-me .btn, #cr-card .btn { align-self: flex-start; }
+.points-box { display: flex; justify-content: space-between; align-items: center; background: var(--card2); border-radius: 10px; padding: 10px 12px; font-size: 14px; }
+.points-box.has-free { box-shadow: 0 0 0 1px var(--good) inset; }
+
+.level-list { display: flex; flex-direction: column; gap: 8px; }
+.level-row {
+  display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+  background: var(--card2); border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; color: var(--text); cursor: pointer;
+}
+.level-row.next { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+.level-row.won { border-color: #3b6b3f; }
+.level-row.locked { opacity: .45; }
+.lv-state { width: 18px; text-align: center; font-size: 14px; }
+.level-row.won .lv-state { color: var(--good); }
+.level-row.next .lv-state { color: var(--accent); }
+.lv-main { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.lv-main b { font-size: 15px; }
+.lv-rewards { display: flex; gap: 4px; }
+.reward-step { color: var(--good); }
+
+.boss-card { text-align: center; border-color: #5b4a1e; background: linear-gradient(180deg, #241f12, var(--card)); display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.boss-label { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+.boss-name { font-style: italic; font-size: 18px; margin: 0; }
+.center-row { justify-content: center; }
+.boss-card .trait-row { justify-content: center; }
+.boss-teaser { color: #f3dfa6; }
+.opp { align-items: center; }
+.opp > div { display: flex; flex-direction: column; gap: 4px; }
+.opp b { font-style: italic; }
+.plus { display: inline-grid; place-items: center; min-width: 28px; height: 22px; border-radius: 6px; background: var(--good); color: #0e1116; font-weight: 800; font-size: 13px; }
+
+/* Editor: Schritt-Bearbeitung */
+.steps { grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.stepbtn { height: 58px; }
+.step-label { font-size: 10px; }
+.slot .ico { min-width: 0; }
+.slot.sel { border-color: #fff; box-shadow: 0 0 0 2px #fff inset; }
+.slot-rep { position: absolute; bottom: 2px; right: 4px; font-size: 11px; font-weight: 700; color: var(--accent); }
+.slot-bar { background: var(--card2); border-radius: 12px; padding: 10px; margin-top: 8px; display: flex; flex-direction: column; gap: 8px; }
+.slot-bar-head { display: flex; align-items: center; gap: 8px; }
+.rep-seg { flex: 0 1 auto; }
+.rep-seg button { padding: 6px 10px; }
+.rep-seg button.locked { opacity: .4; }
+.warn.ok { color: var(--good); }
+.prog-icons .ico { min-width: 0; }
+
+/* Uhr */
+.clock-row { display: flex; align-items: center; gap: 12px; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 8px 12px; }
+.clock { width: 40px; height: 40px; flex: none; }
+.clock-text { display: flex; flex-direction: column; line-height: 1.2; }
+.clock-text b { font-size: 20px; font-variant-numeric: tabular-nums; }
+.clock-text b.urgent { color: var(--bad); }
+.clock-elapsed { margin-left: auto; font-variant-numeric: tabular-nums; }
+.legend-name { min-width: 0; }
+
+/* Glückwunsch */
+.win-box { text-align: center; align-items: center; max-height: 90dvh; overflow: auto; }
+.win-box h2 { font-size: 26px; color: var(--good); }
+.confetti { font-size: 40px; line-height: 1; }
+.win-germ { width: 180px; height: 120px; background: var(--card2); border-radius: 14px; display: grid; place-items: center; }
+.win-germ svg { width: 160px; height: 106px; }
+.win-fact { font-size: 15px; color: #c9d1db; }
+.win-box .rewards { align-self: stretch; text-align: left; }
+.win-box h3 { margin: 4px 0 0; }

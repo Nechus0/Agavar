@@ -1,18 +1,22 @@
-// Oberfläche: Bildschirme, Labor, Editor, Spielablauf.
+// Oberfläche: Bildschirme, Karriere, Editor, Spielablauf.
 import {
-  STEPS, STEP_KEYS, MAX_PROGRAM, COSTED, FREE, SPECIALS, SPECIAL_KEYS, PALETTE,
-  MIN_BUDGET, MAX_BUDGET, defaultGenome, cost, normalize, randomGenome, encodeGenome, decodeGenome,
+  STEPS, STEP_KEYS, MAX_PROGRAM, MAX_REPEAT, COSTED, FREE, SPECIALS, SPECIAL_KEYS, PALETTE,
+  MIN_BUDGET, MAX_BUDGET, defaultGenome, cost, normalize, randomGenome, parseStep, stepEntry, specialsOf,
 } from './genome.js';
 import { Simulation, DISTRIBUTIONS, MAX_TICKS } from './sim.js';
 import { PlateRenderer, drawHistory, PathAnimator } from './render.js';
 import { makeRng, randomSeed } from './rng.js';
 import { randomName } from './names.js';
-import { LEVELS } from './levels.js';
-import { getLimits, traitCap, unlockLevelOf, rewardsOf, problems } from './progression.js';
+import { LEVELS, levelOpponents } from './levels.js';
+import { GERMS, germSvg } from './germs.js';
+import {
+  getLimits, unlockLevelOf, rewardsOf, problems, careerPoints, nextLevel, START_POINTS, POINTS_PER_WIN,
+} from './progression.js';
 import { SPECIAL_ICONS, SPECIAL_COLORS, TRAIT_ICONS, STEP_ICONS, LOCK_ICON, UNLOCK_ICON } from './icons.js';
 import * as store from './storage.js';
 
 const $ = (sel) => document.querySelector(sel);
+const BREW_HOURS = 48; // eine Runde = 48 Stunden Brutzeit
 
 function el(tag, attrs = {}, ...children) {
   const e = document.createElement(tag);
@@ -28,16 +32,32 @@ function el(tag, attrs = {}, ...children) {
   return e;
 }
 
-// SVG-Symbol (nur eigene, feste Strings aus icons.js)
+// Inhalt ersetzen, leere Einträge (null/false) überspringen
+function fill(node, ...kids) {
+  node.replaceChildren(...kids.flat().filter((k) => k !== null && k !== undefined && k !== false));
+}
+
+// SVG-Grafik (nur eigene, feste Strings aus icons.js / germs.js)
 function icon(svg, cls = '', color = '') {
   const s = el('span', { class: `ico ${cls}`, style: color ? `color:${color}` : null });
   s.innerHTML = svg;
   return s;
 }
+function germPic(germ, color, cls = '') {
+  const s = el('span', { class: `germ-pic ${cls}` });
+  s.innerHTML = germSvg(GERMS[germ].shape, color);
+  return s;
+}
 
-const programIcons = (p) => el('span', { class: 'prog-icons' }, p.map((s) => icon(STEP_ICONS[s])));
+function stepChip(entry) {
+  const st = parseStep(entry);
+  return el('span', { class: 'pchip' }, icon(STEP_ICONS[st.s]), st.n > 1 ? el('sub', {}, `×${st.n}`) : null);
+}
+const programIcons = (p) => el('span', { class: 'prog-icons' }, p.map(stepChip));
 const specialBadge = (key, cls = '') => icon(SPECIAL_ICONS[key], cls, SPECIAL_COLORS[key]);
-const limits = () => getLimits(store.levelsWon());
+const specialTag = (key) => el('span', { class: 'sp-tag', style: `--c:${SPECIAL_COLORS[key]}` }, specialBadge(key, 'sm'), SPECIALS[key].name);
+const traitRow = (g) => el('div', { class: 'trait-row' }, COSTED.map((t) =>
+  el('span', { class: 'tchip', title: t.label }, icon(TRAIT_ICONS[t.key], 'xs'), String(g[t.key]))));
 
 const LABELS = {
   size: { klein: 'Klein', mittel: 'Mittel', gross: 'Groß' },
@@ -49,13 +69,17 @@ const LABELS = {
 // Vorlagen für Bewegungsmuster
 const PRESETS = [
   { name: 'Geradeaus', program: ['F'] },
-  { name: 'Kreis', program: ['F', 'F', 'R'] },
-  { name: 'Quadrat', program: ['F', 'F', 'F', 'D'] },
-  { name: 'Welle', program: ['R', 'L', 'L', 'R'] },
+  { name: 'Kreis', program: ['F', 'R'] },
+  { name: 'Quadrat', program: ['F', 'F', 'D'] },
   { name: 'Treppe', program: ['D', 'S'] },
+  { name: 'Welle', program: ['R', 'L', 'L', 'R'] },
   { name: 'Sitzer', program: ['P'] },
-  { name: 'Pendel', program: ['F', 'F', 'F', 'B'] },
-  { name: 'Wanderer', program: ['F', 'F', 'Z'] },
+  { name: 'Pendel', program: ['F', 'F', 'B'] },
+  { name: 'Taumler', program: ['F3', 'Z'] },
+  { name: 'Großes Quadrat', program: ['F4', 'D'] },
+  { name: 'Schlange', program: ['R4', 'M'] },
+  { name: 'Acht', program: ['R4', 'R4', 'M'] },
+  { name: 'Zickzack', program: ['R', 'F2', 'M'] },
 ];
 
 // ---------- Navigation ----------
@@ -82,29 +106,20 @@ function toast(msg) {
   t.textContent = msg;
   t.hidden = false;
   clearTimeout(toast._t);
-  toast._t = setTimeout(() => (t.hidden = true), 2400);
+  toast._t = setTimeout(() => (t.hidden = true), 2600);
 }
 
-function modal({ title, text = '', input = null, readonly = false, buttons }) {
+function confirmDialog(title, text, yes = 'Ja') {
   return new Promise((resolve) => {
     $('#modal-title').textContent = title;
     $('#modal-text').textContent = text;
-    const ta = $('#modal-input');
-    ta.hidden = input === null;
-    ta.value = input || '';
-    ta.readOnly = readonly;
-    const bar = $('#modal-buttons');
-    bar.replaceChildren(...buttons.map((b) => el('button', {
-      class: `btn ${b.primary ? 'primary' : ''} ${b.danger ? 'danger' : ''}`,
-      onclick: () => { $('#modal').hidden = true; resolve({ value: b.value, text: ta.value }); },
-    }, b.label)));
+    const done = (v) => { $('#modal').hidden = true; resolve(v); };
+    fill($('#modal-buttons'), 
+      el('button', { class: 'btn', onclick: () => done(false) }, 'Abbrechen'),
+      el('button', { class: 'btn primary', onclick: () => done(true) }, yes));
     $('#modal').hidden = false;
-    if (input !== null) setTimeout(() => (readonly ? ta.select() : ta.focus()), 50);
   });
 }
-
-const confirmDialog = async (title, text, yes = 'Ja') =>
-  (await modal({ title, text, buttons: [{ label: 'Abbrechen', value: false }, { label: yes, value: true, primary: true }] })).value;
 
 const lockedToast = (level) => toast(`🔒 Wird freigeschaltet, wenn du Level ${level} gewinnst.`);
 
@@ -133,6 +148,7 @@ function demoFrame(t) {
 }
 
 onEnter.home = () => {
+  $('#home-hint').hidden = store.getBacteria().length > 0;
   if (!demo.sim) startDemo();
   demo.last = 0;
   cancelAnimationFrame(demo.raf);
@@ -140,202 +156,188 @@ onEnter.home = () => {
 };
 onLeave.home = () => cancelAnimationFrame(demo.raf);
 
-// ---------- Bakterien-Auswahl ----------
-// ctx: { budget, label } – für den Editor, wenn man von hier aus ein Bakterium anlegt/anpasst.
-function renderPicker(container, ctx, onPick) {
+$('#home-career').addEventListener('click', () => {
+  if (!store.getBacteria().length) openEditor(null, careerNewCtx('home'));
+  else go('careers');
+});
+
+// ---------- Karriere-Übersicht ----------
+const careerCtx = (b, returnTo = 'career') => ({
+  mode: 'career', id: b.id, budget: careerPoints(b.career.won), limits: getLimits(b.career.won),
+  label: 'Ausbaupunkte', returnTo,
+});
+const careerNewCtx = (returnTo = 'careers') => ({
+  mode: 'career', id: null, budget: START_POINTS, limits: getLimits([]), label: 'Ausbaupunkte', returnTo,
+});
+
+function levelBadge(b) {
+  const n = nextLevel(b.career.won, LEVELS.length);
+  return n > LEVELS.length ? '🏆 Meister' : `Level ${n} von ${LEVELS.length}`;
+}
+
+onEnter.careers = () => {
   const list = store.getBacteria();
-  const settings = store.getSettings();
-  const lim = limits();
-  const ok = (b) => problems(b, lim, ctx.budget).length === 0;
-  let selected = list.find((b) => b.id === settings.lastBacterium && ok(b)) || list.find(ok) || null;
-  const draw = () => {
-    const rows = list.map((b) => {
-      const probs = problems(b, lim, ctx.budget);
-      return el('button', {
-        class: `pick ${selected && selected.id === b.id ? 'on' : ''} ${probs.length ? 'bad' : ''}`,
-        onclick: () => {
-          if (probs.length) return toast(`Passt nicht: ${probs.join(', ')}. Tippe auf „Anpassen“.`);
-          selected = b; store.updateSettings({ lastBacterium: b.id }); draw(); onPick(b);
-        },
-      },
-      el('span', { class: 'dot', style: `background:${b.color}` }),
-      el('span', { class: 'pick-main' },
+  fill($('#career-list'), ...(list.length ? list.map((b) => {
+    const pts = careerPoints(b.career.won);
+    const free = pts - cost(b);
+    return el('button', { class: 'lab-item career-item', onclick: () => openCareer(b.id) },
+      el('div', { class: 'title' },
+        el('span', { class: 'dot', style: `background:${b.color}` }),
         el('b', {}, b.name),
-        el('span', { class: 'pick-sub' }, programIcons(b.program), b.special !== 'none' ? specialBadge(b.special, 'sm') : null),
-        probs.length ? el('span', { class: 'pick-warn' }, probs.join(' · ')) : null),
-      el('span', { class: 'cost' }, `${cost(b)} Pkt`));
-    });
-    const sel = list.find((b) => b === selected);
-    const tools = el('div', { class: 'row gap' },
-      el('button', { class: 'btn small', onclick: () => openEditor(null, current, ctx) }, '+ Neu'),
-      list.length ? el('button', {
-        class: 'btn small',
-        onclick: () => {
-          const pick = sel || list[0];
-          openEditor(pick, current, ctx);
-        },
-      }, sel ? `„${sel.name}“ anpassen` : 'Anpassen') : null);
-    container.replaceChildren(...(list.length ? rows : [el('div', { class: 'empty' }, 'Noch keine Bakterien im Labor.')]), tools);
-  };
-  draw();
-  onPick(selected);
+        el('span', { class: 'cost' }, levelBadge(b))),
+      el('div', { class: 'stats' }, programIcons(b.program), b.special !== 'none' ? specialTag(b.special) : null),
+      traitRow(b),
+      el('div', { class: 'small muted' }, `${cost(b)} von ${pts} Ausbaupunkten verteilt`, free > 0 ? el('span', { class: 'free-pts' }, ` · ${free} frei!`) : null));
+  }) : [el('div', { class: 'empty' }, 'Noch kein Bakterium. Erstelle dein erstes!')]));
+};
+$('#career-new').addEventListener('click', () => openEditor(null, careerNewCtx('careers')));
+
+// ---------- Eine Karriere ----------
+let careerId = null;
+const curCareer = () => store.getBacterium(careerId);
+
+function openCareer(id) {
+  careerId = id;
+  go('career');
 }
 
-// ---------- Level ----------
-const levelUnlocked = (n) => n === 1 || store.levelsWon().includes(n - 1);
+onEnter.career = () => {
+  const b = curCareer();
+  if (!b) return go('careers');
+  const won = b.career.won;
+  const pts = careerPoints(won);
+  const free = pts - cost(b);
+  const lim = getLimits(won);
+  const probs = problems(b, lim, pts);
+  $('#cr-title').textContent = b.name;
+  fill($('#cr-card'), 
+    el('div', { class: 'title row gap' }, el('span', { class: 'dot big-dot', style: `background:${b.color}` }), el('b', { class: 'big-name' }, b.name), el('span', { class: 'cost' }, levelBadge(b))),
+    el('div', { class: 'stats' }, programIcons(b.program), b.special !== 'none' ? specialTag(b.special) : null),
+    traitRow(b),
+    el('div', { class: `points-box ${free > 0 ? 'has-free' : ''}` },
+      el('span', {}, el('b', {}, `${cost(b)} / ${pts}`), ' Ausbaupunkte verteilt'),
+      free > 0 ? el('span', { class: 'free-pts' }, `${free} ${free === 1 ? 'Punkt' : 'Punkte'} frei!`) : null),
+    probs.length ? el('p', { class: 'small warn' }, probs.join(' · ')) : null,
+    el('button', { class: 'btn primary', onclick: () => openEditor(b, careerCtx(b)) }, 'Bakterium ausbauen'));
 
-function rewardChips(level) {
-  return rewardsOf(level).map((r) => el('span', { class: 'reward' },
-    r.type === 'special' ? specialBadge(r.key, 'sm') : r.type === 'step' ? icon(STEP_ICONS[r.key], 'sm') : icon(UNLOCK_ICON, 'sm'),
-    r.text));
-}
-
-onEnter.levels = () => {
-  const won = store.levelsWon();
-  $('#level-grid').replaceChildren(...LEVELS.map((lv, i) => {
+  const nxt = nextLevel(won, LEVELS.length);
+  fill($('#cr-levels'), ...LEVELS.map((lv, i) => {
     const n = i + 1;
-    const unlocked = levelUnlocked(n);
+    const isWon = won.includes(n);
+    const open = isWon || n === nxt;
+    const boss = lv.boss;
     return el('button', {
-      class: `level ${won.includes(n) ? 'won' : ''} ${unlocked ? '' : 'locked'}`,
-      onclick: () => (unlocked ? openLevel(n) : toast(`Gewinne zuerst Level ${n - 1}.`)),
+      class: `level-row ${isWon ? 'won' : ''} ${n === nxt ? 'next' : ''} ${open ? '' : 'locked'}`,
+      onclick: () => (open ? openLevel(n) : toast(`Gewinne zuerst Level ${n - 1}.`)),
     },
-    el('span', { class: 'num' }, `Level ${n}`),
-    el('span', { class: 'name' }, lv.name),
-    el('span', { class: 'lv-budget' }, `${lv.budget} Punkte`),
-    el('span', { class: 'dots' }, lv.opponents.map((o) => el('i', { style: `background:${o.color}` })),
-      rewardsOf(n).filter((r) => r.type === 'special').map((r) => specialBadge(r.key, 'xs'))));
+    el('span', { class: 'lv-state' }, isWon ? '✓' : n === nxt ? '▶' : '🔒'),
+    germPic(boss.germ, boss.color, 'mini'),
+    el('span', { class: 'lv-main' },
+      el('b', {}, `${n}. ${lv.name}`),
+      el('span', { class: 'small muted' }, GERMS[boss.germ].name)),
+    el('span', { class: 'lv-rewards' }, rewardsOf(n).map((r) => rewardIcon(r))));
   }));
 };
 
-let levelPick = null;
-let openLevelNo = 1;
-const levelCtx = () => ({ budget: LEVELS[openLevelNo - 1].budget, label: `Level ${openLevelNo}` });
+$('#cr-delete').addEventListener('click', async () => {
+  const b = curCareer();
+  if (b && await confirmDialog('Bakterium löschen?', `„${b.name}“ und seine Karriere werden endgültig gelöscht.`, 'Löschen')) {
+    store.deleteBacterium(b.id);
+    go('careers');
+  }
+});
 
-function opponentRow(o) {
-  const parts = COSTED.filter((t) => o[t.key] > 0).map((t) => `${t.label.split(' ')[0]} ${o[t.key]}`);
+function rewardIcon(r) {
+  if (r.type === 'special') return specialBadge(r.key, 'sm');
+  if (r.type === 'step') return icon(STEP_ICONS[r.key], 'sm reward-step');
+  return icon(UNLOCK_ICON, 'sm reward-step');
+}
+const rewardRows = (level, withPoints) => [
+  withPoints ? el('div', { class: 'reward' }, el('span', { class: 'plus' }, `+${POINTS_PER_WIN}`), 'Ausbaupunkte für dein Bakterium') : null,
+  ...rewardsOf(level).map((r) => el('div', { class: 'reward' }, rewardIcon(r), r.text)),
+].filter(Boolean);
+
+// ---------- Leveldetails ----------
+let openLevelNo = 1;
+
+function opponentCard(o) {
   return el('div', { class: 'opp' },
-    el('span', { class: 'dot', style: `background:${o.color}` }),
+    germPic(o.germ, o.color, 'mini'),
     el('div', {},
-      el('b', {}, o.name), ' ', el('span', { class: 'muted small' }, `${cost(normalize(o))} Pkt`),
-      el('div', { class: 'stats' }, programIcons(o.program),
-        o.special !== 'none' ? el('span', { class: 'sp' }, specialBadge(o.special, 'sm'), SPECIALS[o.special].name) : null),
-      el('div', { class: 'stats' }, parts.join(', '))));
+      el('b', {}, o.name),
+      el('div', { class: 'stats' }, programIcons(o.program), ...specialsOf(o).map(specialTag)),
+      traitRow(o)));
 }
 
 function openLevel(n) {
   openLevelNo = n;
-  const lv = LEVELS[n - 1];
-  $('#ld-title').textContent = `Level ${n}`;
-  $('#ld-desc').replaceChildren(el('b', {}, lv.name), el('br'), lv.desc);
-  $('#ld-budget').replaceChildren(el('b', {}, `${lv.budget} Punkte`), ' stehen dir in diesem Level zur Verfügung.');
-  $('#ld-opponents').replaceChildren(...lv.opponents.map((o) => opponentRow(normalize(o))));
-  const pl = lv.plate;
-  $('#ld-plate').textContent = `Platte: ${LABELS.size[pl.size]} · Nährboden: ${LABELS.distribution[pl.distribution]}, ${LABELS.amount[pl.amount]}, Nachwachsen ${LABELS.regen[pl.regen].toLowerCase()}`;
-  const rewards = rewardChips(n);
-  $('#ld-rewards-card').hidden = !rewards.length || store.levelsWon().includes(n);
-  $('#ld-rewards').replaceChildren(...rewards);
   go('level-detail');
 }
 
 onEnter['level-detail'] = () => {
-  renderPicker($('#ld-picker'), levelCtx(), (b) => { levelPick = b; $('#ld-start').disabled = !b; });
+  const b = curCareer();
+  if (!b) return go('careers');
+  const n = openLevelNo;
+  const lv = LEVELS[n - 1];
+  const [boss, ...others] = levelOpponents(lv);
+  const won = b.career.won;
+  $('#ld-title').textContent = `Level ${n}`;
+  fill($('#ld-desc'), el('b', {}, lv.name), el('br'), lv.desc);
+  const rewards = rewardsOf(n);
+  fill($('#ld-boss'), 
+    el('div', { class: 'boss-label' }, '★ Besonderer Gegner'),
+    germPic(boss.germ, boss.color, 'large'),
+    el('h3', { class: 'boss-name' }, boss.name),
+    el('div', { class: 'stats center-row' }, ...specialsOf(boss).map(specialTag), programIcons(boss.program)),
+    traitRow(boss),
+    rewards.length && !won.includes(n)
+      ? el('p', { class: 'small boss-teaser' }, 'Besiege ihn, um freizuschalten: ', el('b', {}, rewards.map((r) => r.text).join(', ')))
+      : null);
+  $('#ld-others-card').hidden = !others.length;
+  fill($('#ld-opponents'), ...others.map(opponentCard));
+  const pl = lv.plate;
+  $('#ld-plate').textContent = `Platte: ${LABELS.size[pl.size]} · Nährboden: ${LABELS.distribution[pl.distribution]}, ${LABELS.amount[pl.amount]}, Nachwachsen ${LABELS.regen[pl.regen].toLowerCase()}`;
+  $('#ld-rewards-card').hidden = won.includes(n);
+  fill($('#ld-rewards'), ...rewardRows(n, true));
+
+  const pts = careerPoints(won);
+  const probs = problems(b, getLimits(won), pts);
+  fill($('#ld-me'), 
+    el('h3', {}, 'Dein Bakterium'),
+    el('div', { class: 'title row gap' }, el('span', { class: 'dot', style: `background:${b.color}` }), el('b', {}, b.name), el('span', { class: 'cost' }, `${cost(b)} / ${pts} Pkt`)),
+    el('div', { class: 'stats' }, programIcons(b.program), b.special !== 'none' ? specialTag(b.special) : null),
+    traitRow(b),
+    probs.length ? el('p', { class: 'small warn' }, probs.join(' · ')) : null,
+    pts - cost(b) > 0 ? el('p', { class: 'small free-pts' }, `Du hast noch ${pts - cost(b)} ${pts - cost(b) === 1 ? 'Punkt' : 'Punkte'} frei!`) : null,
+    el('button', { class: 'btn small', onclick: () => openEditor(b, careerCtx(b, 'level-detail')) }, 'Ausbauen'));
+  $('#ld-start').disabled = probs.length > 0;
 };
 
 $('#ld-start').addEventListener('click', () => {
-  if (!levelPick) return;
+  const b = curCareer();
+  if (!b) return;
   const lv = LEVELS[openLevelNo - 1];
-  startMatch({
-    mode: 'level', level: openLevelNo, player: levelPick,
-    opponents: lv.opponents.map((o) => normalize(o)), ...lv.plate, seed: randomSeed(),
-  });
-});
-
-// ---------- Labor ----------
-onEnter.lab = () => {
-  const list = store.getBacteria();
-  const box = $('#lab-list');
-  if (!list.length) {
-    box.replaceChildren(el('div', { class: 'empty' }, 'Dein Labor ist leer. Erstelle dein erstes Bakterium!'));
-    return;
-  }
-  box.replaceChildren(...list.map((b) => el('div', { class: 'lab-item' },
-    el('div', { class: 'title' },
-      el('span', { class: 'dot', style: `background:${b.color}` }),
-      el('b', {}, b.name),
-      el('span', { class: 'cost' }, `${cost(b)} Pkt`)),
-    el('div', { class: 'stats' }, programIcons(b.program),
-      b.special !== 'none' ? el('span', { class: 'sp' }, specialBadge(b.special, 'sm'), SPECIALS[b.special].name) : null),
-    el('div', { class: 'trait-row' }, COSTED.map((t) => el('span', { class: 'tchip', title: t.label }, icon(TRAIT_ICONS[t.key], 'xs'), String(b[t.key])))),
-    el('div', { class: 'actions' },
-      el('button', { class: 'btn', onclick: () => openEditor(b) }, 'Bearbeiten'),
-      el('button', { class: 'btn', onclick: () => duplicate(b) }, 'Kopieren'),
-      el('button', { class: 'btn', onclick: () => exportBacterium(b) }, 'Exportieren'),
-      el('button', { class: 'btn danger', onclick: () => removeBacterium(b) }, 'Löschen')))));
-};
-
-function duplicate(b) {
-  const copy = { ...b, id: undefined, name: `${b.name} (Kopie)`.slice(0, 32) };
-  store.saveBacterium(copy);
-  toast('Kopie erstellt.');
-  onEnter.lab();
-}
-
-async function removeBacterium(b) {
-  if (await confirmDialog('Bakterium löschen?', `„${b.name}“ wird endgültig gelöscht.`, 'Löschen')) {
-    store.deleteBacterium(b.id);
-    onEnter.lab();
-  }
-}
-
-async function exportBacterium(b) {
-  const code = encodeGenome(b);
-  let copied = false;
-  try { await navigator.clipboard.writeText(code); copied = true; } catch { /* manuell kopieren */ }
-  await modal({
-    title: `„${b.name}“ exportieren`,
-    text: copied ? 'Der Code wurde in die Zwischenablage kopiert. Du kannst ihn sichern oder verschicken.' : 'Kopiere diesen Code, um das Bakterium zu sichern oder zu teilen.',
-    input: code, readonly: true, buttons: [{ label: 'Fertig', primary: true }],
-  });
-}
-
-$('#lab-new').addEventListener('click', () => openEditor(null));
-$('#lab-import').addEventListener('click', async () => {
-  const r = await modal({
-    title: 'Bakterium importieren', text: 'Füge einen Agava-Code ein (beginnt mit „AGAVA1:“).', input: '',
-    buttons: [{ label: 'Abbrechen', value: false }, { label: 'Importieren', value: true, primary: true }],
-  });
-  if (!r.value) return;
-  try {
-    const g = decodeGenome(r.text);
-    delete g.id;
-    store.saveBacterium(g);
-    toast(`„${g.name}“ importiert.`);
-    onEnter.lab();
-  } catch (err) {
-    toast(err.message || 'Code konnte nicht gelesen werden.');
-  }
+  startMatch({ mode: 'level', level: openLevelNo, careerId: b.id, player: b, opponents: levelOpponents(lv), ...lv.plate, seed: randomSeed() });
 });
 
 // ---------- Editor ----------
 let ed = null;
-let edReturn = 'lab';
 let edCtx = null;
+let selSlot = -1;
 const animator = new PathAnimator($('#ed-preview'), (idx) => {
   document.querySelectorAll('#ed-program .slot').forEach((s, k) => s.classList.toggle('active', k === idx));
 });
 
-function openEditor(b, returnTo = 'lab', ctx = null) {
+function openEditor(b, ctx) {
+  edCtx = ctx;
   ed = b ? normalize(JSON.parse(JSON.stringify(b))) : defaultGenome();
-  if (b) ed.id = b.id;
-  else {
+  if (b && b.id) ed.id = b.id;
+  if (!b) {
     const used = new Set(store.getBacteria().map((x) => x.color));
     ed.color = PALETTE.find((c) => !used.has(c)) || PALETTE[0];
-    // Neues Bakterium: an die freigeschalteten Stufen anpassen
-    const lim = limits();
-    for (const t of COSTED) ed[t.key] = Math.min(ed[t.key], traitCap(t, lim));
   }
-  edReturn = returnTo;
-  edCtx = ctx || { budget: store.getSettings().budget, label: 'Freies Spiel' };
+  selSlot = -1;
+  $('#ed-title').textContent = ctx.mode === 'free' ? 'Freies Spiel' : b ? 'Ausbauen' : 'Neues Bakterium';
   go('editor');
   renderEditor();
   renderProgram();
@@ -345,45 +347,83 @@ onEnter.editor = () => animator.start();
 onLeave.editor = () => animator.stop();
 
 function renderProgram() {
-  const lim = limits();
+  const lim = edCtx.limits;
+  if (selSlot >= ed.program.length) selSlot = -1;
   const slots = [];
   for (let k = 0; k < MAX_PROGRAM; k++) {
-    const s = ed.program[k];
+    const st = ed.program[k] ? parseStep(ed.program[k]) : null;
     const locked = k >= lim.programMax;
     slots.push(el('button', {
-      class: `slot ${s ? 'filled' : ''} ${locked ? 'locked' : ''}`,
-      'aria-label': s ? `Schritt ${k + 1}: ${STEPS[s].name} – entfernen` : `Schritt ${k + 1}`,
+      class: `slot ${st ? 'filled' : ''} ${locked ? 'locked' : ''} ${k === selSlot ? 'sel' : ''}`,
+      'aria-label': st ? `Schritt ${k + 1}: ${STEPS[st.s].name}` : `Schritt ${k + 1}`,
       onclick: () => {
-        if (locked && !s) return lockedToast(unlockLevelOf('program', k + 1));
-        if (s && ed.program.length > 1) { ed.program.splice(k, 1); renderProgram(); }
+        if (!st) return locked ? lockedToast(unlockLevelOf('program', k + 1)) : toast('Wähle unten einen Schritt aus, um ihn anzuhängen.');
+        selSlot = selSlot === k ? -1 : k;
+        renderProgram();
       },
-    }, el('span', { class: 'slot-n' }, String(k + 1)), s ? icon(STEP_ICONS[s]) : locked ? icon(LOCK_ICON, 'lock') : null));
+    }, el('span', { class: 'slot-n' }, String(k + 1)),
+    st ? icon(STEP_ICONS[st.s]) : locked ? icon(LOCK_ICON, 'lock') : null,
+    st && st.n > 1 ? el('span', { class: 'slot-rep' }, `×${st.n}`) : null));
   }
-  $('#ed-program').replaceChildren(...slots);
+  fill($('#ed-program'), ...slots);
 
-  $('#ed-steps').replaceChildren(...STEP_KEYS.map((key) => {
+  // Bearbeitungsleiste für den ausgewählten Schritt
+  const bar = $('#ed-slot-bar');
+  bar.hidden = selSlot < 0;
+  $('#ed-slot-hint').hidden = selSlot >= 0;
+  if (selSlot >= 0) {
+    const st = parseStep(ed.program[selSlot]);
+    const reps = [];
+    for (let r = 1; r <= MAX_REPEAT; r++) {
+      reps.push(el('button', {
+        class: `${st.n === r ? 'on' : ''} ${!lim.repeat && r > 1 ? 'locked' : ''}`,
+        onclick: () => {
+          if (!lim.repeat && r > 1) return lockedToast(unlockLevelOf('repeat'));
+          ed.program[selSlot] = stepEntry(st.s, r); renderProgram();
+        },
+      }, `×${r}`));
+    }
+    fill(bar, 
+      el('div', { class: 'slot-bar-head' }, icon(STEP_ICONS[st.s]), el('b', {}, `Schritt ${selSlot + 1}: ${STEPS[st.s].label}`)),
+      el('div', { class: 'row gap wrap' },
+        el('span', { class: 'small muted' }, 'Wiederholen'),
+        el('div', { class: 'seg rep-seg' }, reps),
+        el('button', {
+          class: 'btn small danger',
+          onclick: () => {
+            if (ed.program.length <= 1) return toast('Ein Schritt muss bleiben.');
+            ed.program.splice(selSlot, 1); selSlot = -1; renderProgram();
+          },
+        }, 'Entfernen')));
+  }
+
+  fill($('#ed-steps'), ...STEP_KEYS.map((key) => {
     const locked = !lim.steps.has(key);
     return el('button', {
       class: `stepbtn ${locked ? 'locked' : ''}`, title: STEPS[key].name,
       onclick: () => {
         if (locked) return lockedToast(unlockLevelOf('step', key));
-        if (ed.program.length >= lim.programMax) return toast(`Maximal ${lim.programMax} Schritte – tippe oben auf einen Schritt, um ihn zu entfernen.`);
+        if (selSlot >= 0) { ed.program[selSlot] = stepEntry(key, parseStep(ed.program[selSlot]).n); renderProgram(); return; }
+        if (ed.program.length >= lim.programMax) return toast(`Maximal ${lim.programMax} Schritte – tippe oben auf einen Schritt, um ihn zu ändern.`);
         ed.program.push(key); renderProgram();
       },
     }, icon(locked ? LOCK_ICON : STEP_ICONS[key], locked ? 'lock' : ''), el('span', { class: 'step-label' }, STEPS[key].label));
   }));
 
-  $('#ed-presets').replaceChildren(...PRESETS.map((pr) => {
-    const missing = pr.program.find((s) => !lim.steps.has(s));
+  fill($('#ed-presets'), ...PRESETS.map((pr) => {
+    const parsed = pr.program.map(parseStep);
+    const missing = parsed.find((x) => !lim.steps.has(x.s));
+    const needRepeat = !lim.repeat && parsed.some((x) => x.n > 1);
     const tooLong = pr.program.length > lim.programMax;
-    const locked = missing || tooLong;
-    const same = pr.program.join('') === ed.program.join('');
+    const locked = missing || needRepeat || tooLong;
+    const same = pr.program.join(',') === ed.program.join(',');
     return el('button', {
       class: `preset ${same ? 'on' : ''} ${locked ? 'locked' : ''}`,
       onclick: () => {
-        if (missing) return lockedToast(unlockLevelOf('step', missing));
+        if (missing) return lockedToast(unlockLevelOf('step', missing.s));
+        if (needRepeat) return lockedToast(unlockLevelOf('repeat'));
         if (tooLong) return lockedToast(unlockLevelOf('program', pr.program.length));
-        ed.program = pr.program.slice(); renderProgram();
+        ed.program = pr.program.slice(); selSlot = -1; renderProgram();
       },
     }, el('span', {}, pr.name), programIcons(pr.program));
   }));
@@ -391,15 +431,15 @@ function renderProgram() {
 }
 
 function renderEditor() {
-  const lim = limits();
+  const lim = edCtx.limits;
   $('#ed-name').value = ed.name;
-  $('#ed-colors').replaceChildren(...PALETTE.map((c) => el('button', {
+  fill($('#ed-colors'), ...PALETTE.map((c) => el('button', {
     class: `swatch ${ed.color === c ? 'on' : ''}`, style: `background:${c}`, 'aria-label': c,
     onclick: () => { ed.color = c; renderEditor(); animator.setProgram(ed.program, ed.color); },
   })));
 
   // Kostenlose Abwägungen
-  $('#ed-free').replaceChildren(...FREE.map((t) => {
+  fill($('#ed-free'), ...FREE.map((t) => {
     const input = el('input', { type: 'range', min: 0, max: t.max, step: 1, value: ed[t.key] });
     input.addEventListener('input', () => { ed[t.key] = Number(input.value); });
     return el('div', { class: 'trait' },
@@ -410,10 +450,11 @@ function renderEditor() {
   }));
 
   // Eigenschaften mit Punktekosten
-  $('#ed-costed').replaceChildren(...COSTED.map((t) => {
-    const cap = traitCap(t, lim);
+  const budget = edCtx.budget;
+  const c = cost(ed);
+  fill($('#ed-costed'), ...COSTED.map((t) => {
     const pips = [];
-    for (let k = 0; k < t.max; k++) pips.push(el('i', { class: k < ed[t.key] ? 'on' : k >= cap ? 'lock' : '' }));
+    for (let k = 0; k < t.max; k++) pips.push(el('i', { class: k < ed[t.key] ? 'on' : '' }));
     return el('div', { class: 'trait' },
       el('div', { class: 'trait-head' },
         el('span', { class: 'trait-name' }, icon(TRAIT_ICONS[t.key], 'ti'), el('b', {}, t.label)),
@@ -423,7 +464,7 @@ function renderEditor() {
           el('button', {
             onclick: () => {
               if (ed[t.key] >= t.max) return;
-              if (ed[t.key] >= cap) return lockedToast(unlockLevelOf('trait', ed[t.key] + 1));
+              if (cost(ed) + 1 > budget) return toast('Keine Punkte mehr frei. Besiege Gegner, um mehr zu bekommen.');
               ed[t.key]++; renderEditor();
             },
             'aria-label': 'mehr',
@@ -432,48 +473,57 @@ function renderEditor() {
   }));
 
   // Spezialfähigkeit als Kacheln mit Symbol
-  $('#ed-specials').replaceChildren(...SPECIAL_KEYS.map((k) => {
+  fill($('#ed-specials'), ...SPECIAL_KEYS.map((k) => {
     const locked = !lim.specials.has(k);
     return el('button', {
       class: `special ${ed.special === k ? 'on' : ''} ${locked ? 'locked' : ''}`,
       onclick: () => {
         if (locked) return lockedToast(unlockLevelOf('special', k));
+        const extra = SPECIALS[k].cost - SPECIALS[ed.special].cost;
+        if (cost(ed) + extra > budget) return toast(`${SPECIALS[k].name} kostet ${SPECIALS[k].cost} Punkte – nimm dafür woanders Punkte weg.`);
         ed.special = k; renderEditor();
       },
     },
     specialBadge(k, 'big'),
     el('span', { class: 'special-name' }, SPECIALS[k].name),
-    el('span', { class: 'special-cost' }, locked ? `🔒 Level ${unlockLevelOf('special', k)}` : SPECIALS[k].cost ? `${SPECIALS[k].cost} Pkt` : '0 Pkt'));
+    el('span', { class: 'special-cost' }, locked ? `🔒 Level ${unlockLevelOf('special', k)}` : `${SPECIALS[k].cost} Pkt`));
   }));
-  $('#ed-special-hint').replaceChildren(el('b', {}, `${SPECIALS[ed.special].name}: `), SPECIALS[ed.special].hint);
+  fill($('#ed-special-hint'), el('b', {}, `${SPECIALS[ed.special].name}: `), SPECIALS[ed.special].hint);
 
   // Budget
-  const { budget, label } = edCtx;
-  const c = cost(ed);
   $('#ed-cost').textContent = `${c} / ${budget}`;
-  $('#ed-budget-label').textContent = `Punkte (Budget ${label})`;
+  $('#ed-budget-label').textContent = edCtx.mode === 'free' ? 'Punkte (freies Spiel)' : 'Ausbaupunkte';
   $('#ed-meter').style.width = `${Math.min(100, (c / budget) * 100)}%`;
   const over = c > budget;
   $('#ed-budget').classList.toggle('over', over);
   const warn = $('#ed-warn');
-  warn.hidden = !over;
-  if (over) warn.textContent = `${c - budget} Punkte zu viel für ${label}. Du kannst trotzdem speichern, aber hier nicht antreten.`;
+  warn.hidden = !over && c >= budget;
+  if (over) warn.textContent = `${c - budget} Punkte zu viel – nimm Punkte weg.`;
+  else if (c < budget) warn.textContent = `Noch ${budget - c} ${budget - c === 1 ? 'Punkt' : 'Punkte'} zu verteilen.`;
+  warn.classList.toggle('ok', !over);
 }
 
 $('#ed-name').addEventListener('input', (e) => { ed.name = e.target.value; });
-$('#ed-clear').addEventListener('click', () => { ed.program = ['F']; renderProgram(); });
-$('#ed-cancel').addEventListener('click', () => go(edReturn));
+$('#ed-clear').addEventListener('click', () => { ed.program = ['F']; selSlot = -1; renderProgram(); });
+$('#ed-cancel').addEventListener('click', () => go(edCtx.returnTo));
 $('#ed-save').addEventListener('click', () => {
-  if (!ed.name.trim()) return toast('Bitte gib einen Namen ein.');
+  if (!ed.name.trim()) { $('#ed-name').focus(); return toast('Bitte gib deinem Bakterium einen Namen.'); }
+  const probs = problems(ed, edCtx.limits, edCtx.budget);
+  if (probs.length) return toast(probs.join(' · '));
+  if (edCtx.mode === 'free') {
+    store.saveFree(ed);
+    toast('Gespeichert.');
+    return go('setup');
+  }
   const saved = store.saveBacterium(ed);
-  store.updateSettings({ lastBacterium: saved.id });
   toast(`„${saved.name}“ gespeichert.`);
-  go(edReturn);
+  careerId = saved.id;
+  go(edCtx.returnTo === 'home' || edCtx.returnTo === 'careers' ? 'career' : edCtx.returnTo);
 });
 
 // ---------- Freies Spiel ----------
-let freePick = null;
-const freeCtx = () => ({ budget: store.getSettings().budget, label: 'Freies Spiel' });
+const freeLimits = () => getLimits(store.globalWon());
+const freeCtx = () => ({ mode: 'free', budget: store.getSettings().budget, limits: freeLimits(), returnTo: 'setup' });
 
 function segOption(label, key, values, labels) {
   const s = store.getSettings();
@@ -495,8 +545,25 @@ function stepperOption(label, key, min, max, step, fmt = (v) => v) {
 }
 
 onEnter.setup = () => {
-  renderPicker($('#su-picker'), freeCtx(), (b) => { freePick = b; $('#su-start').disabled = !b; });
-  $('#su-options').replaceChildren(
+  const s = store.getSettings();
+  const g = store.getFree();
+  const me = $('#su-me');
+  if (!g) {
+    fill(me, el('h3', {}, 'Dein Bakterium'),
+      el('p', { class: 'small muted' }, 'Für das freie Spiel hast du ein eigenes Bakterium. Du kannst sofort alle Punkte verteilen.'),
+      el('button', { class: 'btn primary', onclick: () => openEditor(null, freeCtx()) }, 'Bakterium erstellen'));
+    $('#su-start').disabled = true;
+  } else {
+    const probs = problems(g, freeLimits(), s.budget);
+    fill(me, el('h3', {}, 'Dein Bakterium'),
+      el('div', { class: 'title row gap' }, el('span', { class: 'dot', style: `background:${g.color}` }), el('b', {}, g.name), el('span', { class: 'cost' }, `${cost(g)} / ${s.budget} Pkt`)),
+      el('div', { class: 'stats' }, programIcons(g.program), g.special !== 'none' ? specialTag(g.special) : null),
+      traitRow(g),
+      probs.length ? el('p', { class: 'small warn' }, probs.join(' · ')) : null,
+      el('button', { class: 'btn small', onclick: () => openEditor(g, freeCtx()) }, 'Bearbeiten'));
+    $('#su-start').disabled = probs.length > 0;
+  }
+  fill($('#su-options'), 
     el('h3', {}, 'Einstellungen'),
     stepperOption('Anzahl Gegner', 'opponents', 1, 5, 1),
     stepperOption('Punktebudget (für dich und die Gegner)', 'budget', MIN_BUDGET, MAX_BUDGET, 1, (v) => `${v} Pkt`),
@@ -504,26 +571,27 @@ onEnter.setup = () => {
     segOption('Nährboden-Verteilung', 'distribution', DISTRIBUTIONS, LABELS.distribution),
     segOption('Nährstoffmenge', 'amount', ['wenig', 'normal', 'viel'], LABELS.amount),
     segOption('Nachwachsen', 'regen', ['aus', 'langsam', 'normal', 'schnell'], LABELS.regen),
-    el('p', { class: 'small muted' }, 'Zufallsgegner nutzen nur Fähigkeiten, die du schon freigeschaltet hast.'),
+    el('p', { class: 'small muted' }, 'Spezialfähigkeiten und besondere Schritte schaltest du in der Karriere frei – für dich und die Zufallsgegner.'),
   );
 };
 
 function randomOpponents(n, budget, playerColor, seed) {
   const rng = makeRng(seed ^ 0x9e3779b9);
   const colors = PALETTE.filter((c) => c !== playerColor);
-  const lim = limits();
+  const lim = freeLimits();
   return Array.from({ length: n }, (_, k) => ({
     ...randomGenome(rng, budget, lim), name: randomName(rng), color: colors[k % colors.length],
   }));
 }
 
 $('#su-start').addEventListener('click', () => {
-  if (!freePick) return;
+  const g = store.getFree();
+  if (!g) return;
   const s = store.getSettings();
   const seed = randomSeed();
   startMatch({
-    mode: 'free', player: freePick,
-    opponents: randomOpponents(s.opponents, s.budget, freePick.color, seed),
+    mode: 'free', player: g,
+    opponents: randomOpponents(s.opponents, s.budget, g.color, seed),
     size: s.size, distribution: s.distribution, amount: s.amount, regen: s.regen, seed,
   });
 });
@@ -545,7 +613,7 @@ function fixColors(player, opponents) {
 function startMatch(cfg) {
   run.cfg = cfg;
   const player = normalize(cfg.player);
-  const opponents = fixColors(player, cfg.opponents.map(normalize));
+  const opponents = fixColors(player, cfg.opponents);
   run.genomes = [player, ...opponents];
   run.sim = new Simulation({
     genomes: run.genomes, size: cfg.size, distribution: cfg.distribution,
@@ -558,11 +626,11 @@ function startMatch(cfg) {
   clearTimeout(run.endTimer);
   $('#sim-pause').textContent = '⏸';
   $('#sim-title').textContent = cfg.mode === 'level' ? `Level ${cfg.level}` : 'Freies Spiel';
-  $('#sim-shares').replaceChildren(...run.genomes.map((g) => el('div', { style: `background:${g.color}` })));
-  $('#sim-legend').replaceChildren(...run.genomes.map((g, i) => el('div', { class: 'legend-row' },
+  fill($('#sim-shares'), ...run.genomes.map((g) => el('div', { style: `background:${g.color}` })));
+  fill($('#sim-legend'), ...run.genomes.map((g, i) => el('div', { class: 'legend-row' },
     el('span', { class: 'dot', style: `background:${g.color}` }),
-    el('span', {}, i === 0 ? el('b', {}, `${g.name} (du)`) : g.name),
-    g.special !== 'none' ? specialBadge(g.special, 'sm') : null,
+    el('span', { class: 'legend-name' }, i === 0 ? el('b', {}, `${g.name} (du)`) : g.boss ? el('span', {}, '★ ', g.name) : g.name),
+    ...specialsOf(g).map((k) => specialBadge(k, 'sm')),
     el('span', { class: 'n' }, '0'))));
   setSpeed(run.speed);
   go('sim');
@@ -577,6 +645,11 @@ function setSpeed(v) {
   document.querySelectorAll('#sim-speed button').forEach((b) => b.classList.toggle('on', Number(b.dataset.speed) === v));
 }
 
+const fmtHours = (h) => {
+  const hh = Math.floor(h), mm = Math.floor((h - hh) * 60);
+  return `${hh}:${String(mm).padStart(2, '0')} h`;
+};
+
 function updateSimUi() {
   const sim = run.sim;
   const total = sim.players.reduce((s, p) => s + p.count, 0) || 1;
@@ -587,7 +660,13 @@ function updateSimUi() {
     rows[i].querySelector('.n').textContent = p.count.toLocaleString('de-DE');
     rows[i].classList.toggle('dead', p.count === 0);
   });
-  $('#sim-tick').textContent = `${sim.tick} / ${MAX_TICKS}`;
+  // ablaufende Uhr
+  const frac = Math.min(1, sim.tick / MAX_TICKS);
+  $('#clock-arc').setAttribute('stroke-dashoffset', String(100.5 * frac));
+  $('#clock-hand').setAttribute('transform', `rotate(${frac * 360} 20 20)`);
+  $('#clock-left').textContent = fmtHours(BREW_HOURS * (1 - frac));
+  $('#clock-elapsed').textContent = `${Math.floor(BREW_HOURS * frac)} / ${BREW_HOURS} h`;
+  $('#clock-left').classList.toggle('urgent', frac > 0.85);
 }
 
 function simFrame(t) {
@@ -637,16 +716,10 @@ function showResult() {
   title.textContent = won ? 'Gewonnen!' : sim.winner === 0 ? 'Unentschieden' : 'Verloren';
   title.className = won ? 'win' : sim.winner === 0 ? '' : 'lose';
   const winnerName = sim.winner ? run.genomes[sim.winner - 1].name : null;
-  $('#rs-reason').textContent = `${sim.endReason}${winnerName && !won ? ` Sieger: ${winnerName}.` : ''} (${sim.tick} Generationen)`;
+  const hours = Math.round((BREW_HOURS * sim.tick) / MAX_TICKS);
+  $('#rs-reason').textContent = `${sim.endReason}${winnerName && !won ? ` Sieger: ${winnerName}.` : ''} (nach ${hours} h Brutzeit)`;
 
-  let firstWin = false;
-  if (cfg.mode === 'level' && won) {
-    firstWin = !store.levelsWon().includes(cfg.level);
-    store.markLevelWon(cfg.level);
-  }
-  const rewards = firstWin ? rewardChips(cfg.level) : [];
-  $('#rs-rewards-card').hidden = !rewards.length;
-  $('#rs-rewards').replaceChildren(...rewards);
+  const firstWin = cfg.mode === 'level' && won && store.markWon(cfg.careerId, cfg.level);
 
   go('result');
   const rc = $('#rs-plate');
@@ -656,60 +729,65 @@ function showResult() {
 
   const rows = sim.players.map((p, i) => {
     const g = run.genomes[i];
-    const status = sim.winner === p.id ? '🏆' : p.count === 0 ? `✝ ${p.extinctAt}` : 'lebt';
+    const status = sim.winner === p.id ? '🏆' : p.count === 0 ? `✝ ${Math.round((BREW_HOURS * p.extinctAt) / MAX_TICKS)} h` : 'lebt';
     return el('tr', {},
-      el('td', {}, el('span', { class: 'dot', style: `background:${g.color};vertical-align:-2px;margin-right:6px` }), i === 0 ? el('b', {}, g.name) : g.name,
-        i > 0 && cfg.mode === 'free' ? el('span', {}, ' ', el('button', { class: 'adopt', onclick: (e) => adopt(g, e.target) }, '+ Labor')) : null),
+      el('td', {}, el('span', { class: 'dot', style: `background:${g.color};vertical-align:-2px;margin-right:6px` }), i === 0 ? el('b', {}, g.name) : g.name),
       el('td', { class: 'num' }, p.count.toLocaleString('de-DE')),
       el('td', { class: 'num' }, p.peak.toLocaleString('de-DE')),
       el('td', { class: 'num' }, p.kills.toLocaleString('de-DE')),
       el('td', { class: 'num' }, status));
   });
-  $('#rs-table').replaceChildren(el('table', {},
+  fill($('#rs-table'), el('table', {},
     el('thead', {}, el('tr', {}, el('th', {}, 'Kultur'), el('th', { class: 'num' }, 'Ende'), el('th', { class: 'num' }, 'Max.'), el('th', { class: 'num' }, 'Kills'), el('th', { class: 'num' }, 'Status'))),
     el('tbody', {}, rows)));
 
-  $('#rs-next').hidden = !(cfg.mode === 'level' && won && cfg.level < LEVELS.length);
-  $('#rs-new').hidden = cfg.mode === 'level';
-  $('#rs-rematch').textContent = cfg.mode === 'level' ? 'Nochmal versuchen' : 'Revanche (gleicher Start)';
-  if (cfg.mode === 'level' && won && cfg.level === LEVELS.length) toast('Du hast alle Level geschafft! 🎉');
-  else if (firstWin) toast(`Level ${cfg.level + 1} freigeschaltet!`);
+  const lvMode = cfg.mode === 'level';
+  $('#rs-next').hidden = !(lvMode && won && cfg.level < LEVELS.length);
+  $('#rs-upgrade').hidden = !lvMode;
+  $('#rs-new').hidden = lvMode;
+  $('#rs-rematch').textContent = lvMode ? (won ? 'Level wiederholen' : 'Nochmal versuchen') : 'Revanche (gleicher Start)';
+  if (firstWin) showWinModal(cfg.level);
 }
 
-function adopt(g, btn) {
-  const { id, ...rest } = g;
-  store.saveBacterium(rest);
-  btn.disabled = true;
-  btn.textContent = '✓';
-  toast(`„${g.name}“ ins Labor übernommen.`);
+function showWinModal(level) {
+  const lv = LEVELS[level - 1];
+  const germ = GERMS[lv.boss.germ];
+  fill($('#win-sub'), 'Du hast ', el('b', {}, germ.name), ` besiegt und Level ${level} geschafft!`);
+  const pic = $('#win-germ');
+  pic.innerHTML = germSvg(germ.shape, lv.boss.color);
+  $('#win-fact').textContent = germ.fact;
+  fill($('#win-rewards'), ...rewardRows(level, true));
+  $('#win-modal').hidden = false;
 }
+$('#win-ok').addEventListener('click', () => { $('#win-modal').hidden = true; });
 
+$('#rs-back').addEventListener('click', () => go(run.cfg.mode === 'level' ? 'career' : 'setup'));
 $('#rs-rematch').addEventListener('click', () => {
   const cfg = run.cfg;
-  // Spieler-Bakterium ggf. aktualisiert aus dem Labor holen
-  const fresh = store.getBacterium(cfg.player.id) || cfg.player;
-  // Level: neuer Zufall; freies Spiel: exakt gleicher Startzustand
-  startMatch({ ...cfg, player: fresh, seed: cfg.mode === 'level' ? randomSeed() : cfg.seed });
+  if (cfg.mode === 'level') {
+    const b = store.getBacterium(cfg.careerId);
+    if (!b) return go('careers');
+    const probs = problems(b, getLimits(b.career.won), careerPoints(b.career.won));
+    if (probs.length) return toast(probs.join(' · '));
+    startMatch({ ...cfg, player: b, seed: randomSeed() });
+  } else {
+    startMatch({ ...cfg, player: store.getFree() || cfg.player });
+  }
 });
 $('#rs-new').addEventListener('click', () => {
   const cfg = run.cfg;
   const s = store.getSettings();
   const seed = randomSeed();
-  const player = store.getBacterium(cfg.player.id) || cfg.player;
+  const player = store.getFree() || cfg.player;
   startMatch({ ...cfg, player, seed, opponents: randomOpponents(cfg.opponents.length, s.budget, player.color, seed) });
 });
-$('#rs-next').addEventListener('click', () => openLevel(run.cfg.level + 1));
-$('#rs-edit').addEventListener('click', () => {
-  const b = store.getBacterium(run.cfg.player.id);
-  if (!b) return toast('Dieses Bakterium ist nicht mehr im Labor.');
-  if (run.cfg.mode === 'level') openEditor(b, 'level-detail', levelCtx());
-  else openEditor(b, 'setup', freeCtx());
+$('#rs-next').addEventListener('click', () => { careerId = run.cfg.careerId; openLevel(run.cfg.level + 1); });
+$('#rs-upgrade').addEventListener('click', () => {
+  const b = store.getBacterium(run.cfg.careerId);
+  if (b) openEditor(b, careerCtx(b, 'career'));
 });
 
 // ---------- Start ----------
-if (!store.getBacteria().length) {
-  store.saveBacterium({ ...defaultGenome(), name: 'Agava Prototyp' });
-}
 go('home');
 
 if ('serviceWorker' in navigator && location.protocol === 'https:') {

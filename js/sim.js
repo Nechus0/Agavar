@@ -1,6 +1,7 @@
 // Simulations-Engine: runde Agarplatte als Zellraster, jede belegte Zelle ist ein Bakterium.
 // Unabhängig von der Oberfläche, damit sie auch in Node (Tests, Balancing) läuft.
 import { makeRng } from './rng.js';
+import { parseStep } from './genome.js';
 
 export const PLATE_SIZES = { klein: 100, mittel: 140, gross: 180 };
 export const NUTRIENT_AMOUNTS = { wenig: 45, normal: 70, viel: 100 };
@@ -28,9 +29,22 @@ const T = {
 };
 const MOVE_COST = 0.3;
 
+// Muster in eine flache Aktionsliste übersetzen: "F3" -> F, F, F
+const STEP_CODE = { F: 0, R: 1, L: 2, B: 3, P: 4, Z: 5, D: 6, S: 7, M: 8 };
+function expandProgram(program) {
+  const out = [];
+  for (const e of program) {
+    const st = parseStep(e);
+    if (!st) continue;
+    for (let k = 0; k < st.n; k++) out.push(STEP_CODE[st.s]);
+  }
+  return out.length ? out : [4];
+}
+
 function phenotype(g) {
+  const sp = new Set([g.special, g.bonusSpecial]);
   return {
-    program: g.program.map((s) => 'FRLBPZDS'.indexOf(s)),
+    program: expandProgram(g.program),
     moveChance: T.moveChance[g.speed],
     maxAge: T.maxAge[g.lifespan],
     efficiency: T.efficiency[g.efficiency],
@@ -39,10 +53,10 @@ function phenotype(g) {
     divideAt: T.divideAt[g.division],
     attack: g.attack,
     defense: g.defense,
-    spores: g.special === 'spores',
-    chemo: g.special === 'chemo',
-    biofilm: g.special === 'biofilm',
-    toxin: g.special === 'toxin',
+    spores: sp.has('spores'),
+    chemo: sp.has('chemo'),
+    biofilm: sp.has('biofilm'),
+    toxin: sp.has('toxin'),
   };
 }
 
@@ -96,6 +110,8 @@ export class Simulation {
     this.dir = new Uint8Array(size);
     this.step = new Uint8Array(size);
     this.still = new Uint8Array(size);
+    this.mirror = new Uint8Array(size); // Seitenwechsel aktiv?
+    this.fog = new Uint8Array(size); // sichtbare Giftwolke (klingt ab)
     this.spore = new Uint16Array(size); // >0: Spore, Wert = Alter als Spore
     this.stamp = new Uint32Array(size);
     this.nutrient = new Float32Array(size);
@@ -141,6 +157,7 @@ export class Simulation {
     const startR = n === 1 ? 0 : R * 0.58;
     this.players.forEach((p, k) => {
       const a = offset + (k / n) * Math.PI * 2;
+      const startDir = rng.int(8); // ganze Startkolonie blickt in dieselbe Richtung
       const sx = Math.round(c + Math.cos(a) * startR);
       const sy = Math.round(c + Math.sin(a) * startR);
       for (let dy = -2; dy <= 2; dy++) {
@@ -148,7 +165,7 @@ export class Simulation {
           if (dx * dx + dy * dy > 5) continue;
           const i = (sy + dy) * N + (sx + dx);
           if (!this.inPlate[i] || this.owner[i]) continue;
-          this._place(i, p, START_ENERGY, rng.int(8));
+          this._place(i, p, START_ENERGY, startDir);
         }
       }
     });
@@ -156,13 +173,15 @@ export class Simulation {
     this._record();
   }
 
-  _place(i, p, energy, dir) {
+  _place(i, p, energy, dir, parent = -1) {
     this.owner[i] = p.id;
     this.energy[i] = energy;
     this.age[i] = 0;
     this.maxAge[i] = Math.round(p.ph.maxAge * (0.8 + this.rng() * 0.4));
     this.dir[i] = dir;
-    this.step[i] = 0;
+    // Tochterzellen übernehmen den Musterfortschritt der Mutter, damit Kolonien im Takt bleiben
+    this.step[i] = parent >= 0 ? this.step[parent] : 0;
+    this.mirror[i] = parent >= 0 ? this.mirror[parent] : 0;
     this.still[i] = 0;
     this.spore[i] = 0;
     this.stamp[i] = this.tick + 1;
@@ -183,6 +202,7 @@ export class Simulation {
     this.maxAge[to] = this.maxAge[from];
     this.dir[to] = this.dir[from];
     this.step[to] = this.step[from];
+    this.mirror[to] = this.mirror[from];
     this.still[to] = 0;
     this.spore[to] = 0;
     this.stamp[to] = this.tick + 1;
@@ -213,6 +233,10 @@ export class Simulation {
     const owner = this.owner, energy = this.energy, nutrient = this.nutrient;
     this.tick++;
     const tick = this.tick;
+
+    // Giftwolken verblassen
+    const fog = this.fog;
+    for (let i = 0; i < size; i++) if (fog[i]) fog[i]--;
 
     // Nahrung wächst nach.
     if (this.regen > 0) {
@@ -262,9 +286,10 @@ export class Simulation {
         continue;
       }
 
-      // Giftwolke: schwächt eine zufällige gegnerische Nachbarzelle.
+      // Toxine: schwächen eine zufällige gegnerische Nachbarzelle (sichtbar als Wolke).
       if (ph.toxin && rng() < 0.25) {
         const j = this._neighbor(i, rng.int(8));
+        if (j >= 0) fog[j] = 8;
         if (j >= 0 && owner[j] && owner[j] !== o && !this.spore[j]) {
           energy[j] -= 7;
           energy[i] -= 0.3;
@@ -280,14 +305,16 @@ export class Simulation {
         this.step[i] = (this.step[i] + 1) % prog.length;
         let d = this.dir[i];
         let moves = true;
+        const mir = this.mirror[i] ? -1 : 1;
         switch (s) {
-          case 1: d = (d + 1) & 7; break;
-          case 2: d = (d + 7) & 7; break;
+          case 1: d = (d + mir + 8) & 7; break;
+          case 2: d = (d - mir + 8) & 7; break;
           case 3: d = (d + 4) & 7; break;
           case 4: moves = false; break;
           case 5: d = rng.int(8); break;
-          case 6: d = (d + 2) & 7; break;
-          case 7: d = (d + 6) & 7; break;
+          case 6: d = (d + 2 * mir + 8) & 7; break;
+          case 7: d = (d - 2 * mir + 8) & 7; break;
+          case 8: this.mirror[i] ^= 1; break;
         }
         if (moves && ph.chemo && rng() < 0.35) {
           let best = -1, bestN = -1;
@@ -343,7 +370,7 @@ export class Simulation {
         if (target >= 0) {
           const e = (energy[cur] - 2) / 2;
           energy[cur] = e;
-          this._place(target, p, e, td);
+          this._place(target, p, e, this.dir[cur], cur);
         }
       }
     }

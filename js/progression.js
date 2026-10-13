@@ -1,72 +1,82 @@
-// Freischalt-System: Neue Bewegungsschritte, höhere Stufen und Spezialfähigkeiten
-// gibt es erst nach gewonnenen Leveln.
-import { STEPS, COSTED, SPECIALS, cost, MAX_PROGRAM } from './genome.js';
+// Freischalt- und Karriere-System.
+// Jedes Bakterium hat eine eigene Karriere: Es startet mit wenigen Punkten und einfachen Schritten.
+// Jeder erste Sieg in einem Level bringt Ausbaupunkte und schaltet die Fähigkeit des besiegten Keims frei.
+import { STEPS, SPECIALS, COSTED, cost, parseStep, MAX_PROGRAM } from './genome.js';
 
-// after = Level, das man gewinnen muss (0 = von Anfang an verfügbar)
+export const START_POINTS = 6;
+export const POINTS_PER_WIN = 2;
+
+// after = Level, das gewonnen werden muss (0 = von Anfang an)
 export const UNLOCKS = [
-  { after: 0, steps: ['F', 'R', 'L', 'D', 'S', 'P'], traitMax: 2, programMax: 4 },
-  { after: 1, steps: ['B'], traitMax: 3 },
-  { after: 2, specials: ['chemo'] },
-  { after: 3, steps: ['Z'], programMax: 5 },
-  { after: 4, specials: ['spores'], traitMax: 4 },
-  { after: 5, specials: ['biofilm'], programMax: 6 },
-  { after: 6, traitMax: 5 },
-  { after: 7, specials: ['toxin'] },
+  { after: 0, steps: ['F', 'R', 'L', 'D', 'S'], programMax: 4 },
+  { after: 1, steps: ['P'] },
+  { after: 2, steps: ['B'], programMax: 5 },
+  { after: 3, steps: ['Z'] },
+  { after: 4, specials: ['chemo'] },
+  { after: 5, repeat: true, programMax: 6 },
+  { after: 6, specials: ['spores'] },
+  { after: 7, steps: ['M'] },
+  { after: 8, specials: ['biofilm'] },
+  { after: 9, specials: ['toxin'] },
+  { after: 10, title: 'Meister der Agarplatte' },
 ];
 
-export const ALL_UNLOCKED = {
-  steps: new Set(Object.keys(STEPS)),
-  specials: new Set(Object.keys(SPECIALS)),
-  traitMax: 5,
-  programMax: MAX_PROGRAM,
-};
-
-export function getLimits(levelsWon) {
-  const lim = { steps: new Set(), specials: new Set(['none']), traitMax: 0, programMax: 0 };
+export function getLimits(won) {
+  const lim = { steps: new Set(), specials: new Set(['none']), programMax: 0, repeat: false };
   for (const u of UNLOCKS) {
-    if (u.after !== 0 && !levelsWon.includes(u.after)) continue;
+    if (u.after !== 0 && !won.includes(u.after)) continue;
     (u.steps || []).forEach((s) => lim.steps.add(s));
     (u.specials || []).forEach((s) => lim.specials.add(s));
-    if (u.traitMax) lim.traitMax = Math.max(lim.traitMax, u.traitMax);
     if (u.programMax) lim.programMax = Math.max(lim.programMax, u.programMax);
+    if (u.repeat) lim.repeat = true;
   }
+  lim.programMax = Math.min(MAX_PROGRAM, lim.programMax);
   return lim;
 }
 
-export const traitCap = (t, lim) => Math.min(t.max, lim.traitMax);
+// Punkte einer Karriere: Startpunkte + Punkte pro gewonnenem Level
+export const careerPoints = (won) => START_POINTS + POINTS_PER_WIN * won.length;
+// nächstes Level einer Karriere (Level werden der Reihe nach gespielt)
+export const nextLevel = (won, total) => {
+  for (let n = 1; n <= total; n++) if (!won.includes(n)) return n;
+  return total + 1;
+};
 
-// Nach welchem Level wird etwas freigeschaltet? (für "🔒 ab Level X")
+// Nach welchem Level wird etwas freigeschaltet? (für „🔒 ab Level X“)
 export function unlockLevelOf(kind, key) {
   for (const u of UNLOCKS) {
     if (kind === 'step' && (u.steps || []).includes(key)) return u.after;
     if (kind === 'special' && (u.specials || []).includes(key)) return u.after;
-    if (kind === 'trait' && u.traitMax >= key) return u.after;
     if (kind === 'program' && u.programMax >= key) return u.after;
+    if (kind === 'repeat' && u.repeat) return u.after;
   }
   return 0;
 }
 
-// Lesbare Beschreibung der Belohnungen eines Levels.
+// Lesbare Beschreibung der Belohnungen eines Levels (ohne Punkte).
 export function rewardsOf(level) {
   const out = [];
   for (const u of UNLOCKS.filter((x) => x.after === level)) {
     for (const s of u.steps || []) out.push({ type: 'step', key: s, text: `Bewegungsschritt „${STEPS[s].name}“` });
     for (const s of u.specials || []) out.push({ type: 'special', key: s, text: `Spezialfähigkeit „${SPECIALS[s].name}“` });
-    if (u.traitMax) out.push({ type: 'trait', text: `Eigenschaften bis Stufe ${u.traitMax}` });
+    if (u.repeat) out.push({ type: 'repeat', text: 'Wiederholungen im Muster (×2 bis ×4)' });
     if (u.programMax) out.push({ type: 'program', text: `Muster mit bis zu ${u.programMax} Schritten` });
+    if (u.title) out.push({ type: 'title', text: `Titel „${u.title}“` });
   }
   return out;
 }
 
-// Warum darf dieses Bakterium hier nicht antreten? Leere Liste = alles in Ordnung.
+// Warum darf dieses Bakterium so nicht antreten? Leere Liste = alles in Ordnung.
 export function problems(g, lim, budget) {
   const p = [];
   const c = cost(g);
   if (c > budget) p.push(`${c} statt max. ${budget} Punkte`);
-  for (const t of COSTED) if (g[t.key] > traitCap(t, lim)) p.push(`${t.label.split(' ')[0]} Stufe ${g[t.key]} noch gesperrt`);
+  for (const t of COSTED) if (g[t.key] > t.max) p.push(`${t.label} zu hoch`);
   if (!lim.specials.has(g.special)) p.push(`${SPECIALS[g.special].name} noch gesperrt`);
-  const locked = [...new Set(g.program.filter((s) => !lim.steps.has(s)))];
-  if (locked.length) p.push(`Schritt ${locked.map((s) => STEPS[s].icon).join(' ')} noch gesperrt`);
+  const steps = g.program.map(parseStep).filter(Boolean);
+  const locked = [...new Set(steps.filter((x) => !lim.steps.has(x.s)).map((x) => x.s))];
+  if (locked.length) p.push(`Schritt ${locked.map((s) => STEPS[s].label).join(', ')} noch gesperrt`);
+  if (!lim.repeat && steps.some((x) => x.n > 1)) p.push('Wiederholungen noch gesperrt');
   if (g.program.length > lim.programMax) p.push(`Muster zu lang (max. ${lim.programMax})`);
   return p;
 }

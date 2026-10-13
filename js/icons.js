@@ -1,6 +1,6 @@
 // Kleine SVG-Symbole für Spezialfähigkeiten, Eigenschaften und Bewegungsschritte.
 const wrap = (body, extra = '') =>
-  `<svg viewBox="0 0 24 24" width="100%" height="100%" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ${extra}>${body}</svg>`;
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ${extra}>${body}</svg>`;
 
 export const SPECIAL_ICONS = {
   // gestrichelter Kreis = einfache Zelle ohne Extras
@@ -35,6 +35,7 @@ const arrow = (deg) => wrap(`<g transform="rotate(${deg} 12 12)"><path d="M12 20
 export const STEP_ICONS = {
   F: arrow(0), R: arrow(45), D: arrow(90), B: arrow(180), L: arrow(-45), S: arrow(-90),
   P: wrap('<path d="M9 6v12M15 6v12"/>', 'stroke-width="3"'),
+  M: wrap('<path d="M4 8h15"/><path d="M15 4l4 4-4 4"/><path d="M20 16H5"/><path d="M9 12l-4 4 4 4"/>', 'stroke-width="2.4"'),
   Z: wrap('<rect x="4" y="4" width="16" height="16" rx="3.5"/><circle cx="9" cy="9" r="1.3" fill="currentColor" stroke="none"/><circle cx="15" cy="15" r="1.3" fill="currentColor" stroke="none"/><circle cx="15" cy="9" r="1.3" fill="currentColor" stroke="none"/><circle cx="9" cy="15" r="1.3" fill="currentColor" stroke="none"/>'),
 };
 

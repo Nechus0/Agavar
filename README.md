@@ -12,20 +12,20 @@ Bakterienkampf auf der Agarplatte: Du entwirfst ein Bakterium, setzt es mit Gegn
 
 ## Funktionen
 
-- **Labor**: Bakterien erstellen, bearbeiten, kopieren und löschen. Zum Sichern oder Teilen per Code exportieren oder importieren.
+- **Karriere**:
+  - Jedes Bakterium hat eine eigene Karriere und startet mit 6 Ausbaupunkten und den einfachsten Bewegungsschritten.
+  - 10 Level, jedes mit einem besonderen Gegner: einem echten Keim mit seiner typischen Eigenschaft (z. B. Sporen von *Bacillus subtilis*, Toxine von *Staphylococcus aureus*).
+  - Jeder erste Sieg bringt +2 Ausbaupunkte und schaltet die Eigenschaft des besiegten Keims frei.
+  - Nach dem Sieg erscheint ein Glückwunsch-Popup mit Bild und Fakt zum Keim.
 - **Editor**:
-  - Bewegungsmuster aus bis zu 6 Schritten (vor, halb/ganz rechts und links, umkehren, warten, Zufall) mit animierter Vorschau und Vorlagen
-  - kostenlose Abwägungen bei Teilung und Stoffwechsel
-  - Geschwindigkeit, Lebensdauer, Verwertung, Angriff und Abwehr
-  - eine Spezialfähigkeit mit eigenem Symbol: Sporen, Chemotaxis, Biofilm oder Giftwolke
-  - alles mit Punktebudget
-- **10 Level** mit eigenem Budget pro Level (8 bis 20 Punkte) und Gegnern auf Augenhöhe. Jeder Sieg schaltet das nächste Level und neue Fähigkeiten frei (Schritte, höhere Stufen, längere Muster, Spezialfähigkeiten).
-- **Freies Spiel**: 1–5 Zufallsgegner. Einstellbar sind Punktebudget (6–40), Plattengröße, Nährbodenverteilung, Nährstoffmenge und Nachwachsen.
-- **Simulation**: Pixeldarstellung, Tempo 1× / 2× / 5× / 10×, Pause, Live-Anteile.
-- **Ergebnis**:
-  - Verlaufskurve und Statistik
-  - Revanche mit exakt gleichem Startzustand
-  - gute Gegner per „+ Labor“ übernehmen
+  - Bewegungsmuster aus bis zu 6 Schritten (vor, halb/ganz rechts und links, warten, taumeln, umkehren, Seitenwechsel), jeweils bis ×4 wiederholbar
+  - animierte Vorschau und Vorlagen (Kreis, Quadrat, Schlange, Acht …)
+  - Teilung, Stoffwechsel, Geschwindigkeit, Lebensdauer, Verwertung, Angriff, Abwehr
+  - eine Spezialfähigkeit: Chemotaxis, Sporen, Biofilm oder Toxine
+- **Freies Spiel**: eigenes Bakterium mit frei einstellbarem Budget (6–40). Spezialfähigkeiten und besondere Schritte gibt es nur, wenn sie in einer Karriere freigespielt wurden. Dazu 1–5 Zufallsgegner, Plattengröße und Nährboden einstellbar.
+- **Simulation**:
+  - Pixeldarstellung mit ablaufender Uhr (48 h Brutzeit), Tempo 1× / 2× / 5× / 10×
+  - Spezialfähigkeiten sind sichtbar: Giftwolken, helle Sporen, dunkle Biofilm-Matten
 
 ## Technik
 
@@ -34,9 +34,10 @@ Reines HTML, CSS und JavaScript (ES-Module), ohne Abhängigkeiten und ohne Build
 | Datei | Inhalt |
 |---|---|
 | `js/sim.js` | Simulations-Engine (läuft auch in Node) |
-| `js/genome.js` | Eigenschaften, Punktekosten, Zufallsgegner, Export-Codes |
+| `js/genome.js` | Eigenschaften, Bewegungsschritte, Punktekosten, Zufallsgegner |
 | `js/levels.js` | die 10 Level |
-| `js/progression.js` | Freischalt-System |
+| `js/progression.js` | Karriere- und Freischalt-System |
+| `js/germs.js` | echte Keime: Fakten und Zeichnungen |
 | `js/icons.js` | SVG-Symbole |
 | `js/render.js` | Canvas-Darstellung, Verlaufskurve, Mustervorschau |
 | `js/main.js` | Bildschirme und Spielablauf |

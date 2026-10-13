@@ -25,70 +25,70 @@
         <h1>Agava</h1>
         <p class="sub">Bakterienkampf auf der Agarplatte</p>
       </div>
+      <p class="note center" id="home-hint" hidden>Willkommen! Erstelle zuerst dein eigenes Bakterium – dann geht deine Karriere los.</p>
       <div class="menu">
-        <button class="btn primary big" data-go="levels">Level spielen</button>
+        <button class="btn primary big" id="home-career">Karriere</button>
         <button class="btn big" data-go="setup">Freies Spiel</button>
-        <button class="btn big" data-go="lab">Mein Labor</button>
         <button class="btn ghost" data-go="help">Anleitung</button>
       </div>
     </section>
 
-    <!-- Levelauswahl -->
-    <section class="screen" id="levels" hidden>
-      <header class="bar"><button class="back" data-go="home">‹ Zurück</button><h2>Level</h2><span></span></header>
-      <p class="note">Gewinne ein Level, um das nächste freizuschalten – und neue Fähigkeiten für deine Bakterien. Jedes Level hat sein eigenes Punktebudget.</p>
-      <div id="level-grid" class="level-grid"></div>
+    <!-- Karrieren-Übersicht -->
+    <section class="screen" id="careers" hidden>
+      <header class="bar"><button class="back" data-go="home">‹ Zurück</button><h2>Karriere</h2><span></span></header>
+      <p class="note">Jedes Bakterium hat seine eigene Karriere: Es startet ganz einfach und wird mit jedem besiegten Gegner stärker.</p>
+      <div id="career-list" class="lab-list"></div>
+      <button class="btn primary big" id="career-new">+ Neues Bakterium</button>
+    </section>
+
+    <!-- Eine Karriere -->
+    <section class="screen" id="career" hidden>
+      <header class="bar"><button class="back" data-go="careers">‹ Karriere</button><h2 id="cr-title">Bakterium</h2><span></span></header>
+      <div class="card" id="cr-card"></div>
+      <div class="card">
+        <h3>Level</h3>
+        <div id="cr-levels" class="level-list"></div>
+      </div>
+      <button class="btn ghost danger" id="cr-delete">Bakterium löschen</button>
     </section>
 
     <!-- Leveldetails -->
     <section class="screen" id="level-detail" hidden>
-      <header class="bar"><button class="back" data-go="levels">‹ Level</button><h2 id="ld-title">Level</h2><span></span></header>
+      <header class="bar"><button class="back" data-go="career">‹ Zurück</button><h2 id="ld-title">Level</h2><span></span></header>
       <p id="ld-desc" class="note"></p>
-      <div class="budget-banner" id="ld-budget"></div>
-      <div class="card">
-        <h3>Gegner</h3>
+      <div class="card boss-card" id="ld-boss"></div>
+      <div class="card" id="ld-others-card">
+        <h3>Weitere Gegner</h3>
         <div id="ld-opponents" class="opp-list"></div>
-        <p id="ld-plate" class="small muted"></p>
       </div>
+      <p id="ld-plate" class="small muted"></p>
       <div class="card reward-card" id="ld-rewards-card">
-        <h3>Belohnung bei Sieg</h3>
+        <h3>Belohnung beim ersten Sieg</h3>
         <div id="ld-rewards" class="rewards"></div>
       </div>
-      <div class="card">
-        <h3>Dein Bakterium</h3>
-        <div id="ld-picker" class="picker"></div>
-      </div>
+      <div class="card" id="ld-me"></div>
       <button class="btn primary big" id="ld-start">Simulation starten</button>
-    </section>
-
-    <!-- Labor -->
-    <section class="screen" id="lab" hidden>
-      <header class="bar"><button class="back" data-go="home">‹ Zurück</button><h2>Mein Labor</h2><span></span></header>
-      <div class="row gap">
-        <button class="btn primary" id="lab-new">+ Neues Bakterium</button>
-        <button class="btn" id="lab-import">Importieren</button>
-      </div>
-      <div id="lab-list" class="lab-list"></div>
     </section>
 
     <!-- Editor -->
     <section class="screen" id="editor" hidden>
-      <header class="bar"><button class="back" id="ed-cancel">‹ Abbrechen</button><h2>Editor</h2><button class="btn small primary" id="ed-save">Speichern</button></header>
+      <header class="bar"><button class="back" id="ed-cancel">‹ Abbrechen</button><h2 id="ed-title">Editor</h2><button class="btn small primary" id="ed-save">Speichern</button></header>
       <div class="budget sticky" id="ed-budget">
         <div class="budget-text"><span id="ed-budget-label">Punkte</span><b id="ed-cost">0 / 20</b></div>
         <div class="meter"><div id="ed-meter"></div></div>
         <p class="small warn" id="ed-warn" hidden></p>
       </div>
       <div class="card">
-        <label class="field"><span>Name</span><input id="ed-name" type="text" maxlength="32" autocomplete="off"></label>
+        <label class="field"><span>Name</span><input id="ed-name" type="text" maxlength="32" autocomplete="off" placeholder="z. B. Bacillus furiosus"></label>
         <div class="field"><span>Farbe</span><div id="ed-colors" class="swatches"></div></div>
       </div>
       <div class="card">
         <div class="row between"><h3>Bewegungsmuster</h3><button class="btn small ghost" id="ed-clear">Leeren</button></div>
-        <p class="small muted">Die Zelle führt die Schritte der Reihe nach aus und fängt dann wieder von vorn an. Jeder Schritt dreht sie zuerst (relativ zu ihrer Blickrichtung, siehe Pfeil) und bewegt sie dann ein Feld weiter.</p>
+        <p class="small muted">Die Zelle führt die Schritte der Reihe nach aus und fängt dann wieder von vorn an. Jeder Schritt dreht sie zuerst (relativ zu ihrer Blickrichtung, siehe Pfeil) und bewegt sie dann ein Feld weiter. Tochterzellen übernehmen Richtung und Takt – so zieht die ganze Kolonie im Muster.</p>
         <canvas id="ed-preview" class="preview-wide"></canvas>
         <div id="ed-program" class="program"></div>
-        <p class="small muted center">Tippe auf einen Schritt im Muster, um ihn zu entfernen.</p>
+        <div id="ed-slot-bar" class="slot-bar" hidden></div>
+        <p class="small muted center" id="ed-slot-hint">Tippe auf einen Schritt im Muster, um ihn zu ändern oder zu entfernen.</p>
         <div id="ed-steps" class="steps"></div>
         <h3 class="mt">Vorlagen</h3>
         <div id="ed-presets" class="presets"></div>
@@ -111,17 +111,26 @@
     <!-- Freies Spiel: Einstellungen -->
     <section class="screen" id="setup" hidden>
       <header class="bar"><button class="back" data-go="home">‹ Zurück</button><h2>Freies Spiel</h2><span></span></header>
-      <div class="card">
-        <h3>Dein Bakterium</h3>
-        <div id="su-picker" class="picker"></div>
-      </div>
+      <div class="card" id="su-me"></div>
       <div class="card" id="su-options"></div>
       <button class="btn primary big" id="su-start">Simulation starten</button>
     </section>
 
     <!-- Simulation -->
     <section class="screen" id="sim" hidden>
-      <header class="bar"><button class="back" id="sim-quit">‹ Beenden</button><h2 id="sim-title">Simulation</h2><span id="sim-tick" class="tick">0</span></header>
+      <header class="bar"><button class="back" id="sim-quit">‹ Beenden</button><h2 id="sim-title">Simulation</h2><span></span></header>
+      <div class="clock-row">
+        <svg class="clock" viewBox="0 0 40 40" aria-hidden="true">
+          <circle cx="20" cy="20" r="16" fill="none" stroke="#2a3340" stroke-width="5"/>
+          <circle id="clock-arc" cx="20" cy="20" r="16" fill="none" stroke="#e9c46a" stroke-width="5" stroke-linecap="round" transform="rotate(-90 20 20)" stroke-dasharray="100.5" stroke-dashoffset="0"/>
+          <line id="clock-hand" x1="20" y1="20" x2="20" y2="9" stroke="#e8ecf1" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <div class="clock-text">
+          <span class="muted small">Verbleibende Brutzeit</span>
+          <b id="clock-left">48:00 h</b>
+        </div>
+        <div class="clock-elapsed small muted" id="clock-elapsed">0 / 48 h</div>
+      </div>
       <div class="shares" id="sim-shares"></div>
       <div class="plate-wrap"><canvas id="plate" class="plate"></canvas></div>
       <div id="sim-legend" class="legend"></div>
@@ -138,14 +147,10 @@
 
     <!-- Ergebnis -->
     <section class="screen" id="result" hidden>
-      <header class="bar"><button class="back" data-go="home">‹ Menü</button><h2>Ergebnis</h2><span></span></header>
+      <header class="bar"><button class="back" id="rs-back">‹ Zurück</button><h2>Ergebnis</h2><span></span></header>
       <div class="result-head">
         <h1 id="rs-title">Gewonnen!</h1>
         <p id="rs-reason" class="muted"></p>
-      </div>
-      <div class="card reward-card" id="rs-rewards-card" hidden>
-        <h3>🔓 Neu freigeschaltet</h3>
-        <div id="rs-rewards" class="rewards"></div>
       </div>
       <div class="result-plate"><canvas id="rs-plate" class="plate small-plate"></canvas></div>
       <div class="card">
@@ -157,9 +162,9 @@
       </div>
       <div class="menu">
         <button class="btn primary big" id="rs-next" hidden>Nächstes Level</button>
-        <button class="btn big" id="rs-rematch">Revanche</button>
-        <button class="btn big" id="rs-new">Neue Gegner</button>
-        <button class="btn ghost" id="rs-edit">Bakterium bearbeiten</button>
+        <button class="btn big" id="rs-upgrade" hidden>Bakterium ausbauen</button>
+        <button class="btn big" id="rs-rematch">Nochmal</button>
+        <button class="btn big" id="rs-new" hidden>Neue Gegner</button>
       </div>
     </section>
 
@@ -168,33 +173,44 @@
       <header class="bar"><button class="back" data-go="home">‹ Zurück</button><h2>Anleitung</h2><span></span></header>
       <div class="card prose">
         <h3>Worum geht es?</h3>
-        <p>Du entwirfst im <b>Labor</b> ein Bakterium und setzt es mit Gegnern auf eine Agarplatte. Danach läuft alles von selbst – du kannst nur noch zuschauen (und vorspulen). Wer am Ende übrig bleibt, gewinnt.</p>
+        <p>Du entwirfst ein Bakterium und setzt es mit Gegnern auf eine Agarplatte. Danach läuft alles von selbst – du kannst nur noch zuschauen (und vorspulen). Wer am Ende übrig bleibt, gewinnt.</p>
+        <h3>Karriere</h3>
+        <p>Jedes deiner Bakterien hat eine eigene Karriere. Es startet mit nur 6 Ausbaupunkten und den einfachsten Bewegungsschritten. In jedem Level wartet ein besonderer Gegner – ein echter Keim mit einer typischen Eigenschaft. Besiegst du ihn, bekommt dein Bakterium 2 neue Ausbaupunkte und darf diese Eigenschaft ab jetzt selbst nutzen (z. B. Sporen von Bacillus subtilis oder Toxine von Staphylococcus aureus). Die Punkte kannst du jederzeit neu verteilen.</p>
+        <h3>Freies Spiel</h3>
+        <p>Hier stellst du das Punktebudget selbst ein und kannst alle Punkte sofort verteilen. Spezialfähigkeiten und besondere Bewegungsschritte gibt es aber nur, wenn du sie in einer Karriere freigespielt hast.</p>
         <h3>Was passiert auf der Platte?</h3>
         <p>Jeder farbige Pixel ist eine Bakterienzelle. Zellen fressen den Nährboden unter sich (helles Gelb = viel Nahrung, dunkel = leergefressen), bewegen sich nach ihrem Muster, teilen sich bei genug Energie und sterben an Hunger oder Altersschwäche. Läuft eine Zelle in einen Gegner, kommt es zum Kampf: <b>Angriff</b> gegen <b>Abwehr</b> plus etwas Zufall.</p>
-        <h3>Spielende</h3>
-        <p>Gewonnen hat, wer als einzige Kultur überlebt, über längere Zeit mindestens 97 % aller Zellen stellt – oder nach 4000 Generationen die meisten Zellen hat.</p>
-        <h3>Punktebudget</h3>
-        <p>Geschwindigkeit, Lebensdauer, Verwertung, Angriff und Abwehr kosten 1 Punkt pro Stufe, eine Spezialfähigkeit 3 Punkte. Teilung und Stoffwechsel sind kostenlose Abwägungen. Jedes Level hat ein eigenes Budget (von 8 Punkten in Level 1 bis 20 in Level 10) – die Gegner haben ungefähr gleich viele Punkte. Gewinnen kannst du also nur mit einem durchdachten Entwurf. Im freien Spiel stellst du das Budget selbst ein.</p>
-        <h3>Freischalten</h3>
-        <p>Am Anfang hast du nur die einfachen Bewegungsschritte und Stufe 2 bei allen Eigenschaften. Jedes gewonnene Level schaltet etwas Neues frei: Kehrtwende und Zufallsschritt, höhere Stufen, längere Muster und die Spezialfähigkeiten Chemotaxis, Sporen, Biofilm und Giftwolke. Was ein Level freischaltet, steht in der Levelansicht.</p>
+        <h3>Spezialfähigkeiten erkennen</h3>
+        <p><b>Toxine</b> erscheinen als giftgrüne Wolke um die Kolonie. <b>Sporen</b> sind helle, fast weiße Punkte. <b>Biofilm</b> ist eine dunkle, gemusterte Matte aus stillstehenden Zellen. <b>Chemotaxis</b>-Kolonien wandern auffällig in Richtung der hellen, nahrhaften Stellen.</p>
         <h3>Bewegungsmuster</h3>
-        <p>Das Muster ist eine kurze Schrittfolge, die sich endlos wiederholt. „vor“ geht geradeaus, „halbrechts“/„halblinks“ drehen um 45°, „rechts“/„links“ um 90°, „umkehren“ um 180° – immer bezogen auf die aktuelle Blickrichtung der Zelle. Die animierte Vorschau im Editor zeigt, welcher Schritt gerade ausgeführt wird. „⬆⬆↗“ zieht weite Kreise, „⬆⬆⬆➡“ läuft Quadrate, „⏸“ bleibt sitzen.</p>
-        <h3>Tipps</h3>
-        <p>Schnelle Zellen erobern früh viel Fläche, verhungern aber leichter. Wenige robuste Zellen mit später Teilung halten Fronten besser. Schau dir die Gegner in der Levelansicht genau an und baue gezielt dagegen.</p>
+        <p>Das Muster ist eine kurze Schrittfolge, die sich endlos wiederholt. „vor“ geht geradeaus, „halbrechts“/„halblinks“ drehen um 45°, „rechts“/„links“ um 90°, „umkehren“ um 180°. Später kannst du Schritte wiederholen (×2 bis ×4) und mit „Seitenwechsel“ rechts und links tauschen – so entstehen Schlangenlinien und Achten. Die Vorschau im Editor zeigt, welcher Schritt gerade ausgeführt wird.</p>
+        <h3>Spielende</h3>
+        <p>Eine Runde dauert höchstens 48 Stunden Brutzeit (die Uhr läuft oben mit). Gewonnen hat, wer als einzige Kultur überlebt, lange Zeit fast alle Zellen stellt – oder bei Ablauf der Zeit die meisten Zellen hat.</p>
         <h3>Auf dem iPhone installieren</h3>
-        <p>In Safari öffnen, auf <b>Teilen</b> tippen und <b>„Zum Home-Bildschirm“</b> wählen. Dann startet Agava wie eine App im Vollbild und funktioniert auch offline.</p>
-        <h3>Sicherung</h3>
-        <p>Deine Bakterien werden nur auf diesem Gerät gespeichert. Über <b>Exportieren</b> im Labor bekommst du einen Code, den du sichern oder mit Freunden teilen kannst.</p>
+        <p>In Safari öffnen, auf <b>Teilen</b> tippen und <b>„Zum Home-Bildschirm“</b> wählen. Dann startet Agava wie eine App im Vollbild und funktioniert auch offline. Deine Bakterien werden nur auf diesem Gerät gespeichert.</p>
       </div>
     </section>
 
   </main>
 
+  <!-- Glückwunsch nach einem Sieg -->
+  <div id="win-modal" class="modal" hidden>
+    <div class="modal-box win-box">
+      <div class="confetti" aria-hidden="true">🎉</div>
+      <h2>Glückwunsch!</h2>
+      <p id="win-sub" class="muted"></p>
+      <div id="win-germ" class="win-germ"></div>
+      <p id="win-fact" class="win-fact"></p>
+      <h3>Freigeschaltet</h3>
+      <div id="win-rewards" class="rewards"></div>
+      <button class="btn primary big" id="win-ok">Weiter</button>
+    </div>
+  </div>
+
   <div id="modal" class="modal" hidden>
     <div class="modal-box">
       <h3 id="modal-title"></h3>
       <p id="modal-text" class="small"></p>
-      <textarea id="modal-input" rows="4" hidden></textarea>
       <div class="row gap end" id="modal-buttons"></div>
     </div>
   </div>

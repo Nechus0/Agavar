@@ -9,6 +9,7 @@ export function hexToRgb(hex) {
 const AGAR_LO = [38, 30, 22];
 const AGAR_HI = [214, 178, 96];
 const AGAR = new Uint8Array(101 * 3);
+const TOXIN = [190, 255, 60]; // giftgrüne Wolke
 for (let v = 0; v <= 100; v++) {
   const t = Math.pow(v / 100, 0.8);
   for (let c = 0; c < 3; c++) AGAR[v * 3 + c] = Math.round(AGAR_LO[c] + (AGAR_HI[c] - AGAR_LO[c]) * t);
@@ -28,18 +29,31 @@ export class PlateRenderer {
   draw() {
     const { sim, img, colors } = this;
     const d = img.data;
-    const { owner, energy, nutrient, inPlate, spore } = sim;
+    const { owner, energy, nutrient, inPlate, spore, still, fog, N } = sim;
+    const biofilm = sim.players.map((p) => p.ph.biofilm);
     const size = owner.length;
     for (let i = 0, k = 0; i < size; i++, k += 4) {
       if (!inPlate[i]) { d[k + 3] = 0; continue; }
       const o = owner[i];
       if (o) {
         const col = colors[o - 1];
-        const f = spore[i] ? 0.4 : 0.62 + 0.38 * Math.min(1, energy[i] / 70);
-        d[k] = col[0] * f; d[k + 1] = col[1] * f; d[k + 2] = col[2] * f;
+        if (spore[i]) {
+          // Sporen: helle, fast weiße Punkte
+          d[k] = 150 + col[0] * 0.4; d[k + 1] = 150 + col[1] * 0.4; d[k + 2] = 150 + col[2] * 0.4;
+        } else if (biofilm[o - 1] && still[i] >= 4) {
+          // Biofilm: dunklere, gemusterte Matte
+          const f = ((i % N) + ((i / N) | 0)) & 1 ? 0.45 : 0.62;
+          d[k] = col[0] * f; d[k + 1] = col[1] * f; d[k + 2] = col[2] * f;
+        } else {
+          const f = 0.62 + 0.38 * Math.min(1, energy[i] / 70);
+          d[k] = col[0] * f; d[k + 1] = col[1] * f; d[k + 2] = col[2] * f;
+        }
+        if (fog[i]) { const t = fog[i] / 20; d[k] += (TOXIN[0] - d[k]) * t; d[k + 1] += (TOXIN[1] - d[k + 1]) * t; d[k + 2] += (TOXIN[2] - d[k + 2]) * t; }
       } else {
         const v = Math.min(100, nutrient[i] | 0) * 3;
-        d[k] = AGAR[v]; d[k + 1] = AGAR[v + 1]; d[k + 2] = AGAR[v + 2];
+        let r = AGAR[v], g = AGAR[v + 1], b = AGAR[v + 2];
+        if (fog[i]) { const t = fog[i] / 12; r += (TOXIN[0] - r) * t; g += (TOXIN[1] - g) * t; b += (TOXIN[2] - b) * t; }
+        d[k] = r; d[k + 1] = g; d[k + 2] = b;
       }
       d[k + 3] = 255;
     }
@@ -84,7 +98,7 @@ export function drawHistory(canvas, history, colorsHex) {
 // der gerade ausgeführte Schritt wird über onStep(index) gemeldet.
 const PDX = [0, 1, 1, 1, 0, -1, -1, -1];
 const PDY = [-1, -1, 0, 1, 1, 1, 0, -1];
-const TURN = { F: 0, R: 1, L: -1, D: 2, S: -2, B: 4 };
+const TURN = { F: 0, R: 1, L: -1, D: 2, S: -2, B: 4, M: 0 };
 
 export class PathAnimator {
   constructor(canvas, onStep) {
@@ -99,15 +113,23 @@ export class PathAnimator {
     this.color = color || this.color;
     let s = 7;
     const rnd = () => ((s = (s * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
-    let x = 0, y = 0, d = 0;
+    // Muster auflösen: "F3" -> drei Aktionen, die alle zu Slot 0 gehören
+    const flat = [];
+    program.forEach((e, idx) => {
+      const m = /^([A-Z])([1-9])?$/.exec(e);
+      if (m) for (let r = 0; r < Number(m[2] || 1); r++) flat.push({ st: m[1], idx });
+    });
+    if (!flat.length) flat.push({ st: 'P', idx: 0 });
+    let x = 0, y = 0, d = 0, mirror = 1;
     const acts = [];
-    const n = Math.max(16, Math.min(36, program.length * 6));
+    const n = Math.max(16, Math.min(40, flat.length * 4));
     for (let k = 0; k < n; k++) {
-      const idx = k % program.length;
-      const st = program[idx];
+      const { st, idx } = flat[k % flat.length];
       const d0 = d;
       if (st === 'Z') d = Math.floor(rnd() * 8);
-      else if (st in TURN) d = (d + TURN[st] + 8) & 7;
+      else if (st === 'B') d = (d + 4) & 7;
+      else if (st in TURN) d = (d + TURN[st] * mirror + 8) & 7;
+      if (st === 'M') mirror = -mirror;
       const moved = st !== 'P';
       const fx = x, fy = y;
       if (moved) { x += PDX[d]; y += PDY[d]; }
@@ -115,7 +137,7 @@ export class PathAnimator {
       let turn = ((d - d0 + 8) % 8);
       if (turn > 4) turn -= 8;
       if (st === 'B') turn = 4;
-      acts.push({ idx, st, fx, fy, tx: x, ty: y, d0, turn, moved });
+      acts.push({ idx, st, fx, fy, tx: x, ty: y, d0, turn, moved, mirror });
     }
     this.actions = acts;
     let minX = 0, maxX = 0, minY = 0, maxY = 0;
@@ -150,7 +172,8 @@ export class PathAnimator {
   stop() { cancelAnimationFrame(this.raf); }
 
   _draw(now) {
-    const STEP = 520, HOLD = 900;
+    const HOLD = 900;
+    const STEP = this.actions.length > 24 ? 330 : 470;
     const acts = this.actions;
     if (!acts.length) return;
     const total = acts.length * STEP + HOLD;

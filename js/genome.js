@@ -1,26 +1,36 @@
 // Bakterien-"Genom": alle einstellbaren Eigenschaften, Punktekosten und Zufallserzeugung.
 
 // Bewegungsschritte. "turn" = Drehung in 45°-Schritten relativ zur Blickrichtung (+ = rechts).
-// Reihenfolge = Anordnung der Buttons im Editor (2 Reihen à 4).
+// Reihenfolge = Anordnung der Buttons im Editor.
 export const STEPS = {
   L: { icon: '↖', label: 'halblinks', name: 'Halb links (45°)', turn: -1 },
   F: { icon: '⬆', label: 'vor', name: 'Geradeaus', turn: 0 },
   R: { icon: '↗', label: 'halbrechts', name: 'Halb rechts (45°)', turn: 1 },
   P: { icon: '⏸', label: 'warten', name: 'Warten (nicht bewegen)' },
+  Z: { icon: '🎲', label: 'taumeln', name: 'Taumeln (zufällige Richtung)' },
   S: { icon: '⬅', label: 'links', name: 'Links (90°)', turn: -2 },
   B: { icon: '⬇', label: 'umkehren', name: 'Umkehren (180°)', turn: 4 },
   D: { icon: '➡', label: 'rechts', name: 'Rechts (90°)', turn: 2 },
-  Z: { icon: '🎲', label: 'zufall', name: 'Zufällige Richtung' },
+  M: { icon: '⇄', label: 'seitenwechsel', name: 'Seitenwechsel (rechts und links tauschen)', turn: 0 },
 };
 export const STEP_KEYS = Object.keys(STEPS);
 export const MAX_PROGRAM = 6;
+export const MAX_REPEAT = 4;
+
+// Ein Musterschritt wird als Text gespeichert: Schritt + optionale Wiederholung, z. B. "F" oder "F3".
+export function parseStep(entry) {
+  const m = /^([A-Z])([1-9])?$/.exec(String(entry));
+  if (!m || !STEPS[m[1]]) return null;
+  return { s: m[1], n: Math.min(MAX_REPEAT, Number(m[2] || 1)) };
+}
+export const stepEntry = (s, n = 1) => (n > 1 ? `${s}${n}` : s);
 
 // Eigenschaften, die Punkte kosten (1 Punkt pro Stufe).
 export const COSTED = [
   { key: 'speed', label: 'Geschwindigkeit', max: 4, hint: 'Wie oft sich eine Zelle bewegt. Bewegung kostet Energie.' },
   { key: 'lifespan', label: 'Lebensdauer', max: 4, hint: 'Wie alt eine Zelle maximal wird.' },
   { key: 'efficiency', label: 'Verwertung', max: 4, hint: 'Wie viel Energie aus der aufgenommenen Nahrung gewonnen wird.' },
-  { key: 'attack', label: 'Angriff (Toxin)', max: 5, hint: 'Chance, gegnerische Zellen zu töten, in die man hineinläuft.' },
+  { key: 'attack', label: 'Angriff', max: 5, hint: 'Chance, gegnerische Zellen zu töten, in die man hineinläuft.' },
   { key: 'defense', label: 'Abwehr (Zellwand)', max: 5, hint: 'Schutz gegen Angriffe.' },
 ];
 
@@ -34,10 +44,10 @@ export const FREE = [
 
 export const SPECIALS = {
   none: { name: 'Keine', cost: 0, hint: 'Keine Spezialfähigkeit.' },
-  spores: { name: 'Sporen', cost: 3, hint: 'Verhungernde Zellen werden zu ruhenden Sporen und erwachen, wenn wieder Nahrung da ist.' },
-  chemo: { name: 'Chemotaxis', cost: 3, hint: 'Bewegt sich oft in Richtung der meisten Nahrung statt stur dem Muster zu folgen.' },
-  biofilm: { name: 'Biofilm', cost: 3, hint: 'Zellen, die eine Weile stillstehen, werden deutlich widerstandsfähiger.' },
-  toxin: { name: 'Giftwolke', cost: 3, hint: 'Schwächt regelmäßig gegnerische Nachbarzellen.' },
+  chemo: { name: 'Chemotaxis', cost: 3, hint: 'Die Zellen „riechen“ Nahrung und bewegen sich oft gezielt dorthin statt stur dem Muster zu folgen.' },
+  spores: { name: 'Sporen', cost: 3, hint: 'Verhungernde Zellen werden zu ruhenden Sporen (helle Punkte) und erwachen, wenn wieder Nahrung da ist.' },
+  biofilm: { name: 'Biofilm', cost: 3, hint: 'Zellen, die eine Weile stillstehen, bilden eine schützende Schleimschicht (dunkle Matte) und werden viel widerstandsfähiger.' },
+  toxin: { name: 'Toxine', cost: 3, hint: 'Die Zellen geben Giftstoffe ab (sichtbar als Giftwolke), die gegnerische Nachbarzellen schwächen und töten können.' },
 };
 export const SPECIAL_KEYS = Object.keys(SPECIALS);
 
@@ -50,12 +60,13 @@ export const DEFAULT_BUDGET = 20;
 export const MIN_BUDGET = 6;
 export const MAX_BUDGET = 40;
 
+// Ein neues Bakterium ist ganz einfach: alle Punkte müssen selbst verteilt werden.
 export function defaultGenome() {
   return {
-    name: 'Neues Bakterium',
+    name: '',
     color: PALETTE[0],
-    program: ['F', 'F', 'R'],
-    speed: 2, lifespan: 1, efficiency: 2, attack: 2, defense: 1,
+    program: ['F'],
+    speed: 0, lifespan: 0, efficiency: 0, attack: 0, defense: 0,
     division: 2, metabolism: 2,
     special: 'none',
   };
@@ -74,35 +85,36 @@ export function maxCost() {
 
 const clampInt = (v, lo, hi) => Math.max(lo, Math.min(hi, Math.round(Number(v) || 0)));
 
-// Macht aus beliebigen (z. B. importierten) Daten ein gültiges Genom.
+// Macht aus beliebigen (z. B. gespeicherten) Daten ein gültiges Genom.
 export function normalize(raw) {
-  const d = defaultGenome();
-  const g = { ...d };
+  const g = { ...defaultGenome(), name: 'Bakterium' };
   if (!raw || typeof raw !== 'object') return g;
   if (typeof raw.name === 'string' && raw.name.trim()) g.name = raw.name.trim().slice(0, 32);
   if (typeof raw.color === 'string' && /^#[0-9a-fA-F]{6}$/.test(raw.color)) g.color = raw.color.toLowerCase();
   if (Array.isArray(raw.program)) {
-    const p = raw.program.filter((s) => STEP_KEYS.includes(s)).slice(0, MAX_PROGRAM);
+    const p = raw.program.map(parseStep).filter(Boolean).slice(0, MAX_PROGRAM).map((x) => stepEntry(x.s, x.n));
     g.program = p.length ? p : ['P'];
   }
   for (const t of [...COSTED, ...FREE]) {
     if (raw[t.key] !== undefined) g[t.key] = clampInt(raw[t.key], 0, t.max);
   }
   if (SPECIAL_KEYS.includes(raw.special)) g.special = raw.special;
+  // nur für besondere Gegner: eine zweite Spezialfähigkeit (nicht im Editor wählbar)
+  if (SPECIAL_KEYS.includes(raw.bonusSpecial) && raw.bonusSpecial !== 'none') g.bonusSpecial = raw.bonusSpecial;
   if (typeof raw.id === 'string') g.id = raw.id;
   return g;
 }
 
+export const specialsOf = (g) => [g.special, g.bonusSpecial].filter((s) => s && s !== 'none');
+
 // Zufälliges Bakterium, das das Budget möglichst ausschöpft.
-// limits (optional): { traitMax, specials, steps, programMax } aus dem Freischalt-System.
+// limits (optional): { specials, steps, programMax, repeat } aus dem Freischalt-System.
 export function randomGenome(rng, budget, limits = null) {
-  const g = defaultGenome();
-  const cap = (t) => Math.min(t.max, limits ? limits.traitMax : t.max);
+  const g = { ...defaultGenome(), name: 'Zufall' };
   const specials = (limits ? [...limits.specials] : SPECIAL_KEYS).filter((k) => k !== 'none');
   const steps = limits ? [...limits.steps] : STEP_KEYS;
   const progMax = limits ? limits.programMax : MAX_PROGRAM;
-  for (const t of COSTED) g[t.key] = 0;
-  g.special = 'none';
+  const repeat = limits ? limits.repeat : true;
   let points = budget;
   if (points >= 6 && specials.length && rng() < 0.4) {
     g.special = rng.pick(specials);
@@ -110,7 +122,7 @@ export function randomGenome(rng, budget, limits = null) {
   }
   let guard = 200;
   while (points > 0 && guard-- > 0) {
-    const open = COSTED.filter((t) => g[t.key] < cap(t));
+    const open = COSTED.filter((t) => g[t.key] < t.max);
     if (!open.length) break;
     const t = rng.pick(open);
     g[t.key]++;
@@ -118,28 +130,8 @@ export function randomGenome(rng, budget, limits = null) {
   }
   g.division = rng.int(5);
   g.metabolism = rng.int(5);
-  const weighted = ['F', 'F', 'F', 'R', 'R', 'L', 'L', 'D', 'S', 'B', 'P', 'Z'].filter((k) => steps.includes(k));
+  const weighted = ['F', 'F', 'F', 'R', 'R', 'L', 'L', 'D', 'S', 'B', 'P', 'Z', 'M'].filter((k) => steps.includes(k));
   const len = 1 + rng.int(progMax);
-  g.program = Array.from({ length: len }, () => rng.pick(weighted));
+  g.program = Array.from({ length: len }, () => stepEntry(rng.pick(weighted), repeat && rng() < 0.4 ? 2 + rng.int(MAX_REPEAT - 1) : 1));
   return g;
-}
-
-// Export als teilbarer Code ("AGAVA1:..."), Import mit Fehlerprüfung.
-export function encodeGenome(g) {
-  const { id, ...rest } = g;
-  const json = JSON.stringify(rest);
-  const b64 = typeof btoa === 'function'
-    ? btoa(unescape(encodeURIComponent(json)))
-    : Buffer.from(json, 'utf8').toString('base64');
-  return 'AGAVA1:' + b64;
-}
-
-export function decodeGenome(code) {
-  const s = String(code || '').trim();
-  if (!s.startsWith('AGAVA1:')) throw new Error('Kein gültiger Agava-Code.');
-  const b64 = s.slice(7);
-  const json = typeof atob === 'function'
-    ? decodeURIComponent(escape(atob(b64)))
-    : Buffer.from(b64, 'base64').toString('utf8');
-  return normalize(JSON.parse(json));
 }
