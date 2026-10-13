@@ -24,7 +24,7 @@ const T = {
   maxAge: [50, 80, 115, 155, 200],
   efficiency: [0.5, 0.64, 0.78, 0.92, 1.06],
   uptake: [1.6, 2.5, 3.4, 4.3, 5.2],
-  basal: [0.35, 0.47, 0.6, 0.73, 0.86],
+  basal: [0.25, 0.34, 0.43, 0.52, 0.61],
   divideAt: [26, 38, 52, 66, 80],
 };
 const MOVE_COST = 0.3;
@@ -241,8 +241,8 @@ export class Simulation {
   _defense(j) {
     const q = this.players[this.owner[j] - 1].ph;
     let d = q.defense + this.energy[j] / 50;
-    if (this.spore[j]) d = q.defense + 1;
-    else if (q.biofilm && this.still[j] >= 4) d += 2.5;
+    if (this.spore[j]) d = q.defense + 3; // Sporenhülle
+    else if (q.biofilm && this.still[j] >= 2) d += 3.5; // Schleimschicht
     return d;
   }
 
@@ -287,19 +287,22 @@ export class Simulation {
       if (this.spore[i]) {
         this.spore[i]++;
         if (this.spore[i] > SPORE_LIFE) { this._kill(i, 'starve'); continue; }
-        if (nutrient[i] >= 6) { this.spore[i] = 0; energy[i] = 15; this.age[i] = 0; }
+        if (nutrient[i] >= 6) { this.spore[i] = 0; energy[i] = 25; this.age[i] = 0; }
         continue;
       }
 
       // Altern und Grundumsatz
       this.age[i]++;
-      energy[i] -= ph.basal;
+      // Biofilm: stillstehende Zellen im Schleim sparen Energie
+      energy[i] -= ph.biofilm && this.still[i] >= 2 ? ph.basal * 0.7 : ph.basal;
+      // Kapsel wächst langsam nach
+      if (ph.capsule && !this.shield[i] && rng() < 0.02) this.shield[i] = 1;
 
       // Fressen
       const take = Math.min(nutrient[i], ph.uptake);
       nutrient[i] -= take;
       energy[i] += take * ph.efficiency;
-      if (ph.photo) energy[i] += 0.3; // Energie aus Licht
+      if (ph.photo) energy[i] += 0.45; // Energie aus Licht
       if (energy[i] > MAX_ENERGY) energy[i] = MAX_ENERGY;
 
       if (this.age[i] > this.maxAge[i]) { this._kill(i, 'age'); continue; }
@@ -361,7 +364,7 @@ export class Simulation {
           } else if (owner[j] !== o) {
             // Kampf
             if (this.contactTick < 0) this.contactTick = tick;
-            const atk = ph.attack + rng() * 3;
+            const atk = ph.attack + (ph.predator ? 1 : 0) + rng() * 3;
             const def = this._defense(j) + rng() * 3;
             if (atk > def + 0.5 && this.shield[j]) {
               this.shield[j] = 0; // Kapsel fängt den Angriff ab

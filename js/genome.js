@@ -45,11 +45,11 @@ export const FREE = [
 
 export const SPECIALS = {
   none: { name: 'Keine', cost: 0, hint: 'Keine Spezialfähigkeit.' },
-  capsule: { name: 'Kapsel', cost: 3, hint: 'Eine Schleimkapsel schützt jede Zelle einmal vor einem tödlichen Angriff (Zellen mit Kapsel leuchten heller).' },
+  capsule: { name: 'Kapsel', cost: 3, hint: 'Eine Schleimkapsel fängt einen tödlichen Angriff ab und wächst danach langsam nach (Zellen mit Kapsel leuchten heller).' },
   photo: { name: 'Photosynthese', cost: 3, hint: 'Die Zellen gewinnen ständig etwas Energie aus Licht – auch dort, wo die Nahrung aufgebraucht ist (Zellen schimmern).' },
-  predator: { name: 'Räuber', cost: 3, hint: 'Getötete Gegner werden gefressen und liefern viel Energie (rote Fraßspuren).' },
+  predator: { name: 'Räuber', cost: 3, hint: 'Greift stärker an, frisst getötete Gegner und gewinnt dabei viel Energie (rote Fraßspuren).' },
   spores: { name: 'Sporen', cost: 3, hint: 'Verhungernde Zellen werden zu ruhenden Sporen (helle Punkte) und erwachen, wenn wieder Nahrung da ist.' },
-  biofilm: { name: 'Biofilm', cost: 3, hint: 'Zellen, die eine Weile stillstehen, bilden eine schützende Schleimschicht (dunkle Matte) und werden viel widerstandsfähiger.' },
+  biofilm: { name: 'Biofilm', cost: 3, hint: 'Zellen, die kurz stillstehen, bilden eine Schleimschicht (dunkle Matte): viel widerstandsfähiger und sparsamer im Energieverbrauch.' },
   toxin: { name: 'Toxine', cost: 3, hint: 'Die Zellen geben Giftstoffe ab (sichtbar als Giftwolke), die gegnerische Nachbarzellen schwächen und töten können.' },
 };
 export const SPECIAL_KEYS = Object.keys(SPECIALS);

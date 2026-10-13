@@ -59,8 +59,8 @@ export const LEVELS = [
     name: 'Der Räuber',
     desc: 'Bdellovibrio jagt andere Bakterien und frisst sie auf. Begleitet wird er vom schlängelnden Helicobacter.',
     plate: { size: 'mittel', distribution: 'zentrum', amount: 'normal', regen: 'normal' },
-    boss: g('bdellovibrio', '#ff5d5d', ['F'], [4, 2, 3, 5, 3, 1, 3], 'predator'),
-    opponents: [g('hpylori', '#ff6ec7', ['R4', 'M'], [3, 2, 4, 4, 4, 1, 2])],
+    boss: g('bdellovibrio', '#ff5d5d', ['F'], [4, 1, 3, 4, 3, 1, 3], 'predator'),
+    opponents: [g('hpylori', '#ff6ec7', ['R4', 'M'], [3, 2, 3, 4, 3, 1, 2])],
   },
   {
     name: 'Schleimfestung',

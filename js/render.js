@@ -43,7 +43,7 @@ export class PlateRenderer {
         if (spore[i]) {
           // Sporen: helle, fast weiße Punkte
           d[k] = 150 + col[0] * 0.4; d[k + 1] = 150 + col[1] * 0.4; d[k + 2] = 150 + col[2] * 0.4;
-        } else if (biofilm[o - 1] && still[i] >= 4) {
+        } else if (biofilm[o - 1] && still[i] >= 2) {
           // Biofilm: dunklere, gemusterte Matte
           const f = ((i % N) + ((i / N) | 0)) & 1 ? 0.45 : 0.62;
           d[k] = col[0] * f; d[k + 1] = col[1] * f; d[k + 2] = col[2] * f;
