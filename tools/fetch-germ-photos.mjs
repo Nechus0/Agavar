@@ -24,8 +24,13 @@ const strip = (html) => String(html || '').replace(/<[^>]*>/g, '').replace(/\s+/
 const OK = /^(public domain|pd|cc0|cc by(-sa)? \d|cc-by(-sa)?-\d)/i;
 
 mkdirSync('img/germs', { recursive: true });
-// photos that are already here are kept (FORCE=1 fetches everything again)
+// Hand-picked Commons files for germs whose automatic pick does not fit (e.g. a cheese photo).
+const OVERRIDES = {
+};
+
+// photos that are already here are kept (FORCE=1 fetches everything again, ONLY=a,b just these germs)
 const force = process.env.FORCE === '1';
+const only = (process.env.ONLY || '').split(',').filter(Boolean);
 if (force) { rmSync('img/germs', { recursive: true, force: true }); mkdirSync('img/germs', { recursive: true }); }
 const photos = force ? {} : Object.fromEntries(Object.entries(PHOTOS).filter(([, p]) => existsSync(p.src)));
 
@@ -65,10 +70,11 @@ async function pagePhoto(germ) {
 }
 
 for (const [key, germ] of Object.entries(GERMS)) {
-  if (photos[key]) { console.log(`= ${germ.name}: already there`); continue; }
+  if (only.length && !only.includes(key)) continue;
+  if (photos[key] && !only.includes(key)) { console.log(`= ${germ.name}: already there`); continue; }
   try {
     let style = 'sem';
-    let fi = await semPhoto(germ);
+    let fi = OVERRIDES[key] ? await fileInfo(OVERRIDES[key]) : await semPhoto(germ);
     if (!fi) { style = 'other'; fi = await pagePhoto(germ); }
     if (!fi) { console.log(`– ${germ.name}: no usable photo`); continue; }
     const img = Buffer.from(await (await get(fi.ii.thumburl || fi.ii.url)).arrayBuffer());

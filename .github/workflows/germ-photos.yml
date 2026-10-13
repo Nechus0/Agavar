@@ -9,6 +9,10 @@ on:
         description: Fetch every photo again (otherwise only missing ones)
         type: boolean
         default: false
+      only:
+        description: Only these germ keys (comma-separated), optional
+        required: false
+        default: ''
 permissions:
   contents: write
 jobs:
@@ -22,6 +26,7 @@ jobs:
       - run: node tools/fetch-germ-photos.mjs
         env:
           FORCE: ${{ inputs.refresh && '1' || '0' }}
+          ONLY: ${{ inputs.only }}
       - name: Commit photos
         run: |
           git config user.name "github-actions[bot]"
