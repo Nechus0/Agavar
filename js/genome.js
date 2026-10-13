@@ -99,6 +99,10 @@ export function normalize(raw) {
     if (raw[t.key] !== undefined) g[t.key] = clampInt(raw[t.key], 0, t.max);
   }
   if (SPECIAL_KEYS.includes(raw.special)) g.special = raw.special;
+  // gewählte Bewegungsart (für den Editor); das Muster in program ist maßgeblich für die Simulation
+  if (raw.move && typeof raw.move.type === 'string') {
+    g.move = { type: raw.move.type, size: clampInt(raw.move.size, 0, 5), dir: raw.move.dir === 'L' ? 'L' : 'R' };
+  }
   // nur für besondere Gegner: eine zweite Spezialfähigkeit (nicht im Editor wählbar)
   if (SPECIAL_KEYS.includes(raw.bonusSpecial) && raw.bonusSpecial !== 'none') g.bonusSpecial = raw.bonusSpecial;
   if (typeof raw.id === 'string') g.id = raw.id;

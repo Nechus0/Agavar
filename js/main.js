@@ -1,7 +1,7 @@
 // Oberfläche: Bildschirme, Karriere, Editor, Spielablauf.
 import {
-  STEPS, STEP_KEYS, MAX_PROGRAM, MAX_REPEAT, COSTED, FREE, SPECIALS, SPECIAL_KEYS, PALETTE,
-  MIN_BUDGET, MAX_BUDGET, defaultGenome, cost, normalize, randomGenome, parseStep, stepEntry, specialsOf,
+  COSTED, FREE, SPECIALS, SPECIAL_KEYS, PALETTE,
+  MIN_BUDGET, MAX_BUDGET, defaultGenome, cost, normalize, randomGenome, specialsOf,
 } from './genome.js';
 import { Simulation, DISTRIBUTIONS, MAX_TICKS } from './sim.js';
 import { PlateRenderer, drawHistory, PathAnimator } from './render.js';
@@ -12,7 +12,8 @@ import { GERMS, germSvg } from './germs.js';
 import {
   getLimits, unlockLevelOf, rewardsOf, problems, careerPoints, nextLevel, START_POINTS, POINTS_PER_WIN,
 } from './progression.js';
-import { SPECIAL_ICONS, SPECIAL_COLORS, TRAIT_ICONS, STEP_ICONS, LOCK_ICON, UNLOCK_ICON } from './icons.js';
+import { SPECIAL_ICONS, SPECIAL_COLORS, TRAIT_ICONS, LOCK_ICON, UNLOCK_ICON } from './icons.js';
+import { MOVES, MOVE_BY_KEY, actionsOf, compile, moveFromProgram, describeMove, pathSvg } from './movement.js';
 import * as store from './storage.js';
 
 const $ = (sel) => document.querySelector(sel);
@@ -49,11 +50,8 @@ function germPic(germ, color, cls = '') {
   return s;
 }
 
-function stepChip(entry) {
-  const st = parseStep(entry);
-  return el('span', { class: 'pchip' }, icon(STEP_ICONS[st.s]), st.n > 1 ? el('sub', {}, `×${st.n}`) : null);
-}
-const programIcons = (p) => el('span', { class: 'prog-icons' }, p.map(stepChip));
+// Bewegung als kleine Bahnzeichnung + Beschreibung
+const moveChip = (g) => el('span', { class: 'move-chip' }, icon(pathSvg(g.program), 'path-ico'), describeMove(moveFromProgram(g.program)));
 const specialBadge = (key, cls = '') => icon(SPECIAL_ICONS[key], cls, SPECIAL_COLORS[key]);
 const specialTag = (key) => el('span', { class: 'sp-tag', style: `--c:${SPECIAL_COLORS[key]}` }, specialBadge(key, 'sm'), SPECIALS[key].name);
 const traitRow = (g) => el('div', { class: 'trait-row' }, COSTED.map((t) =>
@@ -65,22 +63,6 @@ const LABELS = {
   amount: { wenig: 'Wenig', normal: 'Normal', viel: 'Viel' },
   regen: { aus: 'Aus', langsam: 'Langsam', normal: 'Normal', schnell: 'Schnell' },
 };
-
-// Vorlagen für Bewegungsmuster
-const PRESETS = [
-  { name: 'Geradeaus', program: ['F'] },
-  { name: 'Kreis', program: ['F', 'R'] },
-  { name: 'Quadrat', program: ['F', 'F', 'D'] },
-  { name: 'Treppe', program: ['D', 'S'] },
-  { name: 'Welle', program: ['R', 'L', 'L', 'R'] },
-  { name: 'Sitzer', program: ['P'] },
-  { name: 'Pendel', program: ['F', 'F', 'B'] },
-  { name: 'Taumler', program: ['F3', 'Z'] },
-  { name: 'Großes Quadrat', program: ['F4', 'D'] },
-  { name: 'Schlange', program: ['R4', 'M'] },
-  { name: 'Acht', program: ['R4', 'R4', 'M'] },
-  { name: 'Zickzack', program: ['R', 'F2', 'M'] },
-];
 
 // ---------- Navigation ----------
 let current = 'home';
@@ -185,7 +167,7 @@ onEnter.careers = () => {
         el('span', { class: 'dot', style: `background:${b.color}` }),
         el('b', {}, b.name),
         el('span', { class: 'cost' }, levelBadge(b))),
-      el('div', { class: 'stats' }, programIcons(b.program), b.special !== 'none' ? specialTag(b.special) : null),
+      el('div', { class: 'stats' }, moveChip(b), b.special !== 'none' ? specialTag(b.special) : null),
       traitRow(b),
       el('div', { class: 'small muted' }, `${cost(b)} von ${pts} Ausbaupunkten verteilt`, free > 0 ? el('span', { class: 'free-pts' }, ` · ${free} frei!`) : null));
   }) : [el('div', { class: 'empty' }, 'Noch kein Bakterium. Erstelle dein erstes!')]));
@@ -212,7 +194,7 @@ onEnter.career = () => {
   $('#cr-title').textContent = b.name;
   fill($('#cr-card'), 
     el('div', { class: 'title row gap' }, el('span', { class: 'dot big-dot', style: `background:${b.color}` }), el('b', { class: 'big-name' }, b.name), el('span', { class: 'cost' }, levelBadge(b))),
-    el('div', { class: 'stats' }, programIcons(b.program), b.special !== 'none' ? specialTag(b.special) : null),
+    el('div', { class: 'stats' }, moveChip(b), b.special !== 'none' ? specialTag(b.special) : null),
     traitRow(b),
     el('div', { class: `points-box ${free > 0 ? 'has-free' : ''}` },
       el('span', {}, el('b', {}, `${cost(b)} / ${pts}`), ' Ausbaupunkte verteilt'),
@@ -249,7 +231,7 @@ $('#cr-delete').addEventListener('click', async () => {
 
 function rewardIcon(r) {
   if (r.type === 'special') return specialBadge(r.key, 'sm');
-  if (r.type === 'step') return icon(STEP_ICONS[r.key], 'sm reward-step');
+  if (r.type === 'move') return icon(pathSvg(actionsOf({ type: r.key, size: 1, dir: 'R' })), 'sm reward-step');
   return icon(UNLOCK_ICON, 'sm reward-step');
 }
 const rewardRows = (level, withPoints) => [
@@ -265,7 +247,7 @@ function opponentCard(o) {
     germPic(o.germ, o.color, 'mini'),
     el('div', {},
       el('b', {}, o.name),
-      el('div', { class: 'stats' }, programIcons(o.program), ...specialsOf(o).map(specialTag)),
+      el('div', { class: 'stats' }, moveChip(o), ...specialsOf(o).map(specialTag)),
       traitRow(o)));
 }
 
@@ -288,7 +270,7 @@ onEnter['level-detail'] = () => {
     el('div', { class: 'boss-label' }, '★ Besonderer Gegner'),
     germPic(boss.germ, boss.color, 'large'),
     el('h3', { class: 'boss-name' }, boss.name),
-    el('div', { class: 'stats center-row' }, ...specialsOf(boss).map(specialTag), programIcons(boss.program)),
+    el('div', { class: 'stats center-row' }, ...specialsOf(boss).map(specialTag), moveChip(boss)),
     traitRow(boss),
     rewards.length && !won.includes(n)
       ? el('p', { class: 'small boss-teaser' }, 'Besiege ihn, um freizuschalten: ', el('b', {}, rewards.map((r) => r.text).join(', ')))
@@ -305,7 +287,7 @@ onEnter['level-detail'] = () => {
   fill($('#ld-me'), 
     el('h3', {}, 'Dein Bakterium'),
     el('div', { class: 'title row gap' }, el('span', { class: 'dot', style: `background:${b.color}` }), el('b', {}, b.name), el('span', { class: 'cost' }, `${cost(b)} / ${pts} Pkt`)),
-    el('div', { class: 'stats' }, programIcons(b.program), b.special !== 'none' ? specialTag(b.special) : null),
+    el('div', { class: 'stats' }, moveChip(b), b.special !== 'none' ? specialTag(b.special) : null),
     traitRow(b),
     probs.length ? el('p', { class: 'small warn' }, probs.join(' · ')) : null,
     pts - cost(b) > 0 ? el('p', { class: 'small free-pts' }, `Du hast noch ${pts - cost(b)} ${pts - cost(b) === 1 ? 'Punkt' : 'Punkte'} frei!`) : null,
@@ -323,10 +305,7 @@ $('#ld-start').addEventListener('click', () => {
 // ---------- Editor ----------
 let ed = null;
 let edCtx = null;
-let selSlot = -1;
-const animator = new PathAnimator($('#ed-preview'), (idx) => {
-  document.querySelectorAll('#ed-program .slot').forEach((s, k) => s.classList.toggle('active', k === idx));
-});
+const animator = new PathAnimator($('#ed-preview'), null);
 
 function openEditor(b, ctx) {
   edCtx = ctx;
@@ -336,97 +315,108 @@ function openEditor(b, ctx) {
     const used = new Set(store.getBacteria().map((x) => x.color));
     ed.color = PALETTE.find((c) => !used.has(c)) || PALETTE[0];
   }
-  selSlot = -1;
+  // Bewegungsart aus dem Muster ableiten (ältere Spielstände kennen sie noch nicht)
+  ed.move = moveFromProgram(ed.program) || ed.move || null;
+  if (!ed.move) { ed.move = { type: 'gerade', size: 0, dir: 'R' }; ed.program = ['F']; }
   $('#ed-title').textContent = ctx.mode === 'free' ? 'Freies Spiel' : b ? 'Ausbauen' : 'Neues Bakterium';
   go('editor');
   renderEditor();
-  renderProgram();
+  renderMove();
 }
 
-onEnter.editor = () => animator.start();
-onLeave.editor = () => animator.stop();
+onEnter.editor = () => { animator.start(); colony.start(); };
+onLeave.editor = () => { animator.stop(); colony.stop(); };
 
-function renderProgram() {
+// Lässt das Bakterium allein auf einer kleinen Platte wachsen, damit man die Ausbreitung sieht.
+const colony = {
+  sim: null, r: null, raf: 0, hold: 0, timer: 0,
+  restart() {
+    clearTimeout(this.timer);
+    this.timer = setTimeout(() => {
+      const g = normalize({ ...ed, name: ed.name || 'Bakterium' });
+      this.sim = new Simulation({ genomes: [g], size: 'klein', distribution: 'gleichmaessig', amount: 'normal', regen: 'normal', seed: 4242 });
+      this.r = new PlateRenderer($('#ed-colony'), this.sim);
+      this.hold = 0;
+      this.r.draw();
+    }, 120);
+  },
+  start() {
+    cancelAnimationFrame(this.raf);
+    const loop = () => {
+      this.raf = requestAnimationFrame(loop);
+      const sim = this.sim;
+      if (!sim) return;
+      if (sim.tick < 420 && !sim.done) {
+        sim.step1(); sim.step1();
+        this.r.draw();
+        $('#ed-colony-label').textContent = `Die Kolonie · ${Math.round((BREW_HOURS * sim.tick) / MAX_TICKS)} h`;
+      } else if (++this.hold > 90) this.restart();
+    };
+    this.raf = requestAnimationFrame(loop);
+  },
+  stop() { cancelAnimationFrame(this.raf); clearTimeout(this.timer); },
+};
+
+function lockReason(res) {
+  const l = res.locked;
+  if (l.kind === 'step') return unlockLevelOf('step', l.key);
+  if (l.kind === 'repeat') return unlockLevelOf('repeat');
+  return unlockLevelOf('program', l.key);
+}
+
+function setMove(move) {
+  const res = compile(move, edCtx.limits);
+  if (!res.program) return lockedToast(lockReason(res));
+  ed.move = move;
+  ed.program = res.program;
+  renderMove();
+  colony.restart();
+}
+
+function renderMove() {
   const lim = edCtx.limits;
-  if (selSlot >= ed.program.length) selSlot = -1;
-  const slots = [];
-  for (let k = 0; k < MAX_PROGRAM; k++) {
-    const st = ed.program[k] ? parseStep(ed.program[k]) : null;
-    const locked = k >= lim.programMax;
-    slots.push(el('button', {
-      class: `slot ${st ? 'filled' : ''} ${locked ? 'locked' : ''} ${k === selSlot ? 'sel' : ''}`,
-      'aria-label': st ? `Schritt ${k + 1}: ${STEPS[st.s].name}` : `Schritt ${k + 1}`,
-      onclick: () => {
-        if (!st) return locked ? lockedToast(unlockLevelOf('program', k + 1)) : toast('Wähle unten einen Schritt aus, um ihn anzuhängen.');
-        selSlot = selSlot === k ? -1 : k;
-        renderProgram();
-      },
-    }, el('span', { class: 'slot-n' }, String(k + 1)),
-    st ? icon(STEP_ICONS[st.s]) : locked ? icon(LOCK_ICON, 'lock') : null,
-    st && st.n > 1 ? el('span', { class: 'slot-rep' }, `×${st.n}`) : null));
-  }
-  fill($('#ed-program'), ...slots);
-
-  // Bearbeitungsleiste für den ausgewählten Schritt
-  const bar = $('#ed-slot-bar');
-  bar.hidden = selSlot < 0;
-  $('#ed-slot-hint').hidden = selSlot >= 0;
-  if (selSlot >= 0) {
-    const st = parseStep(ed.program[selSlot]);
-    const reps = [];
-    for (let r = 1; r <= MAX_REPEAT; r++) {
-      reps.push(el('button', {
-        class: `${st.n === r ? 'on' : ''} ${!lim.repeat && r > 1 ? 'locked' : ''}`,
-        onclick: () => {
-          if (!lim.repeat && r > 1) return lockedToast(unlockLevelOf('repeat'));
-          ed.program[selSlot] = stepEntry(st.s, r); renderProgram();
-        },
-      }, `×${r}`));
-    }
-    fill(bar, 
-      el('div', { class: 'slot-bar-head' }, icon(STEP_ICONS[st.s]), el('b', {}, `Schritt ${selSlot + 1}: ${STEPS[st.s].label}`)),
-      el('div', { class: 'row gap wrap' },
-        el('span', { class: 'small muted' }, 'Wiederholen'),
-        el('div', { class: 'seg rep-seg' }, reps),
-        el('button', {
-          class: 'btn small danger',
-          onclick: () => {
-            if (ed.program.length <= 1) return toast('Ein Schritt muss bleiben.');
-            ed.program.splice(selSlot, 1); selSlot = -1; renderProgram();
-          },
-        }, 'Entfernen')));
-  }
-
-  fill($('#ed-steps'), ...STEP_KEYS.map((key) => {
-    const locked = !lim.steps.has(key);
+  const cur = ed.move;
+  // Karten der Bewegungsarten
+  fill($('#ed-moves'), ...MOVES.map((m) => {
+    const sizes = m.sizes ? m.sizes.length : 1;
+    let firstOk = -1;
+    for (let k = 0; k < sizes; k++) if (compile({ type: m.key, size: k, dir: 'R' }, lim).program) { firstOk = k; break; }
+    const locked = firstOk < 0;
+    const res = compile({ type: m.key, size: 0, dir: 'R' }, lim);
     return el('button', {
-      class: `stepbtn ${locked ? 'locked' : ''}`, title: STEPS[key].name,
+      class: `move-card ${cur.type === m.key ? 'on' : ''} ${locked ? 'locked' : ''}`,
       onclick: () => {
-        if (locked) return lockedToast(unlockLevelOf('step', key));
-        if (selSlot >= 0) { ed.program[selSlot] = stepEntry(key, parseStep(ed.program[selSlot]).n); renderProgram(); return; }
-        if (ed.program.length >= lim.programMax) return toast(`Maximal ${lim.programMax} Schritte – tippe oben auf einen Schritt, um ihn zu ändern.`);
-        ed.program.push(key); renderProgram();
+        if (locked) return lockedToast(lockReason(res));
+        if (cur.type === m.key) return;
+        setMove({ type: m.key, size: firstOk, dir: cur.dir || 'R' });
       },
-    }, icon(locked ? LOCK_ICON : STEP_ICONS[key], locked ? 'lock' : ''), el('span', { class: 'step-label' }, STEPS[key].label));
+    },
+    icon(pathSvg(actionsOf({ type: m.key, size: Math.max(0, firstOk), dir: 'R' })), 'move-pic'),
+    el('span', { class: 'move-name' }, m.name),
+    locked ? el('span', { class: 'move-lock' }, `🔒 Level ${lockReason(res)}`) : null);
   }));
 
-  fill($('#ed-presets'), ...PRESETS.map((pr) => {
-    const parsed = pr.program.map(parseStep);
-    const missing = parsed.find((x) => !lim.steps.has(x.s));
-    const needRepeat = !lim.repeat && parsed.some((x) => x.n > 1);
-    const tooLong = pr.program.length > lim.programMax;
-    const locked = missing || needRepeat || tooLong;
-    const same = pr.program.join(',') === ed.program.join(',');
-    return el('button', {
-      class: `preset ${same ? 'on' : ''} ${locked ? 'locked' : ''}`,
-      onclick: () => {
-        if (missing) return lockedToast(unlockLevelOf('step', missing.s));
-        if (needRepeat) return lockedToast(unlockLevelOf('repeat'));
-        if (tooLong) return lockedToast(unlockLevelOf('program', pr.program.length));
-        ed.program = pr.program.slice(); selSlot = -1; renderProgram();
-      },
-    }, el('span', {}, pr.name), programIcons(pr.program));
-  }));
+  // Größe und Richtung der gewählten Art
+  const m = MOVE_BY_KEY[cur.type];
+  const opts = [];
+  if (m.sizes) {
+    opts.push(el('div', { class: 'opt' }, el('span', {}, m.key === 'sitzen' ? 'Aktivität' : 'Größe'),
+      el('div', { class: 'seg' }, m.sizes.map((label, k) => {
+        const r = compile({ ...cur, size: k }, lim);
+        return el('button', {
+          class: `${cur.size === k ? 'on' : ''} ${r.program ? '' : 'locked'}`,
+          onclick: () => setMove({ ...cur, size: k }),
+        }, r.program ? label : `🔒 ${label}`);
+      }))));
+  }
+  if (m.turn) {
+    opts.push(el('div', { class: 'opt' }, el('span', {}, 'Richtung'),
+      el('div', { class: 'seg' },
+        el('button', { class: cur.dir !== 'L' ? 'on' : '', onclick: () => setMove({ ...cur, dir: 'R' }) }, '↻ rechts herum'),
+        el('button', { class: cur.dir === 'L' ? 'on' : '', onclick: () => setMove({ ...cur, dir: 'L' }) }, '↺ links herum'))));
+  }
+  fill($('#ed-move-opts'), ...opts);
+  fill($('#ed-move-desc'), el('b', {}, `${m.name}: `), m.desc);
   animator.setProgram(ed.program, ed.color);
 }
 
@@ -441,7 +431,7 @@ function renderEditor() {
   // Kostenlose Abwägungen
   fill($('#ed-free'), ...FREE.map((t) => {
     const input = el('input', { type: 'range', min: 0, max: t.max, step: 1, value: ed[t.key] });
-    input.addEventListener('input', () => { ed[t.key] = Number(input.value); });
+    input.addEventListener('input', () => { ed[t.key] = Number(input.value); colony.restart(); });
     return el('div', { class: 'trait' },
       el('div', { class: 'trait-head' }, el('span', { class: 'trait-name' }, icon(TRAIT_ICONS[t.key], 'ti'), el('b', {}, t.label))),
       el('div', { class: 'hint' }, t.hint),
@@ -501,10 +491,10 @@ function renderEditor() {
   if (over) warn.textContent = `${c - budget} Punkte zu viel – nimm Punkte weg.`;
   else if (c < budget) warn.textContent = `Noch ${budget - c} ${budget - c === 1 ? 'Punkt' : 'Punkte'} zu verteilen.`;
   warn.classList.toggle('ok', !over);
+  colony.restart();
 }
 
 $('#ed-name').addEventListener('input', (e) => { ed.name = e.target.value; });
-$('#ed-clear').addEventListener('click', () => { ed.program = ['F']; selSlot = -1; renderProgram(); });
 $('#ed-cancel').addEventListener('click', () => go(edCtx.returnTo));
 $('#ed-save').addEventListener('click', () => {
   if (!ed.name.trim()) { $('#ed-name').focus(); return toast('Bitte gib deinem Bakterium einen Namen.'); }
@@ -557,7 +547,7 @@ onEnter.setup = () => {
     const probs = problems(g, freeLimits(), s.budget);
     fill(me, el('h3', {}, 'Dein Bakterium'),
       el('div', { class: 'title row gap' }, el('span', { class: 'dot', style: `background:${g.color}` }), el('b', {}, g.name), el('span', { class: 'cost' }, `${cost(g)} / ${s.budget} Pkt`)),
-      el('div', { class: 'stats' }, programIcons(g.program), g.special !== 'none' ? specialTag(g.special) : null),
+      el('div', { class: 'stats' }, moveChip(g), g.special !== 'none' ? specialTag(g.special) : null),
       traitRow(g),
       probs.length ? el('p', { class: 'small warn' }, probs.join(' · ')) : null,
       el('button', { class: 'btn small', onclick: () => openEditor(g, freeCtx()) }, 'Bearbeiten'));

@@ -19,7 +19,7 @@ Man entwirft ein Bakterium und setzt es mit Gegnern auf eine runde Agarplatte. S
 
 | Eigenschaft | Stufen | Kosten | Wirkung |
 |---|---|---|---|
-| Bewegungsmuster | 1–6 Schritte, je ×1 bis ×4 | – | Folge, die sich endlos wiederholt; Drehungen relativ zur Blickrichtung. Tochterzellen übernehmen Richtung und Takt. |
+| Bewegungsart | Art + Größe + Richtung | – | Wird intern in ein Schrittmuster übersetzt. Tochterzellen übernehmen Richtung und Takt. |
 | Teilung | sehr früh … sehr spät | kostenlos | Energieschwelle für die Teilung. Früh heißt viele schwache Zellen. |
 | Stoffwechsel | genügsam … gefräßig | kostenlos | Nahrungsaufnahme und Grundumsatz steigen gemeinsam |
 | Geschwindigkeit | 0–4 | 1/Stufe | Bewegungschance pro Runde 25–95 % |
@@ -29,14 +29,20 @@ Man entwirft ein Bakterium und setzt es mit Gegnern auf eine runde Agarplatte. S
 | Abwehr | 0–5 | 1/Stufe | Kampfwert beim Verteidigen |
 | Spezialfähigkeit | eine | 3 | Chemotaxis, Sporen, Biofilm, Toxine |
 
-**Bewegungsschritte:**
-- vor
-- halbrechts und halblinks (45°)
-- rechts und links (90°)
-- warten
-- taumeln (zufällige Richtung)
-- umkehren (180°)
-- Seitenwechsel (rechts und links ab jetzt vertauscht)
+**Bewegungsarten:**
+- Von Anfang an verfügbar:
+  - Geradeaus
+  - Kreisen (4 Größen, rechts oder links herum)
+  - Ecken (Quadrate)
+  - Welle
+  - Treppe
+- Freischaltbar:
+  - Sitzen (Level 1)
+  - Pendeln (Level 2)
+  - Taumeln (Level 3)
+  - Schlängeln und Acht (Level 7)
+- Größere Varianten gibt es nach Level 2 und Level 5.
+- Im Editor zeigen zwei Live-Vorschauen die Bahn einer einzelnen Zelle und die Ausbreitung der ganzen Kolonie auf einer kleinen Platte.
 
 **Spezialfähigkeiten und wie man sie auf der Platte erkennt:**
 - **Chemotaxis**: Die Kolonie zieht gezielt zu nahrhaften Stellen.
@@ -50,13 +56,13 @@ Die Gegner sind echte Keime. Ihre Spieleigenschaften entsprechen ihren echten Ei
 
 | # | Level | Besonderer Gegner | echte Eigenschaft | Freischaltung |
 |---|---|---|---|---|
-| 1 | Hautkontakt | *Staphylococcus epidermidis* | hat keine Geißeln, bewegt sich nicht | Schritt „warten“ |
-| 2 | Das Rudel | *Myxococcus xanthus* | gleitet und kehrt regelmäßig die Richtung um, jagt im Rudel | Schritt „umkehren“, 5. Musterplatz |
-| 3 | Run and Tumble | *Escherichia coli* | schwimmt geradeaus, taumelt dann in eine Zufallsrichtung | Schritt „taumeln“ |
+| 1 | Hautkontakt | *Staphylococcus epidermidis* | hat keine Geißeln, bewegt sich nicht | Bewegungsart „Sitzen“ |
+| 2 | Das Rudel | *Myxococcus xanthus* | gleitet und kehrt regelmäßig die Richtung um, jagt im Rudel | Bewegungsart „Pendeln“, größere Muster |
+| 3 | Run and Tumble | *Escherichia coli* | schwimmt geradeaus, taumelt dann in eine Zufallsrichtung | Bewegungsart „Taumeln“ |
 | 4 | Der Spürhund | *Pseudomonas putida* | Chemotaxis zu Nährstoffen | Chemotaxis |
-| 5 | Schwärmer | *Proteus mirabilis* | schwärmt rhythmisch in langen Bahnen (Ringmuster) | Wiederholungen ×2–×4, 6. Musterplatz |
+| 5 | Schwärmer | *Proteus mirabilis* | schwärmt rhythmisch in langen Bahnen (Ringmuster) | größere Bewegungsmuster |
 | 6 | Hungersnot | *Bacillus subtilis* | bildet Endosporen | Sporen |
-| 7 | Korkenzieher | *Helicobacter pylori* | korkenzieherförmig, schraubt sich durch Schleim | Schritt „Seitenwechsel“ |
+| 7 | Korkenzieher | *Helicobacter pylori* | korkenzieherförmig, schraubt sich durch Schleim | Bewegungsarten „Schlängeln“ und „Acht“ |
 | 8 | Schleimfestung | *Pseudomonas aeruginosa* | Paradebeispiel für Biofilme | Biofilm |
 | 9 | Giftküche | *Staphylococcus aureus* | bildet viele Toxine | Toxine |
 | 10 | Der Endgegner | *Clostridium botulinum* | Sporen und Botulinumtoxin | Titel „Meister der Agarplatte“ |

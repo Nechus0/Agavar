@@ -1,7 +1,10 @@
 // Freischalt- und Karriere-System.
 // Jedes Bakterium hat eine eigene Karriere: Es startet mit wenigen Punkten und einfachen Schritten.
 // Jeder erste Sieg in einem Level bringt Ausbaupunkte und schaltet die Fähigkeit des besiegten Keims frei.
-import { STEPS, SPECIALS, COSTED, cost, parseStep, MAX_PROGRAM } from './genome.js';
+import { SPECIALS, COSTED, cost, parseStep, MAX_PROGRAM } from './genome.js';
+import { STEP_MOVES, MOVE_BY_KEY } from './movement.js';
+
+const moveNames = (step) => (STEP_MOVES[step] || []).map((k) => `„${MOVE_BY_KEY[k].name}“`).join(' und ');
 
 export const START_POINTS = 6;
 export const POINTS_PER_WIN = 2;
@@ -57,10 +60,9 @@ export function unlockLevelOf(kind, key) {
 export function rewardsOf(level) {
   const out = [];
   for (const u of UNLOCKS.filter((x) => x.after === level)) {
-    for (const s of u.steps || []) out.push({ type: 'step', key: s, text: `Bewegungsschritt „${STEPS[s].name}“` });
+    for (const s of u.steps || []) out.push({ type: 'move', key: STEP_MOVES[s][0], text: `Bewegungsart ${moveNames(s)}` });
     for (const s of u.specials || []) out.push({ type: 'special', key: s, text: `Spezialfähigkeit „${SPECIALS[s].name}“` });
-    if (u.repeat) out.push({ type: 'repeat', text: 'Wiederholungen im Muster (×2 bis ×4)' });
-    if (u.programMax) out.push({ type: 'program', text: `Muster mit bis zu ${u.programMax} Schritten` });
+    if (u.repeat || u.programMax) out.push({ type: 'bigger', text: 'Größere Bewegungsmuster (weitere Größenstufen)' });
     if (u.title) out.push({ type: 'title', text: `Titel „${u.title}“` });
   }
   return out;
@@ -75,8 +77,7 @@ export function problems(g, lim, budget) {
   if (!lim.specials.has(g.special)) p.push(`${SPECIALS[g.special].name} noch gesperrt`);
   const steps = g.program.map(parseStep).filter(Boolean);
   const locked = [...new Set(steps.filter((x) => !lim.steps.has(x.s)).map((x) => x.s))];
-  if (locked.length) p.push(`Schritt ${locked.map((s) => STEPS[s].label).join(', ')} noch gesperrt`);
-  if (!lim.repeat && steps.some((x) => x.n > 1)) p.push('Wiederholungen noch gesperrt');
-  if (g.program.length > lim.programMax) p.push(`Muster zu lang (max. ${lim.programMax})`);
+  if (locked.length) p.push(`Bewegungsart ${locked.map(moveNames).join(', ')} noch gesperrt`);
+  else if ((!lim.repeat && steps.some((x) => x.n > 1)) || g.program.length > lim.programMax) p.push('Bewegungsmuster noch zu groß');
   return p;
 }

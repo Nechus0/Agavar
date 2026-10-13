@@ -18,8 +18,8 @@ Bakterienkampf auf der Agarplatte: Du entwirfst ein Bakterium, setzt es mit Gegn
   - Jeder erste Sieg bringt +2 Ausbaupunkte und schaltet die Eigenschaft des besiegten Keims frei.
   - Nach dem Sieg erscheint ein Glückwunsch-Popup mit Bild und Fakt zum Keim.
 - **Editor**:
-  - Bewegungsmuster aus bis zu 6 Schritten (vor, halb/ganz rechts und links, warten, taumeln, umkehren, Seitenwechsel), jeweils bis ×4 wiederholbar
-  - animierte Vorschau und Vorlagen (Kreis, Quadrat, Schlange, Acht …)
+  - Bewegungsart als Karte wählen (Geradeaus, Kreisen, Ecken, Welle, Treppe; freischaltbar: Sitzen, Pendeln, Taumeln, Schlängeln, Acht), dazu Größe und Richtung
+  - zwei Live-Vorschauen: eine einzelne Zelle und die ganze Kolonie auf einer kleinen Agarplatte
   - Teilung, Stoffwechsel, Geschwindigkeit, Lebensdauer, Verwertung, Angriff, Abwehr
   - eine Spezialfähigkeit: Chemotaxis, Sporen, Biofilm oder Toxine
 - **Freies Spiel**: eigenes Bakterium mit frei einstellbarem Budget (6–40). Spezialfähigkeiten und besondere Schritte gibt es nur, wenn sie in einer Karriere freigespielt wurden. Dazu 1–5 Zufallsgegner, Plattengröße und Nährboden einstellbar.
@@ -37,6 +37,7 @@ Reines HTML, CSS und JavaScript (ES-Module), ohne Abhängigkeiten und ohne Build
 | `js/genome.js` | Eigenschaften, Bewegungsschritte, Punktekosten, Zufallsgegner |
 | `js/levels.js` | die 10 Level |
 | `js/progression.js` | Karriere- und Freischalt-System |
+| `js/movement.js` | Bewegungsarten und ihre Übersetzung in Schrittmuster |
 | `js/germs.js` | echte Keime: Fakten und Zeichnungen |
 | `js/icons.js` | SVG-Symbole |
 | `js/render.js` | Canvas-Darstellung, Verlaufskurve, Mustervorschau |

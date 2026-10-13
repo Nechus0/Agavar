@@ -116,7 +116,7 @@ test('problems() erkennt Verstöße', () => {
   const lim = getLimits([]);
   assert.deepEqual(problems({ ...defaultGenome(), speed: 2, attack: 2, defense: 2 }, lim, START_POINTS), []);
   const bad = { ...defaultGenome(), speed: 4, attack: 4, special: 'toxin', program: ['F2', 'Z'] };
-  assert.ok(problems(bad, lim, START_POINTS).length >= 4);
+  assert.ok(problems(bad, lim, START_POINTS).length >= 3);
 });
 
 test('Zufallsgenome mit Grenzen halten die Freischaltungen ein', () => {
@@ -125,4 +125,33 @@ test('Zufallsgenome mit Grenzen halten die Freischaltungen ein', () => {
     const lim = getLimits(won);
     for (let k = 0; k < 60; k++) assert.deepEqual(problems(randomGenome(rng, 10, lim), lim, 10), []);
   }
+});
+
+import { MOVES, compile, moveFromProgram, actionsOf, pathSvg } from '../js/movement.js';
+
+test('Bewegungsarten: alle Größen lassen sich mit allen Freischaltungen erzeugen und wiedererkennen', () => {
+  const all = getLimits([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+  for (const m of MOVES) {
+    for (let size = 0; size < (m.sizes ? m.sizes.length : 1); size++) {
+      for (const dir of m.turn ? ['R', 'L'] : ['R']) {
+        const move = { type: m.key, size, dir };
+        const res = compile(move, all);
+        assert.ok(res.program, `${m.key}/${size}/${dir} nicht erzeugbar`);
+        assert.deepEqual(problems({ ...defaultGenome(), program: res.program }, all, 99), []);
+        assert.deepEqual(moveFromProgram(res.program), move);
+        assert.match(pathSvg(res.program), /^<svg/);
+      }
+    }
+  }
+});
+
+test('Bewegungsarten: am Anfang nur die einfachen, Sitzen erst nach Level 1', () => {
+  const start = getLimits([]);
+  for (const key of ['gerade', 'kreis', 'ecken', 'welle', 'treppe']) assert.ok(compile({ type: key, size: 0, dir: 'R' }, start).program, key);
+  for (const key of ['sitzen', 'pendeln', 'taumeln', 'schlange', 'acht']) assert.ok(compile({ type: key, size: 0, dir: 'R' }, start).locked, key);
+  assert.ok(compile({ type: 'sitzen', size: 0 }, getLimits([1])).program);
+  // große Welle braucht Wiederholungen (Level 5)
+  assert.ok(compile({ type: 'welle', size: 2 }, getLimits([1, 2, 3, 4])).locked);
+  assert.ok(compile({ type: 'welle', size: 2 }, getLimits([1, 2, 3, 4, 5])).program);
+  assert.deepEqual(actionsOf({ type: 'kreis', size: 1, dir: 'L' }), ['F', 'L']);
 });

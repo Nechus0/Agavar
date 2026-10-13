@@ -83,15 +83,16 @@
         <div class="field"><span>Farbe</span><div id="ed-colors" class="swatches"></div></div>
       </div>
       <div class="card">
-        <div class="row between"><h3>Bewegungsmuster</h3><button class="btn small ghost" id="ed-clear">Leeren</button></div>
-        <p class="small muted">Die Zelle führt die Schritte der Reihe nach aus und fängt dann wieder von vorn an. Jeder Schritt dreht sie zuerst (relativ zu ihrer Blickrichtung, siehe Pfeil) und bewegt sie dann ein Feld weiter. Tochterzellen übernehmen Richtung und Takt – so zieht die ganze Kolonie im Muster.</p>
-        <canvas id="ed-preview" class="preview-wide"></canvas>
-        <div id="ed-program" class="program"></div>
-        <div id="ed-slot-bar" class="slot-bar" hidden></div>
-        <p class="small muted center" id="ed-slot-hint">Tippe auf einen Schritt im Muster, um ihn zu ändern oder zu entfernen.</p>
-        <div id="ed-steps" class="steps"></div>
-        <h3 class="mt">Vorlagen</h3>
-        <div id="ed-presets" class="presets"></div>
+        <h3>Bewegung</h3>
+        <p class="small muted">Wähle, wie sich deine Zellen bewegen. Tochterzellen übernehmen die Bewegung – so zieht die ganze Kolonie im Muster.</p>
+        <div id="ed-moves" class="moves"></div>
+        <div id="ed-move-opts" class="move-opts"></div>
+        <p id="ed-move-desc" class="small move-desc"></p>
+        <div class="previews">
+          <figure><canvas id="ed-preview" class="preview-cell"></canvas><figcaption>Eine Zelle</figcaption></figure>
+          <figure><canvas id="ed-colony" class="preview-colony"></canvas><figcaption id="ed-colony-label">Die Kolonie</figcaption></figure>
+        </div>
+        <p class="small muted center">Rechts wächst dein Bakterium allein auf einer kleinen Platte – mit allen Eigenschaften, die du einstellst.</p>
       </div>
       <div class="card">
         <h3>Abwägungen <span class="muted small">(kostenlos)</span></h3>
@@ -182,8 +183,8 @@
         <p>Jeder farbige Pixel ist eine Bakterienzelle. Zellen fressen den Nährboden unter sich (helles Gelb = viel Nahrung, dunkel = leergefressen), bewegen sich nach ihrem Muster, teilen sich bei genug Energie und sterben an Hunger oder Altersschwäche. Läuft eine Zelle in einen Gegner, kommt es zum Kampf: <b>Angriff</b> gegen <b>Abwehr</b> plus etwas Zufall.</p>
         <h3>Spezialfähigkeiten erkennen</h3>
         <p><b>Toxine</b> erscheinen als giftgrüne Wolke um die Kolonie. <b>Sporen</b> sind helle, fast weiße Punkte. <b>Biofilm</b> ist eine dunkle, gemusterte Matte aus stillstehenden Zellen. <b>Chemotaxis</b>-Kolonien wandern auffällig in Richtung der hellen, nahrhaften Stellen.</p>
-        <h3>Bewegungsmuster</h3>
-        <p>Das Muster ist eine kurze Schrittfolge, die sich endlos wiederholt. „vor“ geht geradeaus, „halbrechts“/„halblinks“ drehen um 45°, „rechts“/„links“ um 90°, „umkehren“ um 180°. Später kannst du Schritte wiederholen (×2 bis ×4) und mit „Seitenwechsel“ rechts und links tauschen – so entstehen Schlangenlinien und Achten. Die Vorschau im Editor zeigt, welcher Schritt gerade ausgeführt wird.</p>
+        <h3>Bewegung</h3>
+        <p>Du wählst eine Bewegungsart – Geradeaus, Kreisen, Ecken, Welle oder Treppe – und stellst Größe und Richtung ein. Weitere Arten (Sitzen, Pendeln, Taumeln, Schlängeln, Acht) und größere Muster schaltest du in der Karriere frei. Im Editor siehst du links, wie eine einzelne Zelle läuft, und rechts, wie sich die ganze Kolonie auf einer Platte ausbreitet.</p>
         <h3>Spielende</h3>
         <p>Eine Runde dauert höchstens 48 Stunden Brutzeit (die Uhr läuft oben mit). Gewonnen hat, wer als einzige Kultur überlebt, lange Zeit fast alle Zellen stellt – oder bei Ablauf der Zeit die meisten Zellen hat.</p>
         <h3>Auf dem iPhone installieren</h3>
