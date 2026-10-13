@@ -497,3 +497,24 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 
 .star-col { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 80px; }
 .star-col small { font-size: 11px; color: var(--muted); }
+
+/* ---------- Stoffwechsel, Teilung, Energiebilanz ---------- */
+.free-seg { margin-top: 8px; }
+.free-seg button { font-size: 12px; padding: 7px 2px; white-space: normal; line-height: 1.15; }
+.free-effect { color: #c9d1db; margin-top: 6px; }
+.energy-card { display: flex; flex-direction: column; gap: 8px; }
+.ebar-row { display: grid; grid-template-columns: 74px 1fr 48px; align-items: center; gap: 8px; }
+.ebar-label { font-size: 13px; color: var(--muted); }
+.ebar { height: 14px; background: var(--card2); border-radius: 7px; overflow: hidden; display: flex; }
+.ebar i, .e-legend i { display: block; height: 100%; }
+.e-basal { background: #ff9f43; }
+.e-move { background: #3fa9f5; }
+.e-food { background: #5ee06a; }
+.e-photo { background: #ffd23f; }
+.e-num { text-align: right; font-variant-numeric: tabular-nums; font-size: 14px; }
+.e-num.bad { color: #ff9f43; }
+.e-num.good { color: var(--good); }
+.e-legend { display: flex; flex-wrap: wrap; gap: 4px 12px; color: var(--muted); }
+.e-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.e-legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.e-facts { display: flex; flex-direction: column; gap: 3px; }

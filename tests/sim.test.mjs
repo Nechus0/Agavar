@@ -191,3 +191,19 @@ test('Sterne, Bonuspunkt, Auswertung und Erfolge', () => {
   const ctx = { sim, mode: 'free', level: 0, mask: 0, genome: strong, opponents: 1, globalLimits: getLimits([]), atlasCount: 0, atlasTotal: 18 };
   for (const a of ACHIEVEMENTS) assert.equal(typeof a.check(ctx), 'boolean', a.key);
 });
+
+import { energyProfile } from '../js/sim.js';
+
+test('Energiebilanz: Warten spart Bewegungsenergie, sparsamer Stoffwechsel verbraucht weniger', () => {
+  const base = { ...defaultGenome(), speed: 3, efficiency: 2 };
+  const moving = energyProfile({ ...base, program: ['F'] });
+  const sitting = energyProfile({ ...base, program: ['F', 'P', 'P', 'P'] });
+  assert.ok(sitting.move < moving.move);
+  assert.equal(sitting.moveFrac, 0.25);
+  const frugal = energyProfile({ ...base, metabolism: 0 });
+  const greedy = energyProfile({ ...base, metabolism: 4 });
+  assert.ok(frugal.basal < greedy.basal && frugal.intake < greedy.intake);
+  // sparsam nutzt Nahrung im Verhältnis zum Grundumsatz effizienter
+  assert.ok(frugal.intake / frugal.basal > greedy.intake / greedy.basal);
+  assert.ok(Number.isFinite(moving.roundsToDivide) && moving.roundsWithoutFood > 0);
+});

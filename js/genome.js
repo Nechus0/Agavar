@@ -37,10 +37,12 @@ export const COSTED = [
 
 // Kostenlose Abwägungen: beide Enden haben Vor- und Nachteile.
 export const FREE = [
+  { key: 'metabolism', label: 'Stoffwechsel', max: 4, low: 'sparsam', high: 'gefräßig',
+    options: ['sehr sparsam', 'sparsam', 'mittel', 'hungrig', 'gefräßig'],
+    hint: 'Sparsam: wenig Grundumsatz, nutzt Nahrung effizient, wächst aber langsamer. Gefräßig: frisst schnell, verbraucht aber viel.' },
   { key: 'division', label: 'Teilung', max: 4, low: 'sehr früh', high: 'sehr spät',
-    hint: 'Früh: viele, aber schwache Tochterzellen. Spät: wenige, robuste.' },
-  { key: 'metabolism', label: 'Stoffwechsel', max: 4, low: 'genügsam', high: 'gefräßig',
-    hint: 'Gefräßig: frisst schneller, verbraucht aber auch mehr Energie.' },
+    options: ['sehr früh', 'früh', 'mittel', 'spät', 'sehr spät'],
+    hint: 'Früh: viele, aber schwache Tochterzellen mit wenig Energie. Spät: wenige, robuste Zellen mit mehr Reserven.' },
 ];
 
 export const SPECIALS = {

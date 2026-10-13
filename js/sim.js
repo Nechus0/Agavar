@@ -23,11 +23,14 @@ const T = {
   moveChance: [0.25, 0.4, 0.55, 0.75, 0.95],
   maxAge: [50, 80, 115, 155, 200],
   efficiency: [0.5, 0.64, 0.78, 0.92, 1.06],
-  uptake: [1.6, 2.5, 3.4, 4.3, 5.2],
-  basal: [0.25, 0.34, 0.43, 0.52, 0.61],
+  // Stoffwechsel: sparsam = weniger Verbrauch und effizienter, gefräßig = frisst schneller
+  uptake: [2.0, 2.8, 3.6, 4.4, 5.2],
+  basal: [0.22, 0.32, 0.43, 0.55, 0.68],
   divideAt: [26, 38, 52, 66, 80],
 };
 const MOVE_COST = 0.3;
+const PHOTO_GAIN = 0.45;
+export const ROUNDS_PER_HOUR = 4000 / 48;
 
 // Muster in eine flache Aktionsliste übersetzen: "F3" -> F, F, F
 const STEP_CODE = { F: 0, R: 1, L: 2, B: 3, P: 4, Z: 5, D: 6, S: 7, M: 8 };
@@ -60,6 +63,26 @@ function phenotype(g) {
     predator: sp.has('predator'),
     biofilm: sp.has('biofilm'),
     toxin: sp.has('toxin'),
+  };
+}
+
+// Energiebilanz einer Zelle pro Runde (für die Anzeige im Editor).
+// Bewegungsanteil = Anteil der Musterschritte, bei denen sich die Zelle bewegt (Warten kostet nichts).
+export function energyProfile(g) {
+  const ph = phenotype(g);
+  const moveFrac = ph.program.filter((c) => c !== 4).length / ph.program.length;
+  const basal = ph.basal;
+  const move = ph.moveChance * moveFrac * MOVE_COST;
+  const photo = ph.photo ? PHOTO_GAIN : 0;
+  const intake = ph.uptake * ph.efficiency + photo;
+  const birth = (ph.divideAt - 2) / 2; // Startenergie einer Tochterzelle
+  const cost = basal + move;
+  return {
+    basal, move, cost, photo, intake, moveFrac, moveChance: ph.moveChance, divideAt: ph.divideAt, birth,
+    net: intake - cost,
+    roundsToDivide: intake - cost > 0 ? (ph.divideAt - birth) / (intake - cost) : Infinity,
+    roundsWithoutFood: cost - photo > 0 ? birth / (cost - photo) : Infinity,
+    maxAge: ph.maxAge,
   };
 }
 
@@ -302,7 +325,7 @@ export class Simulation {
       const take = Math.min(nutrient[i], ph.uptake);
       nutrient[i] -= take;
       energy[i] += take * ph.efficiency;
-      if (ph.photo) energy[i] += 0.45; // Energie aus Licht
+      if (ph.photo) energy[i] += PHOTO_GAIN; // Energie aus Licht
       if (energy[i] > MAX_ENERGY) energy[i] = MAX_ENERGY;
 
       if (this.age[i] > this.maxAge[i]) {

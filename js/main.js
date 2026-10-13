@@ -3,7 +3,7 @@ import {
   COSTED, FREE, SPECIALS, SPECIAL_KEYS, PALETTE,
   MIN_BUDGET, MAX_BUDGET, defaultGenome, cost, normalize, randomGenome, specialsOf,
 } from './genome.js';
-import { Simulation, DISTRIBUTIONS, MAX_TICKS } from './sim.js';
+import { Simulation, DISTRIBUTIONS, MAX_TICKS, energyProfile, ROUNDS_PER_HOUR } from './sim.js';
 import { PlateRenderer, drawHistory, PathAnimator } from './render.js';
 import { makeRng, randomSeed } from './rng.js';
 import { randomName } from './names.js';
@@ -449,6 +449,7 @@ function renderMove() {
   }
   fill($('#ed-move-opts'), ...opts);
   fill($('#ed-move-desc'), el('b', {}, `${m.name}: `), m.desc);
+  renderEnergy(energyProfile(normalize(ed)));
   animator.setProgram(ed.program, ed.color);
 }
 
@@ -461,15 +462,19 @@ function renderEditor() {
   })));
 
   // Kostenlose Abwägungen
-  fill($('#ed-free'), ...FREE.map((t) => {
-    const input = el('input', { type: 'range', min: 0, max: t.max, step: 1, value: ed[t.key] });
-    input.addEventListener('input', () => { ed[t.key] = Number(input.value); colony.restart(); });
-    return el('div', { class: 'trait' },
-      el('div', { class: 'trait-head' }, el('span', { class: 'trait-name' }, icon(TRAIT_ICONS[t.key], 'ti'), el('b', {}, t.label), infoBtn())),
-      el('div', { class: 'hint', hidden: true }, t.hint),
-      input,
-      el('div', { class: 'range-labels' }, el('span', {}, t.low), el('span', {}, t.high)));
-  }));
+  const ep = energyProfile(normalize(ed));
+  const effect = {
+    metabolism: `Grundumsatz ${perHour(ep.basal)}/h · frisst bis ${perHour(ep.intake - ep.photo)}/h`,
+    division: `Teilt sich bei ${ep.divideAt} Energie · Tochter startet mit ${Math.round(ep.birth)}`,
+  };
+  fill($('#ed-free'), ...FREE.map((t) => el('div', { class: 'trait' },
+    el('div', { class: 'trait-head' }, el('span', { class: 'trait-name' }, icon(TRAIT_ICONS[t.key], 'ti'), el('b', {}, t.label), infoBtn())),
+    el('div', { class: 'hint', hidden: true }, t.hint),
+    el('div', { class: 'seg free-seg' }, t.options.map((label, k) => el('button', {
+      class: ed[t.key] === k ? 'on' : '', onclick: () => { ed[t.key] = k; renderEditor(); },
+    }, label))),
+    el('div', { class: 'free-effect small' }, effect[t.key]))));
+  renderEnergy(ep);
 
   // Eigenschaften mit Punktekosten
   const budget = edCtx.budget;
@@ -542,6 +547,43 @@ $('#ed-save').addEventListener('click', () => {
   careerId = saved.id;
   go(edCtx.returnTo === 'home' || edCtx.returnTo === 'careers' ? 'career' : edCtx.returnTo);
 });
+
+// Energiebilanz im Editor: Verbrauch (Grundumsatz + Bewegung) gegen Aufnahme bei voller Nahrung
+const perHour = (x) => Math.round(x * ROUNDS_PER_HOUR);
+function fmtDuration(rounds) {
+  if (!Number.isFinite(rounds)) return 'unbegrenzt';
+  const min = (rounds * 60) / ROUNDS_PER_HOUR;
+  return min < 60 ? `${Math.max(1, Math.round(min))} min` : `${(min / 60).toFixed(1).replace('.', ',')} h`;
+}
+function renderEnergy(ep) {
+  const scale = Math.max(ep.intake, ep.cost) || 1;
+  const pct = (x) => `${Math.max(0, (x / scale) * 100)}%`;
+  const facts = [
+    ['🍽', 'Ohne Nahrung hält eine Zelle', fmtDuration(Math.min(ep.roundsWithoutFood, ep.maxAge)), ep.roundsWithoutFood > ep.maxAge ? 'durch (bis zum Höchstalter)' : 'durch'],
+    ['➗', 'Bei voller Nahrung Teilung etwa alle', fmtDuration(ep.roundsToDivide), ''],
+    ['⌛', 'Höchstalter etwa', fmtDuration(ep.maxAge), ''],
+  ];
+  fill($('#ed-energy'),
+    el('h3', {}, '⚡ Energiebilanz ', el('span', { class: 'muted small' }, '· pro Stunde Brutzeit')),
+    el('div', { class: 'ebar-row' }, el('span', { class: 'ebar-label' }, 'Verbrauch'),
+      el('div', { class: 'ebar' },
+        el('i', { class: 'e-basal', style: `width:${pct(ep.basal)}` }),
+        el('i', { class: 'e-move', style: `width:${pct(ep.move)}` })),
+      el('b', { class: 'e-num bad' }, `−${perHour(ep.cost)}`)),
+    el('div', { class: 'ebar-row' }, el('span', { class: 'ebar-label' }, 'Aufnahme'),
+      el('div', { class: 'ebar' },
+        el('i', { class: 'e-food', style: `width:${pct(ep.intake - ep.photo)}` }),
+        ep.photo ? el('i', { class: 'e-photo', style: `width:${pct(ep.photo)}` }) : null),
+      el('b', { class: 'e-num good' }, `+${perHour(ep.intake)}`)),
+    el('div', { class: 'e-legend small' },
+      el('span', {}, el('i', { class: 'e-basal' }), `Grundumsatz ${perHour(ep.basal)}`),
+      el('span', {}, el('i', { class: 'e-move' }), `Bewegung ${perHour(ep.move)}`),
+      el('span', {}, el('i', { class: 'e-food' }), 'Nahrung (wenn vorhanden)'),
+      ep.photo ? el('span', {}, el('i', { class: 'e-photo' }), `Licht ${perHour(ep.photo)}`) : null),
+    el('p', { class: 'small muted' }, `🚶 Bewegung = Tempo (${Math.round(ep.moveChance * 100)} % pro Runde) × Muster (bewegt sich bei ${Math.round(ep.moveFrac * 100)} % der Schritte). Warten kostet keine Bewegungsenergie.`),
+    el('div', { class: 'e-facts' }, facts.map(([ic, a, v, b]) => el('div', { class: 'small' }, `${ic} ${a} `, el('b', {}, v), b ? ` ${b}` : ''))),
+    ed.special === 'biofilm' ? el('p', { class: 'small muted' }, '🟦 Biofilm: Im Stillstand sinkt der Grundumsatz um 30 %.') : null);
+}
 
 // ---------- Freies Spiel ----------
 const freeLimits = () => getLimits(store.globalWon());
