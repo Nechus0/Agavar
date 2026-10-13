@@ -29,6 +29,7 @@
       <div class="menu">
         <button class="btn primary big" id="home-career">Karriere</button>
         <button class="btn big" data-go="setup">Freies Spiel</button>
+        <button class="btn big" data-go="atlas">Atlas &amp; Erfolge</button>
         <button class="btn ghost" data-go="help">Anleitung</button>
       </div>
     </section>
@@ -62,6 +63,10 @@
         <div id="ld-opponents" class="opp-list"></div>
       </div>
       <p id="ld-plate" class="small muted"></p>
+      <div class="card">
+        <h3>Sterne</h3>
+        <div id="ld-stars" class="star-goals"></div>
+      </div>
       <div class="card reward-card" id="ld-rewards-card">
         <h3>Belohnung beim ersten Sieg</h3>
         <div id="ld-rewards" class="rewards"></div>
@@ -133,7 +138,7 @@
         <div class="clock-elapsed small muted" id="clock-elapsed">0 / 48 h</div>
       </div>
       <div class="shares" id="sim-shares"></div>
-      <div class="plate-wrap"><canvas id="plate" class="plate"></canvas></div>
+      <div class="plate-wrap"><canvas id="plate" class="plate"></canvas><div id="sim-banner" class="banner"></div></div>
       <div id="sim-legend" class="legend"></div>
       <div class="controls">
         <button class="btn ctrl" id="sim-pause">⏸</button>
@@ -153,6 +158,9 @@
         <h1 id="rs-title">Gewonnen!</h1>
         <p id="rs-reason" class="muted"></p>
       </div>
+      <div id="rs-stars" class="stars-row" hidden></div>
+      <div class="card insights" id="rs-analysis"></div>
+      <div class="card reward-card" id="rs-achievements" hidden></div>
       <div class="result-plate"><canvas id="rs-plate" class="plate small-plate"></canvas></div>
       <div class="card">
         <h3>Verlauf der Populationen</h3>
@@ -169,6 +177,21 @@
       </div>
     </section>
 
+    <!-- Atlas & Erfolge -->
+    <section class="screen" id="atlas" hidden>
+      <header class="bar"><button class="back" data-go="home">‹ Zurück</button><h2>Atlas &amp; Erfolge</h2><span></span></header>
+      <div class="card">
+        <h3>Bakterien-Atlas</h3>
+        <p class="small muted" id="atlas-count"></p>
+        <div id="atlas-list" class="atlas-list"></div>
+      </div>
+      <div class="card">
+        <h3>Erfolge</h3>
+        <p class="small muted" id="ach-count"></p>
+        <div id="ach-list" class="ach-list"></div>
+      </div>
+    </section>
+
     <!-- Anleitung -->
     <section class="screen" id="help" hidden>
       <header class="bar"><button class="back" data-go="home">‹ Zurück</button><h2>Anleitung</h2><span></span></header>
@@ -177,6 +200,8 @@
         <p>Du entwirfst ein Bakterium und setzt es mit Gegnern auf eine Agarplatte. Danach läuft alles von selbst – du kannst nur noch zuschauen (und vorspulen). Wer am Ende übrig bleibt, gewinnt.</p>
         <h3>Karriere</h3>
         <p>Jedes deiner Bakterien hat eine eigene Karriere. Es startet mit nur 6 Ausbaupunkten und den einfachsten Bewegungsschritten. In jedem Level wartet ein besonderer Gegner – ein echter Keim mit einer typischen Eigenschaft. Besiegst du ihn, bekommt dein Bakterium 2 neue Ausbaupunkte und darf diese Eigenschaft ab jetzt selbst nutzen (z. B. Sporen von Bacillus subtilis oder Toxine von Staphylococcus aureus). Die Punkte kannst du jederzeit neu verteilen.</p>
+        <h3>Sterne, Atlas und Erfolge</h3>
+        <p>In jedem Level gibt es drei Sterne: für den Sieg, für einen schnellen Sieg (unter 12 h) und dafür, zeitweise 30 % der Platte zu besiedeln. Alle drei bringen einen Bonuspunkt. Jeder besiegte Keim kommt mit Bild und Fakt in deinen Atlas, und für besondere Leistungen gibt es Erfolge.</p>
         <h3>Freies Spiel</h3>
         <p>Hier stellst du das Punktebudget selbst ein und kannst alle Punkte sofort verteilen. Spezialfähigkeiten und besondere Bewegungsschritte gibt es aber nur, wenn du sie in einer Karriere freigespielt hast.</p>
         <h3>Was passiert auf der Platte?</h3>

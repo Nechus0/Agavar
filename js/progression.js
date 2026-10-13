@@ -37,8 +37,26 @@ export function getLimits(won) {
   return lim;
 }
 
-// Punkte einer Karriere: Startpunkte + Punkte pro gewonnenem Level
-export const careerPoints = (won) => START_POINTS + POINTS_PER_WIN * won.length;
+// Punkte einer Karriere: Startpunkte + Punkte pro gewonnenem Level + 1 Bonuspunkt je Level mit 3 Sternen
+export const careerPoints = (won, stars = {}) =>
+  START_POINTS + POINTS_PER_WIN * won.length + Object.values(stars).filter((m) => (m & 7) === 7).length;
+
+// Sterne eines Levels: 1 = Sieg, 2 = Sieg in unter 12 h, 4 = zeitweise 30 % der Platte besiedelt
+export const STAR_GOALS = [
+  { bit: 1, text: 'Level gewinnen' },
+  { bit: 2, text: 'In unter 12 h Brutzeit gewinnen' },
+  { bit: 4, text: 'Zeitweise 30 % der Platte besiedeln (und gewinnen)' },
+];
+export const FAST_TICKS = 1000; // 12 h von 48 h
+export const BIG_PLATE = 0.3;
+export const starCount = (mask) => ((mask & 1) + ((mask >> 1) & 1) + ((mask >> 2) & 1));
+export function starMask(sim) {
+  if (sim.winner !== 1) return 0;
+  let m = 1;
+  if (sim.tick <= FAST_TICKS) m |= 2;
+  if (sim.players[0].peakPlate >= BIG_PLATE) m |= 4;
+  return m;
+}
 // nächstes Level einer Karriere (Level werden der Reihe nach gespielt)
 export const nextLevel = (won, total) => {
   for (let n = 1; n <= total; n++) if (!won.includes(n)) return n;

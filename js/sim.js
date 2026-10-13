@@ -92,7 +92,14 @@ export class Simulation {
       peak: 0,
       kills: 0,
       extinctAt: -1,
+      // Statistik für die Auswertung nach dem Spiel
+      died: { starve: 0, age: 0, fight: 0, toxin: 0 },
+      killedBy: new Array(opts.genomes.length + 1).fill(0), // killedBy[id] = von Spieler id getötete Zellen
+      peakShare: 0, // höchster Anteil an allen lebenden Zellen
+      peakPlate: 0, // höchster Anteil an der Plattenfläche
+      lowShareAfterContact: 1, // niedrigster Anteil nach dem ersten Kontakt (für Comebacks)
     }));
+    this.contactTick = -1; // erster Kampf zwischen zwei Kulturen
     this.tick = 0;
     this.done = false;
     this.winner = 0; // 0 = unentschieden / niemand
@@ -193,7 +200,13 @@ export class Simulation {
     this.stamp[i] = this.tick + 1;
   }
 
-  _kill(i) {
+  // cause: 'starve' | 'age' | 'fight' | 'toxin'; killer = Spieler-id bei Kampf/Toxin
+  _kill(i, cause = 'starve', killer = 0) {
+    const victim = this.players[this.owner[i] - 1];
+    if (victim) {
+      victim.died[cause]++;
+      if (killer) victim.killedBy[killer]++;
+    }
     this.owner[i] = 0;
     this.spore[i] = 0;
     // Abgestorbene Zellen geben etwas Nahrung an den Boden zurück.
@@ -273,7 +286,7 @@ export class Simulation {
       // Sporen ruhen, bis wieder Nahrung da ist.
       if (this.spore[i]) {
         this.spore[i]++;
-        if (this.spore[i] > SPORE_LIFE) { this._kill(i); continue; }
+        if (this.spore[i] > SPORE_LIFE) { this._kill(i, 'starve'); continue; }
         if (nutrient[i] >= 6) { this.spore[i] = 0; energy[i] = 15; this.age[i] = 0; }
         continue;
       }
@@ -289,9 +302,9 @@ export class Simulation {
       if (ph.photo) energy[i] += 0.3; // Energie aus Licht
       if (energy[i] > MAX_ENERGY) energy[i] = MAX_ENERGY;
 
-      if (this.age[i] > this.maxAge[i]) { this._kill(i); continue; }
+      if (this.age[i] > this.maxAge[i]) { this._kill(i, 'age'); continue; }
       if (energy[i] <= 0) {
-        if (ph.spores) { this.spore[i] = 1; energy[i] = 0; } else this._kill(i);
+        if (ph.spores) { this.spore[i] = 1; energy[i] = 0; } else this._kill(i, 'starve');
         continue;
       }
 
@@ -302,7 +315,8 @@ export class Simulation {
         if (j >= 0 && owner[j] && owner[j] !== o && !this.spore[j]) {
           energy[j] -= 7;
           energy[i] -= 0.3;
-          if (energy[j] <= 0) { this._kill(j); p.kills++; }
+          if (this.contactTick < 0) this.contactTick = tick;
+          if (energy[j] <= 0) { this._kill(j, 'toxin', o); p.kills++; }
         }
       }
 
@@ -346,13 +360,14 @@ export class Simulation {
             cur = j;
           } else if (owner[j] !== o) {
             // Kampf
+            if (this.contactTick < 0) this.contactTick = tick;
             const atk = ph.attack + rng() * 3;
             const def = this._defense(j) + rng() * 3;
             if (atk > def + 0.5 && this.shield[j]) {
               this.shield[j] = 0; // Kapsel fängt den Angriff ab
               energy[i] -= 3;
             } else if (atk > def + 0.5) {
-              this._kill(j);
+              this._kill(j, 'fight', o);
               p.kills++;
               energy[i] -= 1.5;
               if (ph.predator) { energy[i] = Math.min(MAX_ENERGY, energy[i] + 25); bite[j] = 12; }
@@ -366,7 +381,7 @@ export class Simulation {
       }
       if (cur === i) { if (this.still[i] < 255) this.still[i]++; }
       if (energy[cur] <= 0) {
-        if (ph.spores) { this.spore[cur] = 1; energy[cur] = 0; } else this._kill(cur);
+        if (ph.spores) { this.spore[cur] = 1; energy[cur] = 0; } else this._kill(cur, 'starve');
         continue;
       }
 
@@ -397,9 +412,15 @@ export class Simulation {
     for (const p of this.players) p.count = 0;
     const owner = this.owner, size = owner.length;
     for (let i = 0; i < size; i++) if (owner[i]) this.players[owner[i] - 1].count++;
+    const total = this.players.reduce((a, p) => a + p.count, 0) || 1;
     for (const p of this.players) {
       if (p.count > p.peak) p.peak = p.count;
       if (p.count === 0 && p.extinctAt < 0) p.extinctAt = this.tick;
+      const share = p.count / total;
+      p.share = share;
+      if (share > p.peakShare) p.peakShare = share;
+      if (p.count / this.plateCells > p.peakPlate) p.peakPlate = p.count / this.plateCells;
+      if (this.contactTick >= 0 && share < p.lowShareAfterContact) p.lowShareAfterContact = share;
     }
   }
 

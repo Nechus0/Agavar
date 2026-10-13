@@ -98,6 +98,23 @@ Alle Zellen werden in zufälliger Reihenfolge abgearbeitet:
    - Ein Gegner bedeutet Kampf: Angriff + Zufall gegen Abwehr + Energiebonus + Zufall.
 6. **Teilen**: Die Tochterzelle übernimmt Richtung und Musterfortschritt.
 
+## Motivation: Sterne, Auswertung, Atlas, Erfolge, Ereignisse
+- **Drei Sterne pro Level**:
+  - ★ Sieg
+  - ★ Sieg in unter 12 h
+  - ★ zeitweise 30 % der Platte besiedelt
+
+  Sterne aus verschiedenen Versuchen zählen zusammen. Alle drei bringen +1 Ausbaupunkt.
+- **Auswertung**: Nach jedem Spiel gibt es 1–4 Punkte, z. B. „Knapp! Zeitweise 41 % aller Zellen“, „Die Toxine von *S. aureus* haben 812 deiner Zellen getötet“ oder Tipps für fehlende Sterne. Grundlage ist eine Statistik der Todesursachen (verhungert, Alter, Kampf, Toxin) und wer wen getötet hat.
+- **Bakterien-Atlas**: Jeder besiegte Keim erscheint mit Bild, Fakt und Fähigkeit. Unentdeckte Keime zeigen nur ihre Silhouette.
+- **Erfolge** (12 Stück): z. B. Blitzsieg, Kolonie-Riese, Comeback, Stubenhocker, Purist, Meister der Agarplatte.
+- **Live-Ereignisse**: Banner über der Platte bei:
+  - erstem Kontakt
+  - Führungswechsel
+  - ausgerotteter Kultur
+  - „Noch 6 Stunden“
+  - knappem Rennen kurz vor Schluss: Dann wird automatisch auf Zeitlupe (1×) gebremst.
+
 ## Spielende
 - Nur noch eine Kultur lebt, **oder**
 - eine Kultur stellt lange Zeit mindestens 97 % aller Zellen, **oder**

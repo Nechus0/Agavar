@@ -172,3 +172,22 @@ test('Neue Spezialfähigkeiten: Kapsel schützt, Räuber frisst, Chemotaxis ist 
   const photo = new Simulation(opts([{ ...defaultGenome(), special: 'photo' }], 3));
   assert.ok(photo.players[0].ph.photo);
 });
+
+import { starMask, starCount } from '../js/progression.js';
+import { analyze, ACHIEVEMENTS } from '../js/insights.js';
+
+test('Sterne, Bonuspunkt, Auswertung und Erfolge', () => {
+  assert.equal(careerPoints([1, 2], { 1: 7, 2: 3 }), START_POINTS + 4 + 1);
+  assert.equal(starCount(5), 2);
+  const strong = { ...defaultGenome(), name: 'Stark', speed: 3, efficiency: 4, attack: 5, defense: 5, lifespan: 3 };
+  const weak = { ...defaultGenome(), name: 'Schwach', program: ['P'] };
+  const sim = new Simulation(opts([strong, weak], 11)).run();
+  const p = sim.players[0];
+  assert.ok(p.peakShare > 0 && p.peakShare <= 1);
+  assert.ok(p.died.starve + p.died.age + p.died.fight + p.died.toxin > 0);
+  if (sim.winner === 1) assert.ok(starMask(sim) & 1); else assert.equal(starMask(sim), 0);
+  const tips = analyze(sim, [strong, weak], starMask(sim));
+  assert.ok(tips.length >= 1 && tips.every((t) => typeof t.text === 'string' && t.text.length > 10));
+  const ctx = { sim, mode: 'free', level: 0, mask: 0, genome: strong, opponents: 1, globalLimits: getLimits([]), atlasCount: 0, atlasTotal: 18 };
+  for (const a of ACHIEVEMENTS) assert.equal(typeof a.check(ctx), 'boolean', a.key);
+});

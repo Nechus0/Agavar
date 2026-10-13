@@ -11,7 +11,9 @@ import { LEVELS, levelOpponents } from './levels.js';
 import { GERMS, germSvg } from './germs.js';
 import {
   getLimits, unlockLevelOf, rewardsOf, problems, careerPoints, nextLevel, START_POINTS, POINTS_PER_WIN,
+  STAR_GOALS, starMask, starCount,
 } from './progression.js';
+import { analyze, ACHIEVEMENTS } from './insights.js';
 import { SPECIAL_ICONS, SPECIAL_COLORS, TRAIT_ICONS, LOCK_ICON, UNLOCK_ICON } from './icons.js';
 import { MOVES, MOVE_BY_KEY, actionsOf, compile, moveFromProgram, describeMove, pathSvg } from './movement.js';
 import * as store from './storage.js';
@@ -144,8 +146,10 @@ $('#home-career').addEventListener('click', () => {
 });
 
 // ---------- Karriere-Übersicht ----------
+const ptsOf = (b) => careerPoints(b.career.won, b.career.stars);
+const starsText = (mask) => '★'.repeat(starCount(mask)) + '☆'.repeat(3 - starCount(mask));
 const careerCtx = (b, returnTo = 'career') => ({
-  mode: 'career', id: b.id, budget: careerPoints(b.career.won), limits: getLimits(b.career.won),
+  mode: 'career', id: b.id, budget: ptsOf(b), limits: getLimits(b.career.won),
   label: 'Ausbaupunkte', returnTo,
 });
 const careerNewCtx = (returnTo = 'careers') => ({
@@ -160,7 +164,7 @@ function levelBadge(b) {
 onEnter.careers = () => {
   const list = store.getBacteria();
   fill($('#career-list'), ...(list.length ? list.map((b) => {
-    const pts = careerPoints(b.career.won);
+    const pts = ptsOf(b);
     const free = pts - cost(b);
     return el('button', { class: 'lab-item career-item', onclick: () => openCareer(b.id) },
       el('div', { class: 'title' },
@@ -187,7 +191,7 @@ onEnter.career = () => {
   const b = curCareer();
   if (!b) return go('careers');
   const won = b.career.won;
-  const pts = careerPoints(won);
+  const pts = ptsOf(b);
   const free = pts - cost(b);
   const lim = getLimits(won);
   const probs = problems(b, lim, pts);
@@ -217,7 +221,8 @@ onEnter.career = () => {
     el('span', { class: 'lv-main' },
       el('b', {}, `${n}. ${lv.name}`),
       el('span', { class: 'small muted' }, GERMS[boss.germ].name)),
-    el('span', { class: 'lv-rewards' }, rewardsOf(n).map((r) => rewardIcon(r))));
+    isWon ? el('span', { class: 'lv-stars' }, starsText(b.career.stars[n] || 0))
+      : el('span', { class: 'lv-rewards' }, rewardsOf(n).map((r) => rewardIcon(r))));
   }));
 };
 
@@ -280,9 +285,13 @@ onEnter['level-detail'] = () => {
   const pl = lv.plate;
   $('#ld-plate').textContent = `Platte: ${LABELS.size[pl.size]} · Nährboden: ${LABELS.distribution[pl.distribution]}, ${LABELS.amount[pl.amount]}, Nachwachsen ${LABELS.regen[pl.regen].toLowerCase()}`;
   $('#ld-rewards-card').hidden = won.includes(n);
+  const mask = b.career.stars[n] || 0;
+  fill($('#ld-stars'), ...STAR_GOALS.map((g) => el('div', { class: `star-goal ${mask & g.bit ? 'done' : ''}` },
+    el('span', { class: 'star' }, mask & g.bit ? '★' : '☆'), g.text)),
+    el('p', { class: 'small muted' }, mask === 7 ? 'Alle Sterne geholt – der Bonuspunkt gehört dir!' : 'Alle drei Sterne bringen 1 zusätzlichen Ausbaupunkt. Sterne aus verschiedenen Versuchen zählen zusammen.'));
   fill($('#ld-rewards'), ...rewardRows(n, true));
 
-  const pts = careerPoints(won);
+  const pts = ptsOf(b);
   const probs = problems(b, getLimits(won), pts);
   fill($('#ld-me'), 
     el('h3', {}, 'Dein Bakterium'),
@@ -604,7 +613,52 @@ $('#su-start').addEventListener('click', () => {
 
 // ---------- Simulation ----------
 const TICKS_PER_SECOND = 15;
-const run = { cfg: null, sim: null, r: null, raf: 0, speed: 1, paused: false, last: 0, acc: 0, frame: 0, endTimer: 0 };
+const run = { cfg: null, sim: null, r: null, raf: 0, speed: 1, paused: false, last: 0, acc: 0, frame: 0, endTimer: 0, ev: null };
+
+// Live-Ereignisse während der Simulation (Banner über der Platte)
+const banners = { queue: [], timer: 0 };
+function banner(text, kind = '') {
+  banners.queue.push({ text, kind });
+  if (!banners.timer) nextBanner();
+}
+function nextBanner() {
+  const b = $('#sim-banner');
+  const item = banners.queue.shift();
+  if (!item) { b.classList.remove('show'); banners.timer = 0; return; }
+  b.textContent = item.text;
+  b.className = `banner show ${item.kind}`;
+  banners.timer = setTimeout(() => { b.classList.remove('show'); banners.timer = setTimeout(nextBanner, 250); }, 1900);
+}
+function resetBanners() {
+  clearTimeout(banners.timer);
+  banners.queue = []; banners.timer = 0;
+  $('#sim-banner').className = 'banner';
+}
+
+function checkEvents() {
+  const sim = run.sim, ev = run.ev;
+  const names = run.genomes.map((g, i) => (i === 0 ? 'Deine Kultur' : g.name));
+  if (!ev.contact && sim.contactTick >= 0) { ev.contact = true; banner('⚔️ Erster Kontakt – der Kampf beginnt!'); }
+  sim.players.forEach((p, i) => {
+    if (p.count === 0 && !ev.dead.has(i)) {
+      ev.dead.add(i);
+      if (!sim.done || sim.players.length > 2) banner(i === 0 ? '☠️ Deine Kultur ist ausgestorben!' : `☠️ ${names[i]} ausgerottet!`, i === 0 ? 'bad' : 'good');
+    }
+  });
+  const alive = sim.players.filter((p) => p.count > 0).sort((a, b) => b.count - a.count);
+  if (alive.length >= 2 && sim.tick > 150) {
+    const lead = alive[0];
+    if (ev.leader !== lead.id && lead.share - alive[1].share > 0.06 && sim.tick - ev.leaderTick > 150) {
+      if (ev.leader) banner(lead.id === 1 ? '🔄 Wendepunkt! Du übernimmst die Führung!' : `🔄 Wendepunkt! ${names[lead.id - 1]} übernimmt die Führung`, lead.id === 1 ? 'good' : '');
+      ev.leader = lead.id; ev.leaderTick = sim.tick;
+    }
+    // Knappes Rennen kurz vor Schluss: Zeitlupe
+    if (!ev.slow && sim.tick >= MAX_TICKS - 500 && alive[0].share - alive[1].share < 0.12) {
+      ev.slow = true; banner('🎬 Knappes Rennen – Zeitlupe!');
+    }
+  }
+  if (!ev.sixH && sim.tick >= MAX_TICKS - 500) { ev.sixH = true; banner('⏰ Noch 6 Stunden Brutzeit!'); }
+}
 
 function fixColors(player, opponents) {
   const used = new Set([player.color]);
@@ -629,6 +683,8 @@ function startMatch(cfg) {
   run.paused = false;
   run.acc = 0;
   run.last = 0;
+  run.ev = { contact: false, dead: new Set(), leader: 0, leaderTick: -999, slow: false, sixH: false };
+  resetBanners();
   clearTimeout(run.endTimer);
   $('#sim-pause').textContent = '⏸';
   $('#sim-title').textContent = cfg.mode === 'level' ? `Level ${cfg.level}` : 'Freies Spiel';
@@ -673,6 +729,7 @@ function updateSimUi() {
   $('#clock-left').textContent = fmtHours(BREW_HOURS * (1 - frac));
   $('#clock-elapsed').textContent = `${Math.floor(BREW_HOURS * frac)} / ${BREW_HOURS} h`;
   $('#clock-left').classList.toggle('urgent', frac > 0.85);
+  if (run.ev) checkEvents();
 }
 
 function simFrame(t) {
@@ -681,7 +738,7 @@ function simFrame(t) {
   run.last = t;
   const sim = run.sim;
   if (!run.paused && !sim.done) {
-    run.acc += dt * TICKS_PER_SECOND * run.speed;
+    run.acc += dt * TICKS_PER_SECOND * (run.ev && run.ev.slow ? Math.min(run.speed, 1) : run.speed);
     let n = 0;
     while (run.acc >= 1 && n < 40 && !sim.done) { sim.step1(); run.acc--; n++; }
     if (n >= 40) run.acc = 0;
@@ -726,6 +783,14 @@ function showResult() {
   $('#rs-reason').textContent = `${sim.endReason}${winnerName && !won ? ` Sieger: ${winnerName}.` : ''} (nach ${hours} h Brutzeit)`;
 
   const firstWin = cfg.mode === 'level' && won && store.markWon(cfg.careerId, cfg.level);
+  const mask = cfg.mode === 'level' ? starMask(sim) : 0;
+  const newStars = cfg.mode === 'level' ? store.addStars(cfg.careerId, cfg.level, mask) : 0;
+  const newGerms = cfg.mode === 'level' && won ? store.discover(levelOpponents(LEVELS[cfg.level - 1]).map((o) => o.germ)) : [];
+  const ctx = {
+    sim, mode: cfg.mode, level: cfg.level, mask, genome: run.genomes[0], opponents: cfg.opponents.length,
+    globalLimits: getLimits(store.globalWon()), atlasCount: store.getAtlas().length, atlasTotal: atlasGerms().length,
+  };
+  const newAch = ACHIEVEMENTS.filter((a) => a.check(ctx) && store.grantAchievement(a.key));
 
   go('result');
   const rc = $('#rs-plate');
@@ -747,6 +812,27 @@ function showResult() {
     el('thead', {}, el('tr', {}, el('th', {}, 'Kultur'), el('th', { class: 'num' }, 'Ende'), el('th', { class: 'num' }, 'Max.'), el('th', { class: 'num' }, 'Kills'), el('th', { class: 'num' }, 'Status'))),
     el('tbody', {}, rows)));
 
+  // Sterne
+  const sb = $('#rs-stars');
+  sb.hidden = cfg.mode !== 'level';
+  if (cfg.mode === 'level') {
+    const all = store.getBacterium(cfg.careerId)?.career.stars[cfg.level] || mask;
+    fill(sb, ...STAR_GOALS.map((g) => el('span', {
+      class: `big-star ${mask & g.bit ? 'got' : all & g.bit ? 'old' : ''} ${newStars & g.bit ? 'new' : ''}`, title: g.text,
+    }, mask & g.bit || all & g.bit ? '★' : '☆')),
+    el('div', { class: 'star-legend small muted' }, STAR_GOALS.map((g) => `${(mask | all) & g.bit ? '★' : '☆'} ${g.text}`).join('  ·  ')));
+    if (newStars && (all & 7) === 7) toast('Alle drei Sterne! +1 Ausbaupunkt');
+  }
+  // Analyse
+  fill($('#rs-analysis'), el('h3', {}, won ? 'Auswertung' : 'Woran lag es?'), ...analyze(sim, run.genomes, mask).map((a) =>
+    el('div', { class: `insight ${a.kind}` }, el('span', { class: 'insight-ico' }, a.kind === 'tip' ? '💡' : a.kind === 'good' ? '👍' : '📊'), a.text)));
+  // neue Erfolge & Atlas
+  const ach = $('#rs-achievements');
+  ach.hidden = !newAch.length && !newGerms.length;
+  fill(ach, el('h3', {}, 'Neu freigeschaltet'),
+    ...newAch.map((a) => el('div', { class: 'ach-row got' }, el('span', { class: 'ach-ico' }, a.icon), el('div', {}, el('b', {}, a.name), el('div', { class: 'small muted' }, a.desc)))),
+    newGerms.length ? el('div', { class: 'ach-row got' }, el('span', { class: 'ach-ico' }, '📖'), el('div', {}, el('b', {}, 'Neu im Atlas'), el('div', { class: 'small muted' }, newGerms.map((k) => GERMS[k].name).join(', ')))) : null);
+
   const lvMode = cfg.mode === 'level';
   $('#rs-next').hidden = !(lvMode && won && cfg.level < LEVELS.length);
   $('#rs-upgrade').hidden = !lvMode;
@@ -765,6 +851,36 @@ function showWinModal(level) {
   fill($('#win-rewards'), ...rewardRows(level, true));
   $('#win-modal').hidden = false;
 }
+
+// ---------- Atlas & Erfolge ----------
+// alle Keime in der Reihenfolge ihres ersten Auftretens
+function atlasGerms() {
+  const seen = [];
+  LEVELS.forEach((lv, i) => levelOpponents(lv).forEach((o) => { if (!seen.find((x) => x.germ === o.germ)) seen.push({ germ: o.germ, color: o.color, level: i + 1, boss: o.boss, ability: o.boss ? rewardsOf(i + 1) : [] }); }));
+  return seen;
+}
+
+onEnter.atlas = () => {
+  const found = new Set(store.getAtlas());
+  const list = atlasGerms();
+  $('#atlas-count').textContent = `${list.filter((g) => found.has(g.germ)).length} von ${list.length} Keimen entdeckt`;
+  fill($('#atlas-list'), ...list.map((g) => {
+    const known = found.has(g.germ);
+    const germ = GERMS[g.germ];
+    return el('div', { class: `atlas-card ${known ? '' : 'unknown'}` },
+      germPic(g.germ, known ? g.color : '#3a4554', 'atlas-pic'),
+      el('div', { class: 'atlas-text' },
+        el('b', {}, known ? germ.name : '???'),
+        known ? el('p', { class: 'small' }, germ.fact) : el('p', { class: 'small muted' }, `Besiege Level ${g.level}, um diesen Keim zu entdecken.`),
+        known && g.ability.length ? el('p', { class: 'small atlas-ability' }, 'Schaltet frei: ', g.ability.map((r) => r.text).join(', ')) : null));
+  }));
+  const got = ACHIEVEMENTS.filter((a) => store.hasAchievement(a.key)).length;
+  $('#ach-count').textContent = `${got} von ${ACHIEVEMENTS.length} Erfolgen`;
+  fill($('#ach-list'), ...ACHIEVEMENTS.map((a) => {
+    const has = store.hasAchievement(a.key);
+    return el('div', { class: `ach-row ${has ? 'got' : ''}` }, el('span', { class: 'ach-ico' }, has ? a.icon : '🔒'), el('div', {}, el('b', {}, a.name), el('div', { class: 'small muted' }, a.desc)));
+  }));
+};
 $('#win-ok').addEventListener('click', () => { $('#win-modal').hidden = true; });
 
 $('#rs-back').addEventListener('click', () => go(run.cfg.mode === 'level' ? 'career' : 'setup'));
@@ -773,7 +889,7 @@ $('#rs-rematch').addEventListener('click', () => {
   if (cfg.mode === 'level') {
     const b = store.getBacterium(cfg.careerId);
     if (!b) return go('careers');
-    const probs = problems(b, getLimits(b.career.won), careerPoints(b.career.won));
+    const probs = problems(b, getLimits(b.career.won), ptsOf(b));
     if (probs.length) return toast(probs.join(' · '));
     startMatch({ ...cfg, player: b, seed: randomSeed() });
   } else {
@@ -794,6 +910,8 @@ $('#rs-upgrade').addEventListener('click', () => {
 });
 
 // ---------- Start ----------
+// Atlas nachtragen: Keime aus bereits gewonnenen Leveln gelten als entdeckt
+store.discover(store.globalWon().filter((n) => LEVELS[n - 1]).flatMap((n) => levelOpponents(LEVELS[n - 1]).map((o) => o.germ)));
 go('home');
 
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
