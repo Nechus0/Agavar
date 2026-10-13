@@ -1,12 +1,16 @@
 // Bakterien-"Genom": alle einstellbaren Eigenschaften, Punktekosten und Zufallserzeugung.
 
+// Bewegungsschritte. "turn" = Drehung in 45°-Schritten relativ zur Blickrichtung (+ = rechts).
+// Reihenfolge = Anordnung der Buttons im Editor (2 Reihen à 4).
 export const STEPS = {
-  F: { icon: '⬆', name: 'Geradeaus' },
-  R: { icon: '↗', name: 'Rechts' },
-  L: { icon: '↖', name: 'Links' },
-  B: { icon: '⬇', name: 'Kehrtwende' },
-  P: { icon: '⏸', name: 'Pause' },
-  Z: { icon: '🎲', name: 'Zufall' },
+  L: { icon: '↖', label: 'halblinks', name: 'Halb links (45°)', turn: -1 },
+  F: { icon: '⬆', label: 'vor', name: 'Geradeaus', turn: 0 },
+  R: { icon: '↗', label: 'halbrechts', name: 'Halb rechts (45°)', turn: 1 },
+  P: { icon: '⏸', label: 'warten', name: 'Warten (nicht bewegen)' },
+  S: { icon: '⬅', label: 'links', name: 'Links (90°)', turn: -2 },
+  B: { icon: '⬇', label: 'umkehren', name: 'Umkehren (180°)', turn: 4 },
+  D: { icon: '➡', label: 'rechts', name: 'Rechts (90°)', turn: 2 },
+  Z: { icon: '🎲', label: 'zufall', name: 'Zufällige Richtung' },
 };
 export const STEP_KEYS = Object.keys(STEPS);
 export const MAX_PROGRAM = 6;
@@ -51,7 +55,7 @@ export function defaultGenome() {
     name: 'Neues Bakterium',
     color: PALETTE[0],
     program: ['F', 'F', 'R'],
-    speed: 3, lifespan: 3, efficiency: 3, attack: 3, defense: 3,
+    speed: 2, lifespan: 1, efficiency: 2, attack: 2, defense: 1,
     division: 2, metabolism: 2,
     special: 'none',
   };
@@ -90,18 +94,23 @@ export function normalize(raw) {
 }
 
 // Zufälliges Bakterium, das das Budget möglichst ausschöpft.
-export function randomGenome(rng, budget) {
+// limits (optional): { traitMax, specials, steps, programMax } aus dem Freischalt-System.
+export function randomGenome(rng, budget, limits = null) {
   const g = defaultGenome();
+  const cap = (t) => Math.min(t.max, limits ? limits.traitMax : t.max);
+  const specials = (limits ? [...limits.specials] : SPECIAL_KEYS).filter((k) => k !== 'none');
+  const steps = limits ? [...limits.steps] : STEP_KEYS;
+  const progMax = limits ? limits.programMax : MAX_PROGRAM;
   for (const t of COSTED) g[t.key] = 0;
   g.special = 'none';
   let points = budget;
-  if (points >= 6 && rng() < 0.4) {
-    g.special = rng.pick(SPECIAL_KEYS.filter((k) => k !== 'none'));
+  if (points >= 6 && specials.length && rng() < 0.4) {
+    g.special = rng.pick(specials);
     points -= 3;
   }
   let guard = 200;
   while (points > 0 && guard-- > 0) {
-    const open = COSTED.filter((t) => g[t.key] < t.max);
+    const open = COSTED.filter((t) => g[t.key] < cap(t));
     if (!open.length) break;
     const t = rng.pick(open);
     g[t.key]++;
@@ -109,8 +118,8 @@ export function randomGenome(rng, budget) {
   }
   g.division = rng.int(5);
   g.metabolism = rng.int(5);
-  const weighted = ['F', 'F', 'F', 'R', 'R', 'L', 'L', 'B', 'P', 'Z'];
-  const len = 1 + rng.int(MAX_PROGRAM);
+  const weighted = ['F', 'F', 'F', 'R', 'R', 'L', 'L', 'D', 'S', 'B', 'P', 'Z'].filter((k) => steps.includes(k));
+  const len = 1 + rng.int(progMax);
   g.program = Array.from({ length: len }, () => rng.pick(weighted));
   return g;
 }

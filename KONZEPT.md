@@ -5,7 +5,8 @@ Man entwirft ein Bakterium und setzt es mit Gegnern auf eine runde Agarplatte. S
 
 ## Getroffene Entscheidungen
 - **Plattform**: Web-App (PWA). Läuft in Safari, lässt sich auf dem Home-Bildschirm installieren und funktioniert offline. Kein App Store nötig.
-- **Punktebudget**: Im freien Spiel einstellbar (6–40 Punkte, Standard 20). In den Leveln hat der Spieler immer 20 Punkte.
+- **Punktebudget**: Im freien Spiel einstellbar (6–40 Punkte, Standard 20). In den Leveln hat jedes Level sein eigenes Budget (8 → 20), die Gegner haben ungefähr gleich viele Punkte.
+- **Freischalten**: Fähigkeiten gibt es erst nach und nach (siehe unten).
 - **Nährboden**: einstellbar nach Verteilung, Menge und Nachwachsen.
 - **Sprache**: Deutsch.
 - **10 Level** mit aufsteigend schwereren Gegnern.
@@ -14,7 +15,7 @@ Man entwirft ein Bakterium und setzt es mit Gegnern auf eine runde Agarplatte. S
 
 | Eigenschaft | Stufen | Kosten | Wirkung |
 |---|---|---|---|
-| Bewegungsmuster | 1–6 Schritte aus ⬆ ↗ ↖ ⬇ ⏸ 🎲 | – | Folge, die sich endlos wiederholt |
+| Bewegungsmuster | 1–6 Schritte: vor, halbrechts/halblinks (45°), rechts/links (90°), umkehren, warten, Zufall | – | Folge, die sich endlos wiederholt; Drehungen relativ zur Blickrichtung |
 | Teilung | sehr früh … sehr spät | kostenlos | Energieschwelle für die Teilung (26–80). Früh heißt viele schwache Zellen. |
 | Stoffwechsel | genügsam … gefräßig | kostenlos | Nahrungsaufnahme und Grundumsatz steigen gemeinsam |
 | Geschwindigkeit | 0–4 | 1/Stufe | Bewegungschance pro Runde 25–95 %. Jede Bewegung kostet Energie. |
@@ -46,27 +47,35 @@ Alle Zellen werden in zufälliger Reihenfolge abgearbeitet:
 - eine Kultur stellt 250 Runden lang mindestens 97 % aller Zellen, **oder**
 - nach 4000 Runden gewinnt die größte Kultur.
 
+## Freischalten
+
+| Nach Sieg in | Neu verfügbar |
+|---|---|
+| Start | Schritte vor, halb/ganz rechts und links, warten; Stufe 2; Muster bis 4 Schritte |
+| Level 1 | Umkehren, Stufe 3 |
+| Level 2 | Chemotaxis |
+| Level 3 | Zufallsschritt, Muster bis 5 Schritte |
+| Level 4 | Sporen, Stufe 4 |
+| Level 5 | Biofilm, Muster bis 6 Schritte |
+| Level 6 | Stufe 5 (Angriff/Abwehr) |
+| Level 7 | Giftwolke |
+
 ## Level
-| # | Name | Gegner | Besonderheit |
-|---|---|---|---|
-| 1 | Erste Schritte | 1 | träger Gegner |
-| 2 | Der Wanderer | 1 | kreisender Gegner |
-| 3 | Zwei auf einmal | 2 | erstmals drei Kulturen |
-| 4 | Fleckenteppich | 2 | Nahrung in Flecken, Chemotaxis-Gegner |
-| 5 | Der Ring | 3 | nur der Rand ist nahrhaft |
-| 6 | Hungersnot | 2 | wenig Nahrung, Sporen |
-| 7 | Giftküche | 3 | Giftwolke |
-| 8 | Festung | 2 | Biofilm-Bollwerk, große Platte |
-| 9 | Übermacht | 4 | vier starke Gegner |
-| 10 | Der Endgegner | 3 | Boss mit 22 Punkten |
 
-Die Schwierigkeit wurde per Massensimulation (`tools/levels-check.mjs`) geprüft. Zufällig gebaute Bakterien mit 20 Punkten gewinnen:
+| # | Name | Budget | Gegner (Punkte) | Besonderheit |
+|---|---|---|---|---|
+| 1 | Erste Schritte | 8 | 8 | träger Gegner |
+| 2 | Der Wanderer | 9 | 8 | kreisender Gegner |
+| 3 | Zwei auf einmal | 10 | 9, 9 | erstmals drei Kulturen |
+| 4 | Fleckenteppich | 12 | 11, 11 | Nahrung in Flecken, Chemotaxis-Gegner |
+| 5 | Der Ring | 13 | 11, 11, 11 | nur der Rand ist nahrhaft |
+| 6 | Hungersnot | 14 | 13, 14 | wenig Nahrung, Sporen |
+| 7 | Giftküche | 15 | 13, 13, 13 | Giftwolke (noch nicht freigeschaltet) |
+| 8 | Festung | 16 | 17, 17 | Biofilm-Bollwerk, große Platte |
+| 9 | Übermacht | 18 | 4 × 16 | vier starke Gegner |
+| 10 | Der Endgegner | 20 | 22, 19, 19 | Boss |
 
-| Level | 1–3 | 4–5 | 6 | 7 | 8 | 9–10 |
-|---|---|---|---|---|---|---|
-| Siegquote | ~100 % | ~80 % | ~45 % | ~30 % | ~13 % | ~0 % |
-
-Gezielt optimierte Bakterien können auch Level 9 und 10 gewinnen.
+Die Schwierigkeit wird per Massensimulation geprüft (`tools/levels-check.mjs`). Die Spieler-Bakterien halten dabei das Level-Budget und die bis dahin freigeschalteten Fähigkeiten ein. Gemessen werden zufällig gebaute Bakterien und ein per Optimierung gefundenes „cleveres“ Bakterium. Aktueller Stand: Zufällige Entwürfe gewinnen Level 1 meist (~80 %), Level 2 selten (~25 %) und ab Level 3 so gut wie nie (0–13 %). Ein optimierter Entwurf schafft dagegen jedes Level.
 
 ## Mögliche Erweiterungen
 - Mutationen während des Spiels

@@ -4,10 +4,12 @@ import {
   MIN_BUDGET, MAX_BUDGET, defaultGenome, cost, normalize, randomGenome, encodeGenome, decodeGenome,
 } from './genome.js';
 import { Simulation, DISTRIBUTIONS, MAX_TICKS } from './sim.js';
-import { PlateRenderer, drawHistory, drawPathPreview } from './render.js';
+import { PlateRenderer, drawHistory, PathAnimator } from './render.js';
 import { makeRng, randomSeed } from './rng.js';
 import { randomName } from './names.js';
-import { LEVELS, LEVEL_BUDGET } from './levels.js';
+import { LEVELS } from './levels.js';
+import { getLimits, traitCap, unlockLevelOf, rewardsOf, problems } from './progression.js';
+import { SPECIAL_ICONS, SPECIAL_COLORS, TRAIT_ICONS, STEP_ICONS, LOCK_ICON, UNLOCK_ICON } from './icons.js';
 import * as store from './storage.js';
 
 const $ = (sel) => document.querySelector(sel);
@@ -26,7 +28,16 @@ function el(tag, attrs = {}, ...children) {
   return e;
 }
 
-const programText = (p) => p.map((s) => STEPS[s].icon).join('');
+// SVG-Symbol (nur eigene, feste Strings aus icons.js)
+function icon(svg, cls = '', color = '') {
+  const s = el('span', { class: `ico ${cls}`, style: color ? `color:${color}` : null });
+  s.innerHTML = svg;
+  return s;
+}
+
+const programIcons = (p) => el('span', { class: 'prog-icons' }, p.map((s) => icon(STEP_ICONS[s])));
+const specialBadge = (key, cls = '') => icon(SPECIAL_ICONS[key], cls, SPECIAL_COLORS[key]);
+const limits = () => getLimits(store.levelsWon());
 
 const LABELS = {
   size: { klein: 'Klein', mittel: 'Mittel', gross: 'Groß' },
@@ -34,6 +45,18 @@ const LABELS = {
   amount: { wenig: 'Wenig', normal: 'Normal', viel: 'Viel' },
   regen: { aus: 'Aus', langsam: 'Langsam', normal: 'Normal', schnell: 'Schnell' },
 };
+
+// Vorlagen für Bewegungsmuster
+const PRESETS = [
+  { name: 'Geradeaus', program: ['F'] },
+  { name: 'Kreis', program: ['F', 'F', 'R'] },
+  { name: 'Quadrat', program: ['F', 'F', 'F', 'D'] },
+  { name: 'Welle', program: ['R', 'L', 'L', 'R'] },
+  { name: 'Treppe', program: ['D', 'S'] },
+  { name: 'Sitzer', program: ['P'] },
+  { name: 'Pendel', program: ['F', 'F', 'F', 'B'] },
+  { name: 'Wanderer', program: ['F', 'F', 'Z'] },
+];
 
 // ---------- Navigation ----------
 let current = 'home';
@@ -59,7 +82,7 @@ function toast(msg) {
   t.textContent = msg;
   t.hidden = false;
   clearTimeout(toast._t);
-  toast._t = setTimeout(() => (t.hidden = true), 2200);
+  toast._t = setTimeout(() => (t.hidden = true), 2400);
 }
 
 function modal({ title, text = '', input = null, readonly = false, buttons }) {
@@ -82,6 +105,8 @@ function modal({ title, text = '', input = null, readonly = false, buttons }) {
 
 const confirmDialog = async (title, text, yes = 'Ja') =>
   (await modal({ title, text, buttons: [{ label: 'Abbrechen', value: false }, { label: yes, value: true, primary: true }] })).value;
+
+const lockedToast = (level) => toast(`🔒 Wird freigeschaltet, wenn du Level ${level} gewinnst.`);
 
 // ---------- Startbildschirm mit Demo-Platte ----------
 const demo = { sim: null, r: null, raf: 0, last: 0, acc: 0 };
@@ -116,38 +141,53 @@ onEnter.home = () => {
 onLeave.home = () => cancelAnimationFrame(demo.raf);
 
 // ---------- Bakterien-Auswahl ----------
-function renderPicker(container, budget, onPick) {
+// ctx: { budget, label } – für den Editor, wenn man von hier aus ein Bakterium anlegt/anpasst.
+function renderPicker(container, ctx, onPick) {
   const list = store.getBacteria();
   const settings = store.getSettings();
-  container.replaceChildren();
-  if (!list.length) {
-    container.append(el('div', { class: 'empty' }, 'Noch keine Bakterien im Labor.'),
-      el('button', { class: 'btn', onclick: () => openEditor(null, current) }, '+ Bakterium erstellen'));
-    onPick(null);
-    return;
-  }
-  let selected = list.find((b) => b.id === settings.lastBacterium && cost(b) <= budget)
-    || list.find((b) => cost(b) <= budget) || null;
+  const lim = limits();
+  const ok = (b) => problems(b, lim, ctx.budget).length === 0;
+  let selected = list.find((b) => b.id === settings.lastBacterium && ok(b)) || list.find(ok) || null;
   const draw = () => {
-    container.replaceChildren(...list.map((b) => {
-      const c = cost(b);
+    const rows = list.map((b) => {
+      const probs = problems(b, lim, ctx.budget);
       return el('button', {
-        class: `pick ${selected && selected.id === b.id ? 'on' : ''}`,
-        disabled: c > budget,
-        onclick: () => { selected = b; store.updateSettings({ lastBacterium: b.id }); draw(); onPick(b); },
+        class: `pick ${selected && selected.id === b.id ? 'on' : ''} ${probs.length ? 'bad' : ''}`,
+        onclick: () => {
+          if (probs.length) return toast(`Passt nicht: ${probs.join(', ')}. Tippe auf „Anpassen“.`);
+          selected = b; store.updateSettings({ lastBacterium: b.id }); draw(); onPick(b);
+        },
       },
       el('span', { class: 'dot', style: `background:${b.color}` }),
-      el('span', {}, el('b', {}, b.name), el('br'), el('span', { class: 'prog' }, programText(b.program))),
-      el('span', { class: 'cost' }, c > budget ? `${c} Pkt · zu teuer` : `${c} Pkt`));
-    }));
+      el('span', { class: 'pick-main' },
+        el('b', {}, b.name),
+        el('span', { class: 'pick-sub' }, programIcons(b.program), b.special !== 'none' ? specialBadge(b.special, 'sm') : null),
+        probs.length ? el('span', { class: 'pick-warn' }, probs.join(' · ')) : null),
+      el('span', { class: 'cost' }, `${cost(b)} Pkt`));
+    });
+    const sel = list.find((b) => b === selected);
+    const tools = el('div', { class: 'row gap' },
+      el('button', { class: 'btn small', onclick: () => openEditor(null, current, ctx) }, '+ Neu'),
+      list.length ? el('button', {
+        class: 'btn small',
+        onclick: () => {
+          const pick = sel || list[0];
+          openEditor(pick, current, ctx);
+        },
+      }, sel ? `„${sel.name}“ anpassen` : 'Anpassen') : null);
+    container.replaceChildren(...(list.length ? rows : [el('div', { class: 'empty' }, 'Noch keine Bakterien im Labor.')]), tools);
   };
   draw();
   onPick(selected);
 }
 
 // ---------- Level ----------
-function levelUnlocked(n) {
-  return n === 1 || store.levelsWon().includes(n - 1);
+const levelUnlocked = (n) => n === 1 || store.levelsWon().includes(n - 1);
+
+function rewardChips(level) {
+  return rewardsOf(level).map((r) => el('span', { class: 'reward' },
+    r.type === 'special' ? specialBadge(r.key, 'sm') : r.type === 'step' ? icon(STEP_ICONS[r.key], 'sm') : icon(UNLOCK_ICON, 'sm'),
+    r.text));
 }
 
 onEnter.levels = () => {
@@ -161,17 +201,25 @@ onEnter.levels = () => {
     },
     el('span', { class: 'num' }, `Level ${n}`),
     el('span', { class: 'name' }, lv.name),
-    el('span', { class: 'dots' }, lv.opponents.map((o) => el('i', { style: `background:${o.color}` }))));
+    el('span', { class: 'lv-budget' }, `${lv.budget} Punkte`),
+    el('span', { class: 'dots' }, lv.opponents.map((o) => el('i', { style: `background:${o.color}` })),
+      rewardsOf(n).filter((r) => r.type === 'special').map((r) => specialBadge(r.key, 'xs'))));
   }));
 };
 
 let levelPick = null;
 let openLevelNo = 1;
+const levelCtx = () => ({ budget: LEVELS[openLevelNo - 1].budget, label: `Level ${openLevelNo}` });
 
-function opponentStats(g) {
-  const parts = COSTED.filter((t) => g[t.key] > 0).map((t) => `${t.label.split(' ')[0]} ${g[t.key]}`);
-  if (g.special !== 'none') parts.push(SPECIALS[g.special].name);
-  return `${programText(g.program)} · ${parts.join(', ')}`;
+function opponentRow(o) {
+  const parts = COSTED.filter((t) => o[t.key] > 0).map((t) => `${t.label.split(' ')[0]} ${o[t.key]}`);
+  return el('div', { class: 'opp' },
+    el('span', { class: 'dot', style: `background:${o.color}` }),
+    el('div', {},
+      el('b', {}, o.name), ' ', el('span', { class: 'muted small' }, `${cost(normalize(o))} Pkt`),
+      el('div', { class: 'stats' }, programIcons(o.program),
+        o.special !== 'none' ? el('span', { class: 'sp' }, specialBadge(o.special, 'sm'), SPECIALS[o.special].name) : null),
+      el('div', { class: 'stats' }, parts.join(', '))));
 }
 
 function openLevel(n) {
@@ -179,14 +227,19 @@ function openLevel(n) {
   const lv = LEVELS[n - 1];
   $('#ld-title').textContent = `Level ${n}`;
   $('#ld-desc').replaceChildren(el('b', {}, lv.name), el('br'), lv.desc);
-  $('#ld-opponents').replaceChildren(...lv.opponents.map((o) => el('div', { class: 'opp' },
-    el('span', { class: 'dot', style: `background:${o.color}` }),
-    el('div', {}, el('b', {}, o.name), el('div', { class: 'stats' }, opponentStats(o))))));
+  $('#ld-budget').replaceChildren(el('b', {}, `${lv.budget} Punkte`), ' stehen dir in diesem Level zur Verfügung.');
+  $('#ld-opponents').replaceChildren(...lv.opponents.map((o) => opponentRow(normalize(o))));
   const pl = lv.plate;
   $('#ld-plate').textContent = `Platte: ${LABELS.size[pl.size]} · Nährboden: ${LABELS.distribution[pl.distribution]}, ${LABELS.amount[pl.amount]}, Nachwachsen ${LABELS.regen[pl.regen].toLowerCase()}`;
-  renderPicker($('#ld-picker'), LEVEL_BUDGET, (b) => { levelPick = b; $('#ld-start').disabled = !b; });
+  const rewards = rewardChips(n);
+  $('#ld-rewards-card').hidden = !rewards.length || store.levelsWon().includes(n);
+  $('#ld-rewards').replaceChildren(...rewards);
   go('level-detail');
 }
+
+onEnter['level-detail'] = () => {
+  renderPicker($('#ld-picker'), levelCtx(), (b) => { levelPick = b; $('#ld-start').disabled = !b; });
+};
 
 $('#ld-start').addEventListener('click', () => {
   if (!levelPick) return;
@@ -200,7 +253,6 @@ $('#ld-start').addEventListener('click', () => {
 // ---------- Labor ----------
 onEnter.lab = () => {
   const list = store.getBacteria();
-  const budget = store.getSettings().budget;
   const box = $('#lab-list');
   if (!list.length) {
     box.replaceChildren(el('div', { class: 'empty' }, 'Dein Labor ist leer. Erstelle dein erstes Bakterium!'));
@@ -210,8 +262,10 @@ onEnter.lab = () => {
     el('div', { class: 'title' },
       el('span', { class: 'dot', style: `background:${b.color}` }),
       el('b', {}, b.name),
-      el('span', { class: 'cost' }, `${cost(b)} / ${budget} Pkt`)),
-    el('div', { class: 'prog' }, opponentStats(b)),
+      el('span', { class: 'cost' }, `${cost(b)} Pkt`)),
+    el('div', { class: 'stats' }, programIcons(b.program),
+      b.special !== 'none' ? el('span', { class: 'sp' }, specialBadge(b.special, 'sm'), SPECIALS[b.special].name) : null),
+    el('div', { class: 'trait-row' }, COSTED.map((t) => el('span', { class: 'tchip', title: t.label }, icon(TRAIT_ICONS[t.key], 'xs'), String(b[t.key])))),
     el('div', { class: 'actions' },
       el('button', { class: 'btn', onclick: () => openEditor(b) }, 'Bearbeiten'),
       el('button', { class: 'btn', onclick: () => duplicate(b) }, 'Kopieren'),
@@ -265,51 +319,91 @@ $('#lab-import').addEventListener('click', async () => {
 // ---------- Editor ----------
 let ed = null;
 let edReturn = 'lab';
+let edCtx = null;
+const animator = new PathAnimator($('#ed-preview'), (idx) => {
+  document.querySelectorAll('#ed-program .slot').forEach((s, k) => s.classList.toggle('active', k === idx));
+});
 
-function openEditor(b, returnTo = 'lab') {
+function openEditor(b, returnTo = 'lab', ctx = null) {
   ed = b ? normalize(JSON.parse(JSON.stringify(b))) : defaultGenome();
   if (b) ed.id = b.id;
   else {
     const used = new Set(store.getBacteria().map((x) => x.color));
     ed.color = PALETTE.find((c) => !used.has(c)) || PALETTE[0];
+    // Neues Bakterium: an die freigeschalteten Stufen anpassen
+    const lim = limits();
+    for (const t of COSTED) ed[t.key] = Math.min(ed[t.key], traitCap(t, lim));
   }
   edReturn = returnTo;
+  edCtx = ctx || { budget: store.getSettings().budget, label: 'Freies Spiel' };
   go('editor');
   renderEditor();
+  renderProgram();
 }
 
-function renderEditor() {
-  $('#ed-name').value = ed.name;
-  $('#ed-colors').replaceChildren(...PALETTE.map((c) => el('button', {
-    class: `swatch ${ed.color === c ? 'on' : ''}`, style: `background:${c}`, 'aria-label': c,
-    onclick: () => { ed.color = c; renderEditor(); },
-  })));
+onEnter.editor = () => animator.start();
+onLeave.editor = () => animator.stop();
 
-  // Bewegungsmuster
+function renderProgram() {
+  const lim = limits();
   const slots = [];
   for (let k = 0; k < MAX_PROGRAM; k++) {
     const s = ed.program[k];
+    const locked = k >= lim.programMax;
     slots.push(el('button', {
-      class: `slot ${s ? 'filled' : ''}`,
-      onclick: () => { if (s && ed.program.length > 1) { ed.program.splice(k, 1); renderEditor(); } },
-    }, s ? STEPS[s].icon : ''));
+      class: `slot ${s ? 'filled' : ''} ${locked ? 'locked' : ''}`,
+      'aria-label': s ? `Schritt ${k + 1}: ${STEPS[s].name} – entfernen` : `Schritt ${k + 1}`,
+      onclick: () => {
+        if (locked && !s) return lockedToast(unlockLevelOf('program', k + 1));
+        if (s && ed.program.length > 1) { ed.program.splice(k, 1); renderProgram(); }
+      },
+    }, el('span', { class: 'slot-n' }, String(k + 1)), s ? icon(STEP_ICONS[s]) : locked ? icon(LOCK_ICON, 'lock') : null));
   }
   $('#ed-program').replaceChildren(...slots);
-  $('#ed-steps').replaceChildren(...STEP_KEYS.map((key) => el('button', {
-    class: 'stepbtn', title: STEPS[key].name,
-    onclick: () => {
-      if (ed.program.length >= MAX_PROGRAM) return toast('Maximal 6 Schritte.');
-      ed.program.push(key); renderEditor();
-    },
-  }, STEPS[key].icon)));
-  drawPathPreview($('#ed-preview'), ed.program);
+
+  $('#ed-steps').replaceChildren(...STEP_KEYS.map((key) => {
+    const locked = !lim.steps.has(key);
+    return el('button', {
+      class: `stepbtn ${locked ? 'locked' : ''}`, title: STEPS[key].name,
+      onclick: () => {
+        if (locked) return lockedToast(unlockLevelOf('step', key));
+        if (ed.program.length >= lim.programMax) return toast(`Maximal ${lim.programMax} Schritte – tippe oben auf einen Schritt, um ihn zu entfernen.`);
+        ed.program.push(key); renderProgram();
+      },
+    }, icon(locked ? LOCK_ICON : STEP_ICONS[key], locked ? 'lock' : ''), el('span', { class: 'step-label' }, STEPS[key].label));
+  }));
+
+  $('#ed-presets').replaceChildren(...PRESETS.map((pr) => {
+    const missing = pr.program.find((s) => !lim.steps.has(s));
+    const tooLong = pr.program.length > lim.programMax;
+    const locked = missing || tooLong;
+    const same = pr.program.join('') === ed.program.join('');
+    return el('button', {
+      class: `preset ${same ? 'on' : ''} ${locked ? 'locked' : ''}`,
+      onclick: () => {
+        if (missing) return lockedToast(unlockLevelOf('step', missing));
+        if (tooLong) return lockedToast(unlockLevelOf('program', pr.program.length));
+        ed.program = pr.program.slice(); renderProgram();
+      },
+    }, el('span', {}, pr.name), programIcons(pr.program));
+  }));
+  animator.setProgram(ed.program, ed.color);
+}
+
+function renderEditor() {
+  const lim = limits();
+  $('#ed-name').value = ed.name;
+  $('#ed-colors').replaceChildren(...PALETTE.map((c) => el('button', {
+    class: `swatch ${ed.color === c ? 'on' : ''}`, style: `background:${c}`, 'aria-label': c,
+    onclick: () => { ed.color = c; renderEditor(); animator.setProgram(ed.program, ed.color); },
+  })));
 
   // Kostenlose Abwägungen
   $('#ed-free').replaceChildren(...FREE.map((t) => {
     const input = el('input', { type: 'range', min: 0, max: t.max, step: 1, value: ed[t.key] });
     input.addEventListener('input', () => { ed[t.key] = Number(input.value); });
     return el('div', { class: 'trait' },
-      el('div', { class: 'trait-head' }, el('b', {}, t.label)),
+      el('div', { class: 'trait-head' }, el('span', { class: 'trait-name' }, icon(TRAIT_ICONS[t.key], 'ti'), el('b', {}, t.label))),
       el('div', { class: 'hint' }, t.hint),
       input,
       el('div', { class: 'range-labels' }, el('span', {}, t.low), el('span', {}, t.high)));
@@ -317,38 +411,57 @@ function renderEditor() {
 
   // Eigenschaften mit Punktekosten
   $('#ed-costed').replaceChildren(...COSTED.map((t) => {
+    const cap = traitCap(t, lim);
     const pips = [];
-    for (let k = 0; k < t.max; k++) pips.push(el('i', { class: k < ed[t.key] ? 'on' : '' }));
+    for (let k = 0; k < t.max; k++) pips.push(el('i', { class: k < ed[t.key] ? 'on' : k >= cap ? 'lock' : '' }));
     return el('div', { class: 'trait' },
       el('div', { class: 'trait-head' },
-        el('b', {}, t.label),
+        el('span', { class: 'trait-name' }, icon(TRAIT_ICONS[t.key], 'ti'), el('b', {}, t.label)),
         el('div', { class: 'stepper' },
           el('button', { onclick: () => { if (ed[t.key] > 0) { ed[t.key]--; renderEditor(); } }, 'aria-label': 'weniger' }, '−'),
           el('div', { class: 'pips' }, pips),
-          el('button', { onclick: () => { if (ed[t.key] < t.max) { ed[t.key]++; renderEditor(); } }, 'aria-label': 'mehr' }, '+'))),
+          el('button', {
+            onclick: () => {
+              if (ed[t.key] >= t.max) return;
+              if (ed[t.key] >= cap) return lockedToast(unlockLevelOf('trait', ed[t.key] + 1));
+              ed[t.key]++; renderEditor();
+            },
+            'aria-label': 'mehr',
+          }, '+'))),
       el('div', { class: 'hint' }, t.hint));
   }));
 
-  // Spezialfähigkeit
-  $('#ed-specials').replaceChildren(...SPECIAL_KEYS.map((k) => el('button', {
-    class: `chip ${ed.special === k ? 'on' : ''}`, onclick: () => { ed.special = k; renderEditor(); },
-  }, SPECIALS[k].name)));
-  $('#ed-special-hint').textContent = SPECIALS[ed.special].hint;
+  // Spezialfähigkeit als Kacheln mit Symbol
+  $('#ed-specials').replaceChildren(...SPECIAL_KEYS.map((k) => {
+    const locked = !lim.specials.has(k);
+    return el('button', {
+      class: `special ${ed.special === k ? 'on' : ''} ${locked ? 'locked' : ''}`,
+      onclick: () => {
+        if (locked) return lockedToast(unlockLevelOf('special', k));
+        ed.special = k; renderEditor();
+      },
+    },
+    specialBadge(k, 'big'),
+    el('span', { class: 'special-name' }, SPECIALS[k].name),
+    el('span', { class: 'special-cost' }, locked ? `🔒 Level ${unlockLevelOf('special', k)}` : SPECIALS[k].cost ? `${SPECIALS[k].cost} Pkt` : '0 Pkt'));
+  }));
+  $('#ed-special-hint').replaceChildren(el('b', {}, `${SPECIALS[ed.special].name}: `), SPECIALS[ed.special].hint);
 
   // Budget
-  const budget = store.getSettings().budget;
+  const { budget, label } = edCtx;
   const c = cost(ed);
   $('#ed-cost').textContent = `${c} / ${budget}`;
+  $('#ed-budget-label').textContent = `Punkte (Budget ${label})`;
   $('#ed-meter').style.width = `${Math.min(100, (c / budget) * 100)}%`;
   const over = c > budget;
   $('#ed-budget').classList.toggle('over', over);
   const warn = $('#ed-warn');
-  warn.hidden = !over && c <= LEVEL_BUDGET;
-  if (over) warn.textContent = `${c - budget} Punkte über deinem Budget. Erhöhe das Budget im freien Spiel oder senke Werte.`;
-  else if (c > LEVEL_BUDGET) warn.textContent = `Für die Level (Budget ${LEVEL_BUDGET}) ist dieses Bakterium zu teuer.`;
+  warn.hidden = !over;
+  if (over) warn.textContent = `${c - budget} Punkte zu viel für ${label}. Du kannst trotzdem speichern, aber hier nicht antreten.`;
 }
 
 $('#ed-name').addEventListener('input', (e) => { ed.name = e.target.value; });
+$('#ed-clear').addEventListener('click', () => { ed.program = ['F']; renderProgram(); });
 $('#ed-cancel').addEventListener('click', () => go(edReturn));
 $('#ed-save').addEventListener('click', () => {
   if (!ed.name.trim()) return toast('Bitte gib einen Namen ein.');
@@ -360,6 +473,7 @@ $('#ed-save').addEventListener('click', () => {
 
 // ---------- Freies Spiel ----------
 let freePick = null;
+const freeCtx = () => ({ budget: store.getSettings().budget, label: 'Freies Spiel' });
 
 function segOption(label, key, values, labels) {
   const s = store.getSettings();
@@ -381,8 +495,7 @@ function stepperOption(label, key, min, max, step, fmt = (v) => v) {
 }
 
 onEnter.setup = () => {
-  const s = store.getSettings();
-  renderPicker($('#su-picker'), s.budget, (b) => { freePick = b; $('#su-start').disabled = !b; });
+  renderPicker($('#su-picker'), freeCtx(), (b) => { freePick = b; $('#su-start').disabled = !b; });
   $('#su-options').replaceChildren(
     el('h3', {}, 'Einstellungen'),
     stepperOption('Anzahl Gegner', 'opponents', 1, 5, 1),
@@ -391,14 +504,16 @@ onEnter.setup = () => {
     segOption('Nährboden-Verteilung', 'distribution', DISTRIBUTIONS, LABELS.distribution),
     segOption('Nährstoffmenge', 'amount', ['wenig', 'normal', 'viel'], LABELS.amount),
     segOption('Nachwachsen', 'regen', ['aus', 'langsam', 'normal', 'schnell'], LABELS.regen),
+    el('p', { class: 'small muted' }, 'Zufallsgegner nutzen nur Fähigkeiten, die du schon freigeschaltet hast.'),
   );
 };
 
 function randomOpponents(n, budget, playerColor, seed) {
   const rng = makeRng(seed ^ 0x9e3779b9);
   const colors = PALETTE.filter((c) => c !== playerColor);
+  const lim = limits();
   return Array.from({ length: n }, (_, k) => ({
-    ...randomGenome(rng, budget), name: randomName(rng), color: colors[k % colors.length],
+    ...randomGenome(rng, budget, lim), name: randomName(rng), color: colors[k % colors.length],
   }));
 }
 
@@ -447,6 +562,7 @@ function startMatch(cfg) {
   $('#sim-legend').replaceChildren(...run.genomes.map((g, i) => el('div', { class: 'legend-row' },
     el('span', { class: 'dot', style: `background:${g.color}` }),
     el('span', {}, i === 0 ? el('b', {}, `${g.name} (du)`) : g.name),
+    g.special !== 'none' ? specialBadge(g.special, 'sm') : null,
     el('span', { class: 'n' }, '0'))));
   setSpeed(run.speed);
   go('sim');
@@ -523,11 +639,14 @@ function showResult() {
   const winnerName = sim.winner ? run.genomes[sim.winner - 1].name : null;
   $('#rs-reason').textContent = `${sim.endReason}${winnerName && !won ? ` Sieger: ${winnerName}.` : ''} (${sim.tick} Generationen)`;
 
-  let unlockedNext = false;
+  let firstWin = false;
   if (cfg.mode === 'level' && won) {
-    unlockedNext = !store.levelsWon().includes(cfg.level) && cfg.level < LEVELS.length;
+    firstWin = !store.levelsWon().includes(cfg.level);
     store.markLevelWon(cfg.level);
   }
+  const rewards = firstWin ? rewardChips(cfg.level) : [];
+  $('#rs-rewards-card').hidden = !rewards.length;
+  $('#rs-rewards').replaceChildren(...rewards);
 
   go('result');
   const rc = $('#rs-plate');
@@ -550,12 +669,11 @@ function showResult() {
     el('thead', {}, el('tr', {}, el('th', {}, 'Kultur'), el('th', { class: 'num' }, 'Ende'), el('th', { class: 'num' }, 'Max.'), el('th', { class: 'num' }, 'Kills'), el('th', { class: 'num' }, 'Status'))),
     el('tbody', {}, rows)));
 
-  const next = $('#rs-next');
-  next.hidden = !(cfg.mode === 'level' && won && cfg.level < LEVELS.length);
+  $('#rs-next').hidden = !(cfg.mode === 'level' && won && cfg.level < LEVELS.length);
   $('#rs-new').hidden = cfg.mode === 'level';
   $('#rs-rematch').textContent = cfg.mode === 'level' ? 'Nochmal versuchen' : 'Revanche (gleicher Start)';
   if (cfg.mode === 'level' && won && cfg.level === LEVELS.length) toast('Du hast alle Level geschafft! 🎉');
-  else if (unlockedNext) toast(`Level ${cfg.level + 1} freigeschaltet!`);
+  else if (firstWin) toast(`Level ${cfg.level + 1} freigeschaltet!`);
 }
 
 function adopt(g, btn) {
@@ -584,11 +702,9 @@ $('#rs-next').addEventListener('click', () => openLevel(run.cfg.level + 1));
 $('#rs-edit').addEventListener('click', () => {
   const b = store.getBacterium(run.cfg.player.id);
   if (!b) return toast('Dieses Bakterium ist nicht mehr im Labor.');
-  openEditor(b, run.cfg.mode === 'level' ? 'level-detail' : 'setup');
+  if (run.cfg.mode === 'level') openEditor(b, 'level-detail', levelCtx());
+  else openEditor(b, 'setup', freeCtx());
 });
-onEnter['level-detail'] = () => {
-  if (current === 'level-detail') renderPicker($('#ld-picker'), LEVEL_BUDGET, (b) => { levelPick = b; $('#ld-start').disabled = !b; });
-};
 
 // ---------- Start ----------
 if (!store.getBacteria().length) {

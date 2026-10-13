@@ -80,47 +80,129 @@ export function drawHistory(canvas, history, colorsHex) {
   });
 }
 
-// Vorschau des Bewegungsmusters einer einzelnen Zelle (ohne Hindernisse).
-export function drawPathPreview(canvas, program, seed = 1) {
-  const DX = [0, 1, 1, 1, 0, -1, -1, -1];
-  const DY = [-1, -1, 0, 1, 1, 1, 0, -1];
-  const dpr = window.devicePixelRatio || 1;
-  const w = canvas.clientWidth || 120, h = canvas.clientHeight || 120;
-  canvas.width = w * dpr; canvas.height = h * dpr;
-  const ctx = canvas.getContext('2d');
-  ctx.scale(dpr, dpr);
-  ctx.clearRect(0, 0, w, h);
-  let s = seed;
-  const rnd = () => ((s = (s * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
-  const pts = [[0, 0]];
-  let x = 0, y = 0, d = 0;
-  for (let k = 0; k < 48; k++) {
-    const st = program[k % program.length];
-    if (st === 'R') d = (d + 1) & 7;
-    else if (st === 'L') d = (d + 7) & 7;
-    else if (st === 'B') d = (d + 4) & 7;
-    else if (st === 'Z') d = Math.floor(rnd() * 8);
-    if (st === 'P') continue;
-    x += DX[d]; y += DY[d];
-    pts.push([x, y]);
+// Animierte Vorschau des Bewegungsmusters: eine einzelne Zelle läuft ihr Muster ab,
+// der gerade ausgeführte Schritt wird über onStep(index) gemeldet.
+const PDX = [0, 1, 1, 1, 0, -1, -1, -1];
+const PDY = [-1, -1, 0, 1, 1, 1, 0, -1];
+const TURN = { F: 0, R: 1, L: -1, D: 2, S: -2, B: 4 };
+
+export class PathAnimator {
+  constructor(canvas, onStep) {
+    this.canvas = canvas;
+    this.onStep = onStep;
+    this.color = '#e9c46a';
+    this.raf = 0;
+    this.actions = [];
   }
-  let minX = 0, maxX = 0, minY = 0, maxY = 0;
-  for (const [px, py] of pts) {
-    minX = Math.min(minX, px); maxX = Math.max(maxX, px);
-    minY = Math.min(minY, py); maxY = Math.max(maxY, py);
+
+  setProgram(program, color) {
+    this.color = color || this.color;
+    let s = 7;
+    const rnd = () => ((s = (s * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
+    let x = 0, y = 0, d = 0;
+    const acts = [];
+    const n = Math.max(16, Math.min(36, program.length * 6));
+    for (let k = 0; k < n; k++) {
+      const idx = k % program.length;
+      const st = program[idx];
+      const d0 = d;
+      if (st === 'Z') d = Math.floor(rnd() * 8);
+      else if (st in TURN) d = (d + TURN[st] + 8) & 7;
+      const moved = st !== 'P';
+      const fx = x, fy = y;
+      if (moved) { x += PDX[d]; y += PDY[d]; }
+      // kürzeste Drehung für die Animation
+      let turn = ((d - d0 + 8) % 8);
+      if (turn > 4) turn -= 8;
+      if (st === 'B') turn = 4;
+      acts.push({ idx, st, fx, fy, tx: x, ty: y, d0, turn, moved });
+    }
+    this.actions = acts;
+    let minX = 0, maxX = 0, minY = 0, maxY = 0;
+    for (const a of acts) {
+      minX = Math.min(minX, a.tx); maxX = Math.max(maxX, a.tx);
+      minY = Math.min(minY, a.ty); maxY = Math.max(maxY, a.ty);
+    }
+    this.bounds = { minX, maxX, minY, maxY };
+    this._resize();
+    this.t0 = performance.now();
+    this.lastK = -1;
   }
-  const span = Math.max(maxX - minX, maxY - minY, 4);
-  const sc = (Math.min(w, h) - 16) / span;
-  const ox = w / 2 - ((minX + maxX) / 2) * sc, oy = h / 2 - ((minY + maxY) / 2) * sc;
-  ctx.strokeStyle = 'rgba(233,196,106,0.9)';
-  ctx.lineWidth = 2;
-  ctx.lineJoin = 'round';
-  ctx.beginPath();
-  pts.forEach(([px, py], i) => {
-    const X = ox + px * sc, Y = oy + py * sc;
-    if (i === 0) ctx.moveTo(X, Y); else ctx.lineTo(X, Y);
-  });
-  ctx.stroke();
-  ctx.fillStyle = '#5ee06a';
-  ctx.beginPath(); ctx.arc(ox, oy, 4, 0, Math.PI * 2); ctx.fill();
+
+  _resize() {
+    const dpr = window.devicePixelRatio || 1;
+    const w = this.canvas.clientWidth || 300, h = this.canvas.clientHeight || 170;
+    this.canvas.width = w * dpr; this.canvas.height = h * dpr;
+    this.w = w; this.h = h; this.dpr = dpr;
+    const { minX, maxX, minY, maxY } = this.bounds;
+    const sc = Math.min(26, (w - 40) / Math.max(1, maxX - minX), (h - 40) / Math.max(1, maxY - minY));
+    this.sc = sc;
+    this.ox = w / 2 - ((minX + maxX) / 2) * sc;
+    this.oy = h / 2 - ((minY + maxY) / 2) * sc;
+  }
+
+  start() {
+    cancelAnimationFrame(this.raf);
+    const loop = (t) => { this.raf = requestAnimationFrame(loop); this._draw(t); };
+    this.raf = requestAnimationFrame(loop);
+  }
+
+  stop() { cancelAnimationFrame(this.raf); }
+
+  _draw(now) {
+    const STEP = 520, HOLD = 900;
+    const acts = this.actions;
+    if (!acts.length) return;
+    const total = acts.length * STEP + HOLD;
+    const el = Math.max(0, now - this.t0) % total;
+    const k = Math.min(acts.length - 1, Math.floor(el / STEP));
+    const f = el >= acts.length * STEP ? 1 : (el % STEP) / STEP;
+    const a = acts[k];
+    if (this.lastK !== k) { this.lastK = k; if (this.onStep) this.onStep(a.idx); }
+
+    const ctx = this.canvas.getContext('2d');
+    const { sc, ox, oy, w, h } = this;
+    ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    const X = (gx) => ox + gx * sc, Y = (gy) => oy + gy * sc;
+
+    // Raster: jedes Feld der Platte ist ein Punkt
+    ctx.fillStyle = 'rgba(255,255,255,0.10)';
+    const gx0 = Math.floor(-ox / sc) - 1, gx1 = Math.ceil((w - ox) / sc) + 1;
+    const gy0 = Math.floor(-oy / sc) - 1, gy1 = Math.ceil((h - oy) / sc) + 1;
+    if (sc >= 6) for (let gy = gy0; gy <= gy1; gy++) for (let gx = gx0; gx <= gx1; gx++) ctx.fillRect(X(gx) - 1, Y(gy) - 1, 2, 2);
+
+    // Phasen eines Schritts: erst drehen, dann bewegen
+    const turnF = Math.min(1, f / 0.4);
+    const moveF = a.moved ? Math.max(0, (f - 0.4) / 0.6) : 0;
+    const ease = (v) => v * v * (3 - 2 * v);
+    const cx = a.fx + (a.tx - a.fx) * ease(moveF);
+    const cy = a.fy + (a.ty - a.fy) * ease(moveF);
+
+    // Spur
+    ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    ctx.strokeStyle = this.color; ctx.globalAlpha = 0.55; ctx.lineWidth = Math.max(2, sc * 0.18);
+    ctx.beginPath(); ctx.moveTo(X(0), Y(0));
+    for (let j = 0; j < k; j++) ctx.lineTo(X(acts[j].tx), Y(acts[j].ty));
+    ctx.lineTo(X(cx), Y(cy));
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+
+    // Startpunkt
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(X(0), Y(0), Math.max(3, sc * 0.25), 0, Math.PI * 2); ctx.stroke();
+
+    // Zelle mit Blickrichtung
+    const ang = ((a.d0 + a.turn * ease(turnF)) * Math.PI) / 4;
+    const r = Math.max(6, Math.min(11, sc * 0.42));
+    ctx.save();
+    ctx.translate(X(cx), Y(cy));
+    if (a.st === 'P') { const p = 1 + 0.12 * Math.sin(f * Math.PI * 2); ctx.scale(p, p); }
+    ctx.rotate(ang);
+    ctx.fillStyle = this.color;
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#0e1116';
+    ctx.beginPath(); ctx.moveTo(0, -r * 0.7); ctx.lineTo(r * 0.45, r * 0.25); ctx.lineTo(-r * 0.45, r * 0.25); ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
 }

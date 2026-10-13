@@ -30,7 +30,7 @@ const MOVE_COST = 0.3;
 
 function phenotype(g) {
   return {
-    program: g.program.map((s) => 'FRLBPZ'.indexOf(s)),
+    program: g.program.map((s) => 'FRLBPZDS'.indexOf(s)),
     moveChance: T.moveChance[g.speed],
     maxAge: T.maxAge[g.lifespan],
     efficiency: T.efficiency[g.efficiency],
@@ -286,6 +286,8 @@ export class Simulation {
           case 3: d = (d + 4) & 7; break;
           case 4: moves = false; break;
           case 5: d = rng.int(8); break;
+          case 6: d = (d + 2) & 7; break;
+          case 7: d = (d + 6) & 7; break;
         }
         if (moves && ph.chemo && rng() < 0.35) {
           let best = -1, bestN = -1;

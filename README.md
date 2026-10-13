@@ -14,12 +14,12 @@ Bakterienkampf auf der Agarplatte: Du entwirfst ein Bakterium, setzt es mit Gegn
 
 - **Labor**: Bakterien erstellen, bearbeiten, kopieren und löschen. Zum Sichern oder Teilen per Code exportieren oder importieren.
 - **Editor**:
-  - Bewegungsmuster aus bis zu 6 Schritten (geradeaus, rechts, links, Kehrtwende, Pause, Zufall) mit Vorschau
+  - Bewegungsmuster aus bis zu 6 Schritten (vor, halb/ganz rechts und links, umkehren, warten, Zufall) mit animierter Vorschau und Vorlagen
   - kostenlose Abwägungen bei Teilung und Stoffwechsel
   - Geschwindigkeit, Lebensdauer, Verwertung, Angriff und Abwehr
-  - eine Spezialfähigkeit: Sporen, Chemotaxis, Biofilm oder Giftwolke
+  - eine Spezialfähigkeit mit eigenem Symbol: Sporen, Chemotaxis, Biofilm oder Giftwolke
   - alles mit Punktebudget
-- **10 Level** mit immer stärkeren Gegnern und verschiedenen Nährböden. Ein gewonnenes Level schaltet das nächste frei; dein Budget ist dort immer 20.
+- **10 Level** mit eigenem Budget pro Level (8 bis 20 Punkte) und Gegnern auf Augenhöhe. Jeder Sieg schaltet das nächste Level und neue Fähigkeiten frei (Schritte, höhere Stufen, längere Muster, Spezialfähigkeiten).
 - **Freies Spiel**: 1–5 Zufallsgegner. Einstellbar sind Punktebudget (6–40), Plattengröße, Nährbodenverteilung, Nährstoffmenge und Nachwachsen.
 - **Simulation**: Pixeldarstellung, Tempo 1× / 2× / 5× / 10×, Pause, Live-Anteile.
 - **Ergebnis**:
@@ -36,6 +36,8 @@ Reines HTML, CSS und JavaScript (ES-Module), ohne Abhängigkeiten und ohne Build
 | `js/sim.js` | Simulations-Engine (läuft auch in Node) |
 | `js/genome.js` | Eigenschaften, Punktekosten, Zufallsgegner, Export-Codes |
 | `js/levels.js` | die 10 Level |
+| `js/progression.js` | Freischalt-System |
+| `js/icons.js` | SVG-Symbole |
 | `js/render.js` | Canvas-Darstellung, Verlaufskurve, Mustervorschau |
 | `js/main.js` | Bildschirme und Spielablauf |
 | `js/storage.js` | Speichern auf dem Gerät |

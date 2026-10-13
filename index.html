@@ -36,7 +36,7 @@
     <!-- Levelauswahl -->
     <section class="screen" id="levels" hidden>
       <header class="bar"><button class="back" data-go="home">‹ Zurück</button><h2>Level</h2><span></span></header>
-      <p class="note">Gewinne ein Level, um das nächste freizuschalten. Dein Budget beträgt in allen Leveln <b>20 Punkte</b>.</p>
+      <p class="note">Gewinne ein Level, um das nächste freizuschalten – und neue Fähigkeiten für deine Bakterien. Jedes Level hat sein eigenes Punktebudget.</p>
       <div id="level-grid" class="level-grid"></div>
     </section>
 
@@ -44,10 +44,15 @@
     <section class="screen" id="level-detail" hidden>
       <header class="bar"><button class="back" data-go="levels">‹ Level</button><h2 id="ld-title">Level</h2><span></span></header>
       <p id="ld-desc" class="note"></p>
+      <div class="budget-banner" id="ld-budget"></div>
       <div class="card">
         <h3>Gegner</h3>
         <div id="ld-opponents" class="opp-list"></div>
         <p id="ld-plate" class="small muted"></p>
+      </div>
+      <div class="card reward-card" id="ld-rewards-card">
+        <h3>Belohnung bei Sieg</h3>
+        <div id="ld-rewards" class="rewards"></div>
       </div>
       <div class="card">
         <h3>Dein Bakterium</h3>
@@ -70,7 +75,7 @@
     <section class="screen" id="editor" hidden>
       <header class="bar"><button class="back" id="ed-cancel">‹ Abbrechen</button><h2>Editor</h2><button class="btn small primary" id="ed-save">Speichern</button></header>
       <div class="budget sticky" id="ed-budget">
-        <div class="budget-text"><span>Punkte</span><b id="ed-cost">0 / 20</b></div>
+        <div class="budget-text"><span id="ed-budget-label">Punkte</span><b id="ed-cost">0 / 20</b></div>
         <div class="meter"><div id="ed-meter"></div></div>
         <p class="small warn" id="ed-warn" hidden></p>
       </div>
@@ -79,15 +84,14 @@
         <div class="field"><span>Farbe</span><div id="ed-colors" class="swatches"></div></div>
       </div>
       <div class="card">
-        <h3>Bewegungsmuster</h3>
-        <p class="small muted">Bis zu 6 Schritte, die sich endlos wiederholen. Tippe auf einen Schritt im Muster, um ihn zu entfernen.</p>
-        <div class="program-wrap">
-          <div>
-            <div id="ed-program" class="program"></div>
-            <div id="ed-steps" class="steps"></div>
-          </div>
-          <canvas id="ed-preview" class="preview"></canvas>
-        </div>
+        <div class="row between"><h3>Bewegungsmuster</h3><button class="btn small ghost" id="ed-clear">Leeren</button></div>
+        <p class="small muted">Die Zelle führt die Schritte der Reihe nach aus und fängt dann wieder von vorn an. Jeder Schritt dreht sie zuerst (relativ zu ihrer Blickrichtung, siehe Pfeil) und bewegt sie dann ein Feld weiter.</p>
+        <canvas id="ed-preview" class="preview-wide"></canvas>
+        <div id="ed-program" class="program"></div>
+        <p class="small muted center">Tippe auf einen Schritt im Muster, um ihn zu entfernen.</p>
+        <div id="ed-steps" class="steps"></div>
+        <h3 class="mt">Vorlagen</h3>
+        <div id="ed-presets" class="presets"></div>
       </div>
       <div class="card">
         <h3>Abwägungen <span class="muted small">(kostenlos)</span></h3>
@@ -98,8 +102,8 @@
         <div id="ed-costed"></div>
       </div>
       <div class="card">
-        <h3>Spezialfähigkeit <span class="muted small">(3 Punkte)</span></h3>
-        <div id="ed-specials" class="chips"></div>
+        <h3>Spezialfähigkeit <span class="muted small">(höchstens eine)</span></h3>
+        <div id="ed-specials" class="specials"></div>
         <p id="ed-special-hint" class="small muted"></p>
       </div>
     </section>
@@ -139,6 +143,10 @@
         <h1 id="rs-title">Gewonnen!</h1>
         <p id="rs-reason" class="muted"></p>
       </div>
+      <div class="card reward-card" id="rs-rewards-card" hidden>
+        <h3>🔓 Neu freigeschaltet</h3>
+        <div id="rs-rewards" class="rewards"></div>
+      </div>
       <div class="result-plate"><canvas id="rs-plate" class="plate small-plate"></canvas></div>
       <div class="card">
         <h3>Verlauf der Populationen</h3>
@@ -166,9 +174,13 @@
         <h3>Spielende</h3>
         <p>Gewonnen hat, wer als einzige Kultur überlebt, über längere Zeit mindestens 97 % aller Zellen stellt – oder nach 4000 Generationen die meisten Zellen hat.</p>
         <h3>Punktebudget</h3>
-        <p>Geschwindigkeit, Lebensdauer, Verwertung, Angriff und Abwehr kosten 1 Punkt pro Stufe, eine Spezialfähigkeit 3 Punkte. Teilung und Stoffwechsel sind kostenlose Abwägungen. Im freien Spiel kannst du das Budget einstellen, in den Leveln sind es immer 20.</p>
+        <p>Geschwindigkeit, Lebensdauer, Verwertung, Angriff und Abwehr kosten 1 Punkt pro Stufe, eine Spezialfähigkeit 3 Punkte. Teilung und Stoffwechsel sind kostenlose Abwägungen. Jedes Level hat ein eigenes Budget (von 8 Punkten in Level 1 bis 20 in Level 10) – die Gegner haben ungefähr gleich viele Punkte. Gewinnen kannst du also nur mit einem durchdachten Entwurf. Im freien Spiel stellst du das Budget selbst ein.</p>
+        <h3>Freischalten</h3>
+        <p>Am Anfang hast du nur die einfachen Bewegungsschritte und Stufe 2 bei allen Eigenschaften. Jedes gewonnene Level schaltet etwas Neues frei: Kehrtwende und Zufallsschritt, höhere Stufen, längere Muster und die Spezialfähigkeiten Chemotaxis, Sporen, Biofilm und Giftwolke. Was ein Level freischaltet, steht in der Levelansicht.</p>
+        <h3>Bewegungsmuster</h3>
+        <p>Das Muster ist eine kurze Schrittfolge, die sich endlos wiederholt. „vor“ geht geradeaus, „halbrechts“/„halblinks“ drehen um 45°, „rechts“/„links“ um 90°, „umkehren“ um 180° – immer bezogen auf die aktuelle Blickrichtung der Zelle. Die animierte Vorschau im Editor zeigt, welcher Schritt gerade ausgeführt wird. „⬆⬆↗“ zieht weite Kreise, „⬆⬆⬆➡“ läuft Quadrate, „⏸“ bleibt sitzen.</p>
         <h3>Tipps</h3>
-        <p>Schnelle Zellen erobern früh viel Fläche, verhungern aber leichter. Wenige robuste Zellen mit später Teilung halten Fronten besser. Probiere verschiedene Muster aus: „⬆⬆↗“ zieht weite Kreise, „⬆↗⬆↖“ wandert im Zickzack, „⏸“ bleibt sitzen.</p>
+        <p>Schnelle Zellen erobern früh viel Fläche, verhungern aber leichter. Wenige robuste Zellen mit später Teilung halten Fronten besser. Schau dir die Gegner in der Levelansicht genau an und baue gezielt dagegen.</p>
         <h3>Auf dem iPhone installieren</h3>
         <p>In Safari öffnen, auf <b>Teilen</b> tippen und <b>„Zum Home-Bildschirm“</b> wählen. Dann startet Agava wie eine App im Vollbild und funktioniert auch offline.</p>
         <h3>Sicherung</h3>

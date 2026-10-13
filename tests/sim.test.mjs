@@ -2,7 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Simulation } from '../js/sim.js';
 import { defaultGenome, randomGenome, cost, normalize, encodeGenome, decodeGenome, maxCost } from '../js/genome.js';
-import { LEVELS, LEVEL_BUDGET } from '../js/levels.js';
+import { LEVELS } from '../js/levels.js';
+import { getLimits, problems, rewardsOf, unlockLevelOf } from '../js/progression.js';
 import { makeRng } from '../js/rng.js';
 
 const opts = (genomes, seed = 1) => ({ genomes, size: 'klein', distribution: 'gleichmaessig', amount: 'normal', regen: 'normal', seed });
@@ -54,9 +55,45 @@ test('normalize repariert ungültige Daten', () => {
 
 test('es gibt 10 Level mit gültigen Gegnern', () => {
   assert.equal(LEVELS.length, 10);
-  assert.equal(LEVEL_BUDGET, 20);
+  for (let k = 1; k < LEVELS.length; k++) assert.ok(LEVELS[k].budget >= LEVELS[k - 1].budget, 'Budget steigt');
   for (const lv of LEVELS) {
     assert.ok(lv.opponents.length >= 1 && lv.opponents.length <= 5);
     for (const o of lv.opponents) assert.deepEqual(normalize(o).program, o.program);
   }
+});
+
+test('Freischalten: am Anfang eingeschränkt, nach allen Leveln alles offen', () => {
+  const start = getLimits([]);
+  assert.equal(start.traitMax, 2);
+  assert.ok(!start.specials.has('chemo'));
+  assert.ok(!start.steps.has('Z'));
+  assert.equal(start.programMax, 4);
+  const all = getLimits([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+  assert.equal(all.traitMax, 5);
+  assert.equal(all.programMax, 6);
+  for (const k of ['spores', 'chemo', 'biofilm', 'toxin']) assert.ok(all.specials.has(k));
+  assert.ok(all.steps.has('Z') && all.steps.has('B'));
+  assert.ok(rewardsOf(2).some((r) => r.key === 'chemo'));
+  assert.equal(unlockLevelOf('special', 'toxin'), 7);
+});
+
+test('Start-Bakterium passt in Level 1, problems() erkennt Verstöße', () => {
+  const lim = getLimits([]);
+  assert.deepEqual(problems(defaultGenome(), lim, LEVELS[0].budget), []);
+  const bad = { ...defaultGenome(), speed: 4, special: 'toxin', program: ['F', 'Z'] };
+  assert.ok(problems(bad, lim, 8).length >= 3);
+});
+
+test('Zufallsgenome mit Grenzen halten die Freischaltungen ein', () => {
+  const rng = makeRng(8);
+  const lim = getLimits([1, 2]);
+  for (let k = 0; k < 100; k++) assert.deepEqual(problems(randomGenome(rng, 10, lim), lim, 10), []);
+});
+
+test('90°-Schritte werden in der Simulation erkannt', () => {
+  const g = { ...defaultGenome(), program: ['F', 'D', 'S'] };
+  const sim = new Simulation(opts([g], 2));
+  assert.equal(sim.players[0].ph.program.join(','), '0,6,7');
+  sim.run(200);
+  assert.ok(sim.tick > 0);
 });

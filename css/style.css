@@ -240,3 +240,76 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
   background: #2b3442; color: var(--text); padding: 10px 16px; border-radius: 999px; font-size: 14px;
   z-index: 60; box-shadow: 0 8px 20px rgba(0,0,0,.4); max-width: 90vw; text-align: center;
 }
+
+/* ---------- Symbole, Freischalten, Bewegungs-Editor ---------- */
+.ico { display: inline-flex; width: 18px; height: 18px; flex: none; vertical-align: middle; }
+.ico.xs { width: 13px; height: 13px; }
+.ico.sm { width: 16px; height: 16px; }
+.ico.ti { width: 20px; height: 20px; color: var(--accent); }
+.ico.big { width: 30px; height: 30px; }
+.ico.lock { color: var(--muted); opacity: .7; }
+.row.between { justify-content: space-between; }
+.center { text-align: center; }
+.mt { margin-top: 16px; }
+
+.prog-icons { display: inline-flex; gap: 1px; color: var(--text); vertical-align: middle; }
+.prog-icons .ico { width: 15px; height: 15px; }
+.stats { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.sp { display: inline-flex; align-items: center; gap: 4px; color: var(--muted); font-size: 12px; }
+.trait-row { display: flex; gap: 10px; flex-wrap: wrap; width: 100%; }
+.tchip { display: inline-flex; align-items: center; gap: 3px; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.tchip .ico { color: var(--accent); }
+
+.pick { align-items: flex-start; }
+.pick .dot { margin-top: 4px; }
+.pick-main { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.pick-sub { display: flex; align-items: center; gap: 6px; }
+.pick-warn { color: var(--bad); font-size: 12px; }
+.pick.bad { opacity: .65; }
+.picker .row { margin-top: 4px; flex-wrap: wrap; }
+
+.budget-banner { background: #2a2414; border: 1px solid #5b4a1e; color: #f3dfa6; border-radius: var(--radius); padding: 10px 14px; font-size: 15px; }
+.lv-budget { font-size: 12px; color: var(--accent); }
+.level .dots { align-items: center; }
+.reward-card { border-color: #3b6b3f; background: #142018; }
+.rewards { display: flex; flex-direction: column; gap: 8px; }
+.reward { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.reward .ico { color: var(--good); }
+
+/* Bewegungs-Editor */
+.preview-wide { width: 100%; height: 170px; display: block; background: var(--card2); border-radius: 12px; margin: 10px 0 12px; }
+.program { grid-template-columns: repeat(6, 1fr); }
+.slot { position: relative; }
+.slot .ico { width: 55%; height: 55%; }
+.slot-n { position: absolute; top: 3px; left: 5px; font-size: 10px; color: var(--muted); }
+.slot.active { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent) inset; background: #2c2716; }
+.slot.locked { opacity: .45; }
+.program + p { margin-top: 6px; }
+.steps { grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.stepbtn { aspect-ratio: auto; height: 62px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; }
+.stepbtn .ico { width: 24px; height: 24px; }
+.step-label { font-size: 11px; color: var(--muted); }
+.stepbtn.locked { opacity: .45; }
+.presets { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.preset {
+  display: flex; justify-content: space-between; align-items: center; gap: 6px;
+  border: 1px solid var(--line); background: var(--card2); color: var(--text);
+  border-radius: 10px; padding: 8px 10px; font-size: 14px; cursor: pointer;
+}
+.preset.on { border-color: var(--accent); }
+.preset.locked { opacity: .4; }
+
+.trait-name { display: inline-flex; align-items: center; gap: 8px; }
+.pips i.lock { background: repeating-linear-gradient(45deg, transparent 0 2px, rgba(255,255,255,.18) 2px 3px); border-style: dashed; }
+
+/* Spezialfähigkeiten als Kacheln */
+.specials { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; }
+.special {
+  display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 4px;
+  border: 1px solid var(--line); background: var(--card2); color: var(--text); border-radius: 12px; cursor: pointer;
+}
+.special.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; background: #2a2414; }
+.special.locked { opacity: .45; }
+.special-name { font-size: 13px; font-weight: 600; }
+.special-cost { font-size: 11px; color: var(--muted); }
+.legend-row .ico { margin-left: -2px; }
