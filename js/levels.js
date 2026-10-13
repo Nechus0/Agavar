@@ -43,10 +43,10 @@ export const LEVELS = [
   },
   {
     name: 'Lichtfänger',
-    desc: 'Synechococcus lebt vom Licht und hält auch auf leergefressenem Boden durch. Proteus schwärmt am nahrhaften Rand.',
-    plate: { size: 'mittel', distribution: 'ring', amount: 'normal', regen: 'normal' },
+    desc: 'Synechococcus lebt vom Licht und hält auch auf leergefressenem Boden durch. Proteus schwärmt in großen Bögen über die Platte – wer zu langsam ist, dem frisst er die Nahrung weg.',
+    plate: { size: 'mittel', distribution: 'gleichmaessig', amount: 'normal', regen: 'normal' },
     boss: g('synechococcus', '#5ee06a', ['F', 'P'], [1, 2, 3, 1, 3, 2, 1], 'photo'),
-    opponents: [g('pmirabilis', '#2ee6d6', ['F4', 'R'], [4, 1, 3, 2, 2, 1, 3])],
+    opponents: [g('pmirabilis', '#2ee6d6', ['F4', 'R'], [3, 1, 3, 2, 2, 1, 3])],
   },
   {
     name: 'Hungersnot',
