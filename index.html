@@ -62,14 +62,10 @@
         <h3>Weitere Gegner</h3>
         <div id="ld-opponents" class="opp-list"></div>
       </div>
-      <p id="ld-plate" class="small muted"></p>
+      <div id="ld-plate" class="plate-chips"></div>
       <div class="card">
-        <h3>Sterne</h3>
-        <div id="ld-stars" class="star-goals"></div>
-      </div>
-      <div class="card reward-card" id="ld-rewards-card">
-        <h3>Belohnung beim ersten Sieg</h3>
-        <div id="ld-rewards" class="rewards"></div>
+        <h3>Ziele</h3>
+        <div id="ld-stars"></div>
       </div>
       <div class="card" id="ld-me"></div>
       <button class="btn primary big" id="ld-start">Simulation starten</button>
@@ -89,7 +85,7 @@
       </div>
       <div class="card">
         <h3>Bewegung</h3>
-        <p class="small muted">Wähle, wie sich deine Zellen bewegen. Tochterzellen übernehmen die Bewegung – so zieht die ganze Kolonie im Muster.</p>
+        <p class="small muted">Wähle, wie sich deine Zellen bewegen – die ganze Kolonie folgt diesem Muster.</p>
         <div id="ed-moves" class="moves"></div>
         <div id="ed-move-opts" class="move-opts"></div>
         <p id="ed-move-desc" class="small move-desc"></p>
@@ -97,18 +93,17 @@
           <figure><canvas id="ed-preview" class="preview-cell"></canvas><figcaption>Eine Zelle</figcaption></figure>
           <figure><canvas id="ed-colony" class="preview-colony"></canvas><figcaption id="ed-colony-label">Die Kolonie</figcaption></figure>
         </div>
-        <p class="small muted center">Rechts wächst dein Bakterium allein auf einer kleinen Platte – mit allen Eigenschaften, die du einstellst.</p>
       </div>
       <div class="card">
-        <h3>Abwägungen <span class="muted small">(kostenlos)</span></h3>
+        <h3>Abwägungen <span class="muted small">· kostenlos</span></h3>
         <div id="ed-free"></div>
       </div>
       <div class="card">
-        <h3>Eigenschaften <span class="muted small">(1 Punkt pro Stufe)</span></h3>
+        <h3>Eigenschaften <span class="muted small">· 1 Punkt pro Stufe · ⓘ = Erklärung</span></h3>
         <div id="ed-costed"></div>
       </div>
       <div class="card">
-        <h3>Spezialfähigkeit <span class="muted small">(höchstens eine)</span></h3>
+        <h3>Spezialfähigkeit <span class="muted small">· höchstens eine · 3 Punkte</span></h3>
         <div id="ed-specials" class="specials"></div>
         <p id="ed-special-hint" class="small muted"></p>
       </div>
@@ -159,22 +154,22 @@
         <p id="rs-reason" class="muted"></p>
       </div>
       <div id="rs-stars" class="stars-row" hidden></div>
+      <div class="menu">
+        <button class="btn primary big" id="rs-next" hidden>▶ Nächstes Level</button>
+        <div class="row gap">
+          <button class="btn" id="rs-upgrade" hidden>🔧 Ausbauen</button>
+          <button class="btn" id="rs-rematch">↻ Nochmal</button>
+          <button class="btn" id="rs-new" hidden>🎲 Neue Gegner</button>
+        </div>
+      </div>
       <div class="card insights" id="rs-analysis"></div>
       <div class="card reward-card" id="rs-achievements" hidden></div>
-      <div class="result-plate"><canvas id="rs-plate" class="plate small-plate"></canvas></div>
-      <div class="card">
-        <h3>Verlauf der Populationen</h3>
+      <details class="card details">
+        <summary>📊 Details: Platte, Verlauf, Statistik</summary>
+        <div class="result-plate"><canvas id="rs-plate" class="plate small-plate"></canvas></div>
         <canvas id="rs-chart" class="chart"></canvas>
-      </div>
-      <div class="card">
         <div id="rs-table"></div>
-      </div>
-      <div class="menu">
-        <button class="btn primary big" id="rs-next" hidden>Nächstes Level</button>
-        <button class="btn big" id="rs-upgrade" hidden>Bakterium ausbauen</button>
-        <button class="btn big" id="rs-rematch">Nochmal</button>
-        <button class="btn big" id="rs-new" hidden>Neue Gegner</button>
-      </div>
+      </details>
     </section>
 
     <!-- Atlas & Erfolge -->

@@ -43,9 +43,9 @@ export const careerPoints = (won, stars = {}) =>
 
 // Sterne eines Levels: 1 = Sieg, 2 = Sieg in unter 12 h, 4 = zeitweise 30 % der Platte besiedelt
 export const STAR_GOALS = [
-  { bit: 1, text: 'Level gewinnen' },
-  { bit: 2, text: 'In unter 12 h Brutzeit gewinnen' },
-  { bit: 4, text: 'Zeitweise 30 % der Platte besiedeln (und gewinnen)' },
+  { bit: 1, icon: '🏆', short: 'Sieg', text: 'Level gewinnen' },
+  { bit: 2, icon: '⏱', short: 'unter 12 h', text: 'In unter 12 h Brutzeit gewinnen' },
+  { bit: 4, icon: '🧫', short: '30 % Platte', text: 'Zeitweise 30 % der Platte besiedeln (und gewinnen)' },
 ];
 export const FAST_TICKS = 1000; // 12 h von 48 h
 export const BIG_PLATE = 0.3;

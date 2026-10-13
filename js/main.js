@@ -35,6 +35,12 @@ function el(tag, attrs = {}, ...children) {
   return e;
 }
 
+// ⓘ-Knopf: blendet die Erklärung einer Eigenschaft ein/aus
+const infoBtn = () => el('button', {
+  class: 'info-btn', 'aria-label': 'Erklärung',
+  onclick: (e) => { const h = e.target.closest('.trait').querySelector('.hint'); h.hidden = !h.hidden; },
+}, 'ⓘ');
+
 // Inhalt ersetzen, leere Einträge (null/false) überspringen
 function fill(node, ...kids) {
   node.replaceChildren(...kids.flat().filter((k) => k !== null && k !== undefined && k !== false));
@@ -56,8 +62,8 @@ function germPic(germ, color, cls = '') {
 const moveChip = (g) => el('span', { class: 'move-chip' }, icon(pathSvg(g.program), 'path-ico'), describeMove(moveFromProgram(g.program)));
 const specialBadge = (key, cls = '') => icon(SPECIAL_ICONS[key], cls, SPECIAL_COLORS[key]);
 const specialTag = (key) => el('span', { class: 'sp-tag', style: `--c:${SPECIAL_COLORS[key]}` }, specialBadge(key, 'sm'), SPECIALS[key].name);
-const traitRow = (g) => el('div', { class: 'trait-row' }, COSTED.map((t) =>
-  el('span', { class: 'tchip', title: t.label }, icon(TRAIT_ICONS[t.key], 'xs'), String(g[t.key]))));
+const traitRow = (g) => el('div', { class: 'trait-grid' }, COSTED.map((t) =>
+  el('span', { class: 'tcell', title: t.label }, icon(TRAIT_ICONS[t.key], 'sm'), el('b', {}, String(g[t.key])), el('small', {}, t.short))));
 
 const LABELS = {
   size: { klein: 'Klein', mittel: 'Mittel', gross: 'Groß' },
@@ -269,38 +275,39 @@ onEnter['level-detail'] = () => {
   const [boss, ...others] = levelOpponents(lv);
   const won = b.career.won;
   $('#ld-title').textContent = `Level ${n}`;
-  fill($('#ld-desc'), el('b', {}, lv.name), el('br'), lv.desc);
-  const rewards = rewardsOf(n);
-  fill($('#ld-boss'), 
+  fill($('#ld-desc'), el('b', {}, lv.name), ' – ', lv.desc);
+  fill($('#ld-boss'),
     el('div', { class: 'boss-label' }, '★ Besonderer Gegner'),
-    germPic(boss.germ, boss.color, 'large'),
-    el('h3', { class: 'boss-name' }, boss.name),
-    el('div', { class: 'stats center-row' }, ...specialsOf(boss).map(specialTag), moveChip(boss)),
-    traitRow(boss),
-    rewards.length && !won.includes(n)
-      ? el('p', { class: 'small boss-teaser' }, 'Besiege ihn, um freizuschalten: ', el('b', {}, rewards.map((r) => r.text).join(', ')))
-      : null);
+    el('div', { class: 'boss-head' }, germPic(boss.germ, boss.color, 'boss-pic'),
+      el('div', {}, el('h3', { class: 'boss-name' }, boss.name),
+        el('div', { class: 'stats' }, ...specialsOf(boss).map(specialTag), moveChip(boss)))),
+    traitRow(boss));
   $('#ld-others-card').hidden = !others.length;
   fill($('#ld-opponents'), ...others.map(opponentCard));
   const pl = lv.plate;
-  $('#ld-plate').textContent = `Platte: ${LABELS.size[pl.size]} · Nährboden: ${LABELS.distribution[pl.distribution]}, ${LABELS.amount[pl.amount]}, Nachwachsen ${LABELS.regen[pl.regen].toLowerCase()}`;
-  $('#ld-rewards-card').hidden = won.includes(n);
+  fill($('#ld-plate'),
+    el('span', { class: 'pchip2', title: 'Plattengröße' }, '🧫 ', LABELS.size[pl.size]),
+    el('span', { class: 'pchip2', title: 'Nährboden' }, '🍯 ', `${LABELS.distribution[pl.distribution]}, ${LABELS.amount[pl.amount].toLowerCase()}`),
+    el('span', { class: 'pchip2', title: 'Nachwachsen' }, '🔁 ', `nachwachsen ${LABELS.regen[pl.regen].toLowerCase()}`));
+  // Ziele: Sterne + Belohnung in einer Karte
   const mask = b.career.stars[n] || 0;
-  fill($('#ld-stars'), ...STAR_GOALS.map((g) => el('div', { class: `star-goal ${mask & g.bit ? 'done' : ''}` },
-    el('span', { class: 'star' }, mask & g.bit ? '★' : '☆'), g.text)),
-    el('p', { class: 'small muted' }, mask === 7 ? 'Alle Sterne geholt – der Bonuspunkt gehört dir!' : 'Alle drei Sterne bringen 1 zusätzlichen Ausbaupunkt. Sterne aus verschiedenen Versuchen zählen zusammen.'));
-  fill($('#ld-rewards'), ...rewardRows(n, true));
+  fill($('#ld-stars'),
+    el('div', { class: 'goal-stars' }, STAR_GOALS.map((g) => el('div', { class: `goal ${mask & g.bit ? 'done' : ''}`, title: g.text },
+      el('span', { class: 'star' }, mask & g.bit ? '★' : '☆'), el('small', {}, `${g.icon} ${g.short}`)))),
+    el('p', { class: 'small muted center' }, mask === 7 ? 'Alle Sterne geholt ✓' : '3 Sterne = +1 Ausbaupunkt (zählen über alle Versuche)'),
+    won.includes(n) ? null : el('div', { class: 'goal-reward' }, el('div', { class: 'small muted' }, 'Belohnung für den ersten Sieg:'), ...rewardRows(n, true)));
 
   const pts = ptsOf(b);
   const probs = problems(b, getLimits(won), pts);
-  fill($('#ld-me'), 
+  fill($('#ld-me'),
     el('h3', {}, 'Dein Bakterium'),
-    el('div', { class: 'title row gap' }, el('span', { class: 'dot', style: `background:${b.color}` }), el('b', {}, b.name), el('span', { class: 'cost' }, `${cost(b)} / ${pts} Pkt`)),
+    el('div', { class: 'title row gap' }, el('span', { class: 'dot', style: `background:${b.color}` }), el('b', {}, b.name),
+      el('span', { class: 'cost' }, `${cost(b)} / ${pts} Pkt`),
+      el('button', { class: 'btn small', onclick: () => openEditor(b, careerCtx(b, 'level-detail')) }, '🔧 Ausbauen')),
     el('div', { class: 'stats' }, moveChip(b), b.special !== 'none' ? specialTag(b.special) : null),
     traitRow(b),
-    probs.length ? el('p', { class: 'small warn' }, probs.join(' · ')) : null,
-    pts - cost(b) > 0 ? el('p', { class: 'small free-pts' }, `Du hast noch ${pts - cost(b)} ${pts - cost(b) === 1 ? 'Punkt' : 'Punkte'} frei!`) : null,
-    el('button', { class: 'btn small', onclick: () => openEditor(b, careerCtx(b, 'level-detail')) }, 'Ausbauen'));
+    probs.length ? el('p', { class: 'small warn' }, '⚠ ', probs.join(' · ')) : null,
+    pts - cost(b) > 0 ? el('p', { class: 'small free-pts' }, `＋ ${pts - cost(b)} ${pts - cost(b) === 1 ? 'Punkt' : 'Punkte'} frei`) : null);
   $('#ld-start').disabled = probs.length > 0;
 };
 
@@ -458,8 +465,8 @@ function renderEditor() {
     const input = el('input', { type: 'range', min: 0, max: t.max, step: 1, value: ed[t.key] });
     input.addEventListener('input', () => { ed[t.key] = Number(input.value); colony.restart(); });
     return el('div', { class: 'trait' },
-      el('div', { class: 'trait-head' }, el('span', { class: 'trait-name' }, icon(TRAIT_ICONS[t.key], 'ti'), el('b', {}, t.label))),
-      el('div', { class: 'hint' }, t.hint),
+      el('div', { class: 'trait-head' }, el('span', { class: 'trait-name' }, icon(TRAIT_ICONS[t.key], 'ti'), el('b', {}, t.label), infoBtn())),
+      el('div', { class: 'hint', hidden: true }, t.hint),
       input,
       el('div', { class: 'range-labels' }, el('span', {}, t.low), el('span', {}, t.high)));
   }));
@@ -472,7 +479,7 @@ function renderEditor() {
     for (let k = 0; k < t.max; k++) pips.push(el('i', { class: k < ed[t.key] ? 'on' : '' }));
     return el('div', { class: 'trait' },
       el('div', { class: 'trait-head' },
-        el('span', { class: 'trait-name' }, icon(TRAIT_ICONS[t.key], 'ti'), el('b', {}, t.label)),
+        el('span', { class: 'trait-name' }, icon(TRAIT_ICONS[t.key], 'ti'), el('b', {}, t.label), infoBtn()),
         el('div', { class: 'stepper' },
           el('button', { onclick: () => { if (ed[t.key] > 0) { ed[t.key]--; renderEditor(); } }, 'aria-label': 'weniger' }, '−'),
           el('div', { class: 'pips' }, pips),
@@ -484,7 +491,7 @@ function renderEditor() {
             },
             'aria-label': 'mehr',
           }, '+'))),
-      el('div', { class: 'hint' }, t.hint));
+      el('div', { class: 'hint', hidden: true }, t.hint));
   }));
 
   // Spezialfähigkeit als Kacheln mit Symbol
@@ -817,10 +824,9 @@ function showResult() {
   sb.hidden = cfg.mode !== 'level';
   if (cfg.mode === 'level') {
     const all = store.getBacterium(cfg.careerId)?.career.stars[cfg.level] || mask;
-    fill(sb, ...STAR_GOALS.map((g) => el('span', {
-      class: `big-star ${mask & g.bit ? 'got' : all & g.bit ? 'old' : ''} ${newStars & g.bit ? 'new' : ''}`, title: g.text,
-    }, mask & g.bit || all & g.bit ? '★' : '☆')),
-    el('div', { class: 'star-legend small muted' }, STAR_GOALS.map((g) => `${(mask | all) & g.bit ? '★' : '☆'} ${g.text}`).join('  ·  ')));
+    fill(sb, ...STAR_GOALS.map((g) => el('div', { class: 'star-col', title: g.text },
+      el('span', { class: `big-star ${mask & g.bit ? 'got' : all & g.bit ? 'old' : ''} ${newStars & g.bit ? 'new' : ''}` }, mask & g.bit || all & g.bit ? '★' : '☆'),
+      el('small', {}, `${g.icon} ${g.short}`))));
     if (newStars && (all & 7) === 7) toast('Alle drei Sterne! +1 Ausbaupunkt');
   }
   // Analyse
@@ -837,7 +843,8 @@ function showResult() {
   $('#rs-next').hidden = !(lvMode && won && cfg.level < LEVELS.length);
   $('#rs-upgrade').hidden = !lvMode;
   $('#rs-new').hidden = lvMode;
-  $('#rs-rematch').textContent = lvMode ? (won ? 'Level wiederholen' : 'Nochmal versuchen') : 'Revanche (gleicher Start)';
+  $('#rs-rematch').textContent = lvMode ? '↻ Nochmal' : '↻ Revanche';
+  document.querySelector('#result details').open = false;
   if (firstWin) showWinModal(cfg.level);
 }
 
@@ -882,6 +889,10 @@ onEnter.atlas = () => {
   }));
 };
 $('#win-ok').addEventListener('click', () => { $('#win-modal').hidden = true; });
+// Diagramm neu zeichnen, sobald die Details aufgeklappt werden (vorher hat es keine Breite)
+document.querySelector('#result details').addEventListener('toggle', (e) => {
+  if (e.target.open && run.sim) drawHistory($('#rs-chart'), run.sim.history, run.genomes.map((g) => g.color));
+});
 
 $('#rs-back').addEventListener('click', () => go(run.cfg.mode === 'level' ? 'career' : 'setup'));
 $('#rs-rematch').addEventListener('click', () => {

@@ -305,18 +305,22 @@ export class Simulation {
       if (ph.photo) energy[i] += 0.45; // Energie aus Licht
       if (energy[i] > MAX_ENERGY) energy[i] = MAX_ENERGY;
 
-      if (this.age[i] > this.maxAge[i]) { this._kill(i, 'age'); continue; }
+      if (this.age[i] > this.maxAge[i]) {
+        // Sporenbildner überdauern auch das Alter als Spore
+        if (ph.spores) { this.spore[i] = 1; energy[i] = 0; } else this._kill(i, 'age');
+        continue;
+      }
       if (energy[i] <= 0) {
         if (ph.spores) { this.spore[i] = 1; energy[i] = 0; } else this._kill(i, 'starve');
         continue;
       }
 
       // Toxine: schwächen eine zufällige gegnerische Nachbarzelle (sichtbar als Wolke).
-      if (ph.toxin && rng() < 0.25) {
+      if (ph.toxin && rng() < 0.35) {
         const j = this._neighbor(i, rng.int(8));
         if (j >= 0) fog[j] = 8;
         if (j >= 0 && owner[j] && owner[j] !== o && !this.spore[j]) {
-          energy[j] -= 7;
+          energy[j] -= 9;
           energy[i] -= 0.3;
           if (this.contactTick < 0) this.contactTick = tick;
           if (energy[j] <= 0) { this._kill(j, 'toxin', o); p.kills++; }

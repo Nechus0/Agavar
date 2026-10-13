@@ -27,12 +27,12 @@ export const stepEntry = (s, n = 1) => (n > 1 ? `${s}${n}` : s);
 
 // Eigenschaften, die Punkte kosten (1 Punkt pro Stufe).
 export const COSTED = [
-  { key: 'speed', label: 'Geschwindigkeit', max: 4, hint: 'Wie oft sich eine Zelle bewegt. Bewegung kostet Energie.' },
-  { key: 'lifespan', label: 'Lebensdauer', max: 4, hint: 'Wie alt eine Zelle maximal wird.' },
-  { key: 'efficiency', label: 'Verwertung', max: 4, hint: 'Wie viel Energie aus der aufgenommenen Nahrung gewonnen wird.' },
-  { key: 'chemotaxis', label: 'Chemotaxis', max: 4, hint: 'Die Zellen „riechen“ Nahrung und weichen öfter vom Muster ab, um gezielt dorthin zu laufen.' },
-  { key: 'attack', label: 'Angriff', max: 5, hint: 'Chance, gegnerische Zellen zu töten, in die man hineinläuft.' },
-  { key: 'defense', label: 'Abwehr (Zellwand)', max: 5, hint: 'Schutz gegen Angriffe.' },
+  { key: 'speed', label: 'Geschwindigkeit', short: 'Tempo', max: 4, hint: 'Wie oft sich eine Zelle bewegt. Bewegung kostet Energie.' },
+  { key: 'lifespan', label: 'Lebensdauer', short: 'Leben', max: 4, hint: 'Wie alt eine Zelle maximal wird.' },
+  { key: 'efficiency', label: 'Verwertung', short: 'Verwertung', max: 4, hint: 'Wie viel Energie aus der aufgenommenen Nahrung gewonnen wird.' },
+  { key: 'chemotaxis', label: 'Chemotaxis', short: 'Riechen', max: 4, hint: 'Die Zellen „riechen“ Nahrung und weichen öfter vom Muster ab, um gezielt dorthin zu laufen.' },
+  { key: 'attack', label: 'Angriff', short: 'Angriff', max: 5, hint: 'Chance, gegnerische Zellen zu töten, in die man hineinläuft.' },
+  { key: 'defense', label: 'Abwehr', short: 'Abwehr', max: 5, hint: 'Schutz gegen Angriffe.' },
 ];
 
 // Kostenlose Abwägungen: beide Enden haben Vor- und Nachteile.
