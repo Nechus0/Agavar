@@ -25,15 +25,18 @@ export function parseStep(entry) {
 }
 export const stepEntry = (s, n = 1) => (n > 1 ? `${s}${n}` : s);
 
-// Eigenschaften, die Punkte kosten (1 Punkt pro Stufe).
+// Eigenschaften, die Punkte kosten (1 Punkt pro Stufe, Stufen 0–10).
+export const TRAIT_MAX = 10;
 export const COSTED = [
-  { key: 'speed', label: 'Speed', short: 'Speed', max: 4, hint: 'How often a cell moves. Moving costs energy.' },
-  { key: 'lifespan', label: 'Lifespan', short: 'Life', max: 4, hint: 'How old a cell can get.' },
-  { key: 'efficiency', label: 'Efficiency', short: 'Efficiency', max: 4, hint: 'How much energy a cell gets out of the food it eats.' },
-  { key: 'chemotaxis', label: 'Chemotaxis', short: 'Smell', max: 4, hint: 'Cells “smell” food and leave their pattern more often to head straight for it.' },
-  { key: 'attack', label: 'Attack', short: 'Attack', max: 5, hint: 'Chance to kill enemy cells you run into.' },
-  { key: 'defense', label: 'Defense', short: 'Defense', max: 5, hint: 'Protection against attacks.' },
+  { key: 'speed', label: 'Speed', short: 'Speed', max: TRAIT_MAX, hint: 'How often a cell moves. Moving costs energy.' },
+  { key: 'lifespan', label: 'Lifespan', short: 'Life', max: TRAIT_MAX, hint: 'How old a cell can get.' },
+  { key: 'efficiency', label: 'Efficiency', short: 'Efficiency', max: TRAIT_MAX, hint: 'How much energy a cell gets out of the food it eats.' },
+  { key: 'chemotaxis', label: 'Chemotaxis', short: 'Smell', max: TRAIT_MAX, hint: 'Cells “smell” food and leave their pattern more often to head straight for it.' },
+  { key: 'attack', label: 'Attack', short: 'Attack', max: TRAIT_MAX, hint: 'Chance to kill enemy cells you run into.' },
+  { key: 'defense', label: 'Defense', short: 'Defense', max: TRAIT_MAX, hint: 'Protection against attacks.' },
 ];
+// Spielstände vor Version 2 hatten Stufen 0–4 (Kampf 0–5); eine alte Stufe entspricht zwei neuen.
+export const GENOME_VERSION = 2;
 
 // Kostenlose Abwägungen: beide Enden haben Vor- und Nachteile.
 export const FREE = [
@@ -47,23 +50,34 @@ export const FREE = [
 
 export const SPECIALS = {
   none: { name: 'None', cost: 0, hint: 'No special ability.' },
-  capsule: { name: 'Capsule', cost: 3, hint: 'A slime capsule absorbs one deadly attack and then slowly grows back (cells with a capsule look brighter).' },
-  photo: { name: 'Photosynthesis', cost: 3, hint: 'Cells constantly gain a little energy from light – even where the food is gone (cells shimmer).' },
-  predator: { name: 'Predator', cost: 3, hint: 'Attacks harder, eats killed enemies and gains a lot of energy from them (red bite marks).' },
-  spores: { name: 'Spores', cost: 3, hint: 'Starving cells turn into dormant spores (pale dots) and wake up when food returns.' },
-  biofilm: { name: 'Biofilm', cost: 3, hint: 'Cells that stand still build a slime layer (dark mat): much tougher and they use less energy.' },
-  toxin: { name: 'Toxins', cost: 3, hint: 'Cells release poison (visible as a toxic cloud) that weakens and can kill neighbouring enemy cells.' },
+  capsule: { name: 'Capsule', cost: 5, hint: 'A slime capsule absorbs one deadly attack and then slowly grows back (cells with a capsule look brighter).' },
+  photo: { name: 'Photosynthesis', cost: 5, hint: 'Cells constantly gain a little energy from light – even where the food is gone (cells shimmer).' },
+  predator: { name: 'Predator', cost: 6, hint: 'Attacks harder, eats killed enemies and gains a lot of energy from them (red bite marks).' },
+  spores: { name: 'Spores', cost: 4, hint: 'Starving cells turn into dormant spores (pale dots) and wake up when food returns.' },
+  biofilm: { name: 'Biofilm', cost: 6, hint: 'Cells that stand still build a slime layer (dark mat): much tougher and they use less energy.' },
+  toxin: { name: 'Toxins', cost: 7, hint: 'Cells release poison (visible as a toxic cloud) that weakens and can kill neighbouring enemy cells.' },
 };
 export const SPECIAL_KEYS = Object.keys(SPECIALS);
 
+// Kulturfarben des Design-Systems, jede mit eigenem Symbol (Farbe ist nie das einzige Merkmal).
 export const PALETTE = [
-  '#3fa9f5', '#ff5d5d', '#5ee06a', '#ffd23f',
-  '#c77dff', '#ff9f43', '#2ee6d6', '#ff6ec7',
+  '#38a0b4', '#cc5252', '#cc8040', '#c0a030',
+  '#52a83e', '#5858c4', '#a040a0', '#c04878',
 ];
+export const CULTURE_SYMBOLS = {
+  '#cc5252': '●', '#cc8040': '▲', '#c0a030': '■', '#52a83e': '◆',
+  '#38a0b4': '+', '#5858c4': '⬡', '#a040a0': '★', '#c04878': '‹',
+};
+// alte, grellere Farben früherer Versionen auf die Kulturfarben abbilden
+export const OLD_COLORS = {
+  '#3fa9f5': '#38a0b4', '#ff5d5d': '#cc5252', '#5ee06a': '#52a83e', '#ffd23f': '#c0a030',
+  '#c77dff': '#a040a0', '#ff9f43': '#cc8040', '#2ee6d6': '#5858c4', '#ff6ec7': '#c04878',
+};
+export const symbolOf = (color) => CULTURE_SYMBOLS[color] || '●';
 
-export const DEFAULT_BUDGET = 20;
-export const MIN_BUDGET = 6;
-export const MAX_BUDGET = 40;
+export const DEFAULT_BUDGET = 24;
+export const MIN_BUDGET = 10;
+export const MAX_BUDGET = 60;
 
 // Ein neues Bakterium ist ganz einfach: alle Punkte müssen selbst verteilt werden.
 export function defaultGenome() {
@@ -85,7 +99,7 @@ export function cost(g) {
 }
 
 export function maxCost() {
-  return COSTED.reduce((s, t) => s + t.max, 0) + 3;
+  return COSTED.reduce((s, t) => s + t.max, 0) + Math.max(...Object.values(SPECIALS).map((x) => x.cost));
 }
 
 const clampInt = (v, lo, hi) => Math.max(lo, Math.min(hi, Math.round(Number(v) || 0)));
@@ -95,7 +109,7 @@ export function normalize(raw) {
   const g = { ...defaultGenome(), name: 'Bacterium' };
   if (!raw || typeof raw !== 'object') return g;
   if (typeof raw.name === 'string' && raw.name.trim()) g.name = raw.name.trim().slice(0, 32);
-  if (typeof raw.color === 'string' && /^#[0-9a-fA-F]{6}$/.test(raw.color)) g.color = raw.color.toLowerCase();
+  if (typeof raw.color === 'string' && /^#[0-9a-fA-F]{6}$/.test(raw.color)) g.color = OLD_COLORS[raw.color.toLowerCase()] || raw.color.toLowerCase();
   if (Array.isArray(raw.program)) {
     const p = raw.program.map(parseStep).filter(Boolean).slice(0, MAX_PROGRAM).map((x) => stepEntry(x.s, x.n));
     g.program = p.length ? p : ['P'];
@@ -105,7 +119,7 @@ export function normalize(raw) {
   }
   if (SPECIAL_KEYS.includes(raw.special)) g.special = raw.special;
   // ältere Spielstände: Chemotaxis war früher eine Spezialfähigkeit (3 Punkte) -> jetzt Eigenschaft Stufe 3
-  if (raw.special === 'chemo') g.chemotaxis = Math.max(g.chemotaxis, 3);
+  if (raw.special === 'chemo') g.chemotaxis = Math.max(g.chemotaxis, 6);
   // gewählte Bewegungsart (für den Editor); das Muster in program ist maßgeblich für die Simulation
   if (raw.move && typeof raw.move.type === 'string') {
     g.move = { type: raw.move.type, size: clampInt(raw.move.size, 0, 5), dir: raw.move.dir === 'L' ? 'L' : 'R' };
@@ -127,9 +141,9 @@ export function randomGenome(rng, budget, limits = null) {
   const progMax = limits ? limits.programMax : MAX_PROGRAM;
   const repeat = limits ? limits.repeat : true;
   let points = budget;
-  if (points >= 6 && specials.length && rng() < 0.4) {
-    g.special = rng.pick(specials);
-    points -= 3;
+  if (specials.length && rng() < 0.4) {
+    const sp = rng.pick(specials);
+    if (points >= SPECIALS[sp].cost * 2) { g.special = sp; points -= SPECIALS[sp].cost; }
   }
   let guard = 200;
   while (points > 0 && guard-- > 0) {

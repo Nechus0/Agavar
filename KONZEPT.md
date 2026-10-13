@@ -5,12 +5,13 @@ Man entwirft ein Bakterium und setzt es mit Gegnern auf eine runde Agarplatte. S
 
 ## Spielmodi
 - **Karriere**:
-  - Jedes Bakterium ist eine eigene Karriere. Es muss zuerst selbst erstellt werden; ein vorgefertigtes Bakterium gibt es nicht.
-  - Start: 6 Ausbaupunkte, nur die einfachen Schritte, Muster mit höchstens 4 Schritten.
-  - Jeder erste Level-Sieg: +2 Ausbaupunkte und die Fähigkeit des besiegten besonderen Gegners.
+  - Jedes Bakterium ist eine eigene Karriere und gehört zu genau einer Welt (z. B. Haut). Für jede neue Welt erstellt man ein neues Bakterium; alle freigeschalteten Fähigkeiten bleiben erhalten.
+  - Der Würfel im Editor schlägt einen lateinischen Namen vor, der zur Welt passt und keinem echten Keim der Welt oder einem eigenen Bakterium gleicht.
+  - Start: 12 Ausbaupunkte, nur die einfachen Schritte, Muster mit höchstens 4 Schritten.
+  - Jeder erste Level-Sieg: +1 Ausbaupunkt und die Fähigkeit des besiegten besonderen Gegners (am Ende einer Welt also rund 30 Punkte, plus Sternboni).
   - Punkte können jederzeit neu verteilt werden.
 - **Freies Spiel**:
-  - eigenes Bakterium, Budget frei einstellbar (6–40)
+  - eigenes Bakterium, Budget frei einstellbar (10–60)
   - Spezialfähigkeiten und besondere Schritte nur, wenn sie in irgendeiner Karriere freigespielt wurden
   - Zufallsgegner nutzen dieselben Freischaltungen
 - Export/Import gibt es bewusst nicht.
@@ -22,13 +23,13 @@ Man entwirft ein Bakterium und setzt es mit Gegnern auf eine runde Agarplatte. S
 | Bewegungsart | Art + Größe + Richtung | – | Wird intern in ein Schrittmuster übersetzt. Tochterzellen übernehmen Richtung und Takt. |
 | Teilung | sehr früh … sehr spät | kostenlos | Energieschwelle für die Teilung. Früh heißt viele schwache Zellen. |
 | Stoffwechsel | genügsam … gefräßig | kostenlos | Nahrungsaufnahme und Grundumsatz steigen gemeinsam |
-| Geschwindigkeit | 0–4 | 1/Stufe | Bewegungschance pro Runde 25–95 % |
-| Lebensdauer | 0–4 | 1/Stufe | maximales Alter |
-| Verwertung | 0–4 | 1/Stufe | Energie pro Nahrungseinheit |
-| Chemotaxis | 0–4 | 1/Stufe | Chance je Bewegung (3–12 %), gezielt zur nahrhaftesten Nachbarstelle zu laufen |
-| Angriff | 0–5 | 1/Stufe | Kampfwert beim Hineinlaufen in Gegner |
-| Abwehr | 0–5 | 1/Stufe | Kampfwert beim Verteidigen |
-| Spezialfähigkeit | eine | 3 | Kapsel, Photosynthese, Räuber, Sporen, Biofilm, Toxine |
+| Geschwindigkeit | 0–10 | 1/Stufe | Bewegungschance pro Runde 25–95 % |
+| Lebensdauer | 0–10 | 1/Stufe | maximales Alter |
+| Verwertung | 0–10 | 1/Stufe | Energie pro Nahrungseinheit |
+| Chemotaxis | 0–10 | 1/Stufe | Chance je Bewegung (3–12 %), gezielt zur nahrhaftesten Nachbarstelle zu laufen |
+| Angriff | 0–10 | 1/Stufe | Kampfwert beim Hineinlaufen in Gegner |
+| Abwehr | 0–10 | 1/Stufe | Kampfwert beim Verteidigen |
+| Spezialfähigkeit | eine | 4–7 | Sporen 4, Kapsel 5, Photosynthese 5, Biofilm 6, Räuber 6, Toxine 7 (stärkere kosten mehr) |
 
 **Bewegungsarten:**
 - Von Anfang an verfügbar:

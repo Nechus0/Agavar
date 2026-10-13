@@ -6,8 +6,8 @@ export function hexToRgb(hex) {
 }
 
 // Farbverlauf für den Nährboden: leergefressen (dunkel) bis satt (helles Agar-Gelb).
-const AGAR_LO = [38, 30, 22];
-const AGAR_HI = [214, 178, 96];
+const AGAR_LO = [48, 30, 14];
+const AGAR_HI = [192, 153, 60];
 const TOXIN = [190, 255, 60]; // giftgrüne Wolke
 const BITE = [255, 40, 60]; // rote Fraßspur
 // food colour table for a world theme ({ lo, hi } as RGB); default is classic agar
@@ -140,7 +140,7 @@ export class PathAnimator {
   constructor(canvas, onStep) {
     this.canvas = canvas;
     this.onStep = onStep;
-    this.color = '#e3c48a';
+    this.color = '#38a0b4';
     this.raf = 0;
     this.actions = [];
   }
@@ -260,7 +260,7 @@ export class PathAnimator {
     ctx.rotate(ang);
     ctx.fillStyle = this.color;
     ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#0b1220';
+    ctx.fillStyle = '#0f1210';
     ctx.beginPath(); ctx.moveTo(0, -r * 0.7); ctx.lineTo(r * 0.45, r * 0.25); ctx.lineTo(-r * 0.45, r * 0.25); ctx.closePath(); ctx.fill();
     ctx.restore();
   }
@@ -272,7 +272,7 @@ export class PathAnimator {
 export class GrowthAnimator {
   constructor(canvas) {
     this.canvas = canvas;
-    this.color = '#e3c48a';
+    this.color = '#38a0b4';
     this.raf = 0;
     this.flat = [{ st: 'P' }];
     this.divEvery = 5;

@@ -1,7 +1,7 @@
 // Speichern auf dem Gerät (localStorage). Alle Zugriffe sind abgesichert,
 // weil Safari den Speicher z. B. im privaten Modus verweigern kann.
 // Jedes Bakterium ist eine Karriere (career.won = gewonnene Level). Das freie Spiel hat ein eigenes Bakterium.
-import { normalize, DEFAULT_BUDGET } from './genome.js';
+import { normalize, DEFAULT_BUDGET, COSTED, GENOME_VERSION } from './genome.js';
 
 const KEY = 'agava.v2';
 
@@ -22,10 +22,17 @@ const cleanStars = (st) => {
   if (st && typeof st === 'object') for (const [k, v] of Object.entries(st)) if (Number.isInteger(v) && v > 0) out[k] = v & 7;
   return out;
 };
-const withCareer = (raw) => ({
-  ...normalize(raw), id: raw.id,
+// ältere Spielstände: Stufen 0–4/0–5 auf die feinere Skala 0–10 heben
+function upgrade(raw) {
+  if (!raw || typeof raw !== 'object' || raw.v >= GENOME_VERSION) return raw;
+  const out = { ...raw, v: GENOME_VERSION };
+  for (const t of COSTED) if (Number.isFinite(raw[t.key])) out[t.key] = raw[t.key] * 2;
+  return out;
+}
+const withCareer = (raw0) => { const raw = upgrade(raw0); return {
+  ...normalize(raw), id: raw.id, v: GENOME_VERSION, world: Number.isInteger(raw.world) ? raw.world : 1,
   career: { won: cleanWon(raw.career && raw.career.won), stars: cleanStars(raw.career && raw.career.stars) },
-});
+}; };
 
 let state = load();
 
@@ -37,8 +44,8 @@ function load() {
     const s = JSON.parse(raw);
     return {
       bacteria: Array.isArray(s.bacteria) ? s.bacteria.filter((b) => b && typeof b.id === 'string').map(withCareer) : [],
-      freeGenome: s.freeGenome ? normalize(s.freeGenome) : null,
-      settings: { ...DEFAULT_SETTINGS, ...(s.settings || {}) },
+      freeGenome: s.freeGenome ? { ...normalize(upgrade(s.freeGenome)), v: GENOME_VERSION } : null,
+      settings: { ...DEFAULT_SETTINGS, ...(s.settings || {}), ...(s.settings && !s.settings.v2 ? { budget: DEFAULT_BUDGET, v2: true } : {}) },
       achievements: s.achievements && typeof s.achievements === 'object' ? s.achievements : {},
       atlas: Array.isArray(s.atlas) ? s.atlas.filter((x) => typeof x === 'string') : [],
     };
@@ -62,7 +69,7 @@ export const getBacterium = (id) => state.bacteria.find((b) => b.id === id) || n
 // Speichert Bauplan und Name; die Karriere bleibt erhalten.
 export function saveBacterium(g) {
   const old = g.id ? getBacterium(g.id) : null;
-  const b = withCareer({ ...g, career: old ? old.career : { won: [], stars: {} } });
+  const b = withCareer({ ...g, v: GENOME_VERSION, career: old ? old.career : { won: [], stars: {} } });
   b.id = old ? old.id : `b${Date.now().toString(36)}${Math.floor(Math.random() * 1e6).toString(36)}`;
   if (old) state.bacteria[state.bacteria.indexOf(old)] = b;
   else state.bacteria.push(b);
@@ -118,7 +125,7 @@ export function globalWon() {
 
 export const getFree = () => state.freeGenome;
 export function saveFree(g) {
-  state.freeGenome = normalize(g);
+  state.freeGenome = { ...normalize(g), v: GENOME_VERSION };
   save();
   return state.freeGenome;
 }
@@ -128,3 +135,5 @@ export function updateSettings(patch) {
   Object.assign(state.settings, patch);
   save();
 }
+// Zeitpunkt eines Erfolgs (ms) oder 0
+export const achievementTime = (key) => Number(state.achievements[key]) || 0;

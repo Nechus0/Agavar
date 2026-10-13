@@ -6,8 +6,9 @@ import { STEP_MOVES, MOVE_BY_KEY } from './movement.js';
 
 const moveNames = (step) => (STEP_MOVES[step] || []).map((k) => `“${MOVE_BY_KEY[k].name}”`).join(' and ');
 
-export const START_POINTS = 6;
-export const POINTS_PER_WIN = 2;
+// ein Bakterium lebt eine Welt lang: 12 Punkte zum Start, +1 je Level, +1 je Level mit drei Sternen (≈ 30 am Weltende)
+export const START_POINTS = 12;
+export const POINTS_PER_WIN = 1;
 
 // after = Level, das gewonnen werden muss (0 = von Anfang an)
 export const UNLOCKS = [

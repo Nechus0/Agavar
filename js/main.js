@@ -1,9 +1,9 @@
-// Oberfläche: Bildschirme, Karriere, Editor, Spielablauf.
+// Oberfläche: Bildschirme, Karriere, Editor, Spielablauf – im Agava-Design-System („Lab at night“).
 import {
-  COSTED, FREE, SPECIALS, SPECIAL_KEYS, PALETTE,
-  MIN_BUDGET, MAX_BUDGET, defaultGenome, cost, normalize, randomGenome, specialsOf,
+  COSTED, FREE, SPECIALS, SPECIAL_KEYS, PALETTE, TRAIT_MAX,
+  MIN_BUDGET, MAX_BUDGET, defaultGenome, cost, normalize, randomGenome, specialsOf, symbolOf,
 } from './genome.js';
-import { Simulation, DISTRIBUTIONS, MAX_TICKS, energyProfile, ROUNDS_PER_HOUR } from './sim.js';
+import { Simulation, DISTRIBUTIONS, MAX_TICKS, energyProfile, phenotype, ROUNDS_PER_HOUR } from './sim.js';
 import { PlateRenderer, drawHistory, GrowthAnimator } from './render.js';
 import { makeRng, randomSeed } from './rng.js';
 import { randomName } from './names.js';
@@ -14,7 +14,7 @@ import {
   STAR_GOALS, starMask, starCount,
 } from './progression.js';
 import { analyze, ACHIEVEMENTS } from './insights.js';
-import { SPECIAL_ICONS, SPECIAL_COLORS, TRAIT_ICONS, LOCK_ICON, UNLOCK_ICON } from './icons.js';
+import { SPECIAL_ICONS, TRAIT_ICONS, UI_ICONS, ACH_ICONS } from './icons.js';
 import { MOVES, MOVE_BY_KEY, actionsOf, compile, moveFromProgram, describeMove, pathSvg } from './movement.js';
 import * as store from './storage.js';
 import { meters, METER_INFO, counterTips } from './meters.js';
@@ -40,76 +40,73 @@ function el(tag, attrs = {}, ...children) {
   return e;
 }
 
-// Drei Leisten (Ausbreitung, Kampfkraft, Ausdauer); mit `other` als Vergleich „Du vs. Gegner“
-function meterBars(g, other = null, otherLabel = '') {
-  const a = meters(g);
-  const b = other ? meters(other) : null;
-  return el('div', { class: `meters ${b ? 'versus' : ''}` },
-    b ? el('div', { class: 'm-legend small muted' }, el('span', {}, el('i', { class: 'm-you' }), 'You'), el('span', {}, el('i', { class: 'm-them' }), otherLabel)) : null,
-    METER_INFO.map((m) => el('div', { class: 'm-row', title: m.label },
-      el('span', { class: 'm-label' }, `${m.icon} ${m.label}`),
-      el('div', { class: 'm-bars' },
-        el('div', { class: 'm-bar' }, el('i', { style: `width:${a[m.key] * 10}%;background:${m.color}` })),
-        b ? el('div', { class: 'm-bar them' }, el('i', { style: `width:${b[m.key] * 10}%` })) : null),
-      el('b', { class: 'm-val' }, b ? `${Math.round(a[m.key])}:${Math.round(b[m.key])}` : String(Math.round(a[m.key]))))));
-}
-
-// Ton an/aus (Einstellung wird gespeichert)
-function refreshSoundButtons() {
-  const on = store.getSettings().sound !== false;
-  setSoundEnabled(on);
-  document.querySelectorAll('.sound-toggle').forEach((b) => { setToggle(b, on ? '🔊' : '🔇', on); });
-}
-document.addEventListener('click', (e) => {
-  if (!e.target.closest('.sound-toggle')) return;
-  store.updateSettings({ sound: store.getSettings().sound === false });
-  refreshSoundButtons();
-  toast(store.getSettings().sound ? '🔊 Sound on' : '🔇 Sound off');
-  play('tap');
-});
-
-// toggle buttons: plain icon, or a settings row with label and On/Off
-function setToggle(b, ico, on) {
-  b.setAttribute('aria-pressed', String(on));
-  b.classList.toggle('off', !on);
-  if (!b.dataset.label) { b.textContent = ico; return; }
-  fill(b, el('span', { class: 'set-label' }, `${ico} ${b.dataset.label}`), el('span', { class: `set-value ${on ? '' : 'muted'}` }, on ? 'On' : 'Off'));
-}
-
-// Music on/off (only plays during a simulation)
-const musicOn = () => store.getSettings().music !== false;
-function refreshMusicButtons() {
-  document.querySelectorAll('.music-toggle').forEach((b) => setToggle(b, '🎵', musicOn()));
-}
-document.addEventListener('click', (e) => {
-  if (!e.target.closest('.music-toggle')) return;
-  store.updateSettings({ music: !musicOn() });
-  refreshMusicButtons();
-  toast(musicOn() ? '🎵 Music on' : '🎵 Music off');
-  if (current === 'sim' && musicOn() && !run.paused && !run.sim.done) startMusic(); else stopMusic();
-});
-
 // Inhalt ersetzen, leere Einträge (null/false) überspringen
 function fill(node, ...kids) {
   node.replaceChildren(...kids.flat().filter((k) => k !== null && k !== undefined && k !== false));
 }
 
-// SVG-Grafik (nur eigene, feste Strings aus icons.js / germs.js)
-function icon(svg, cls = '', color = '') {
-  const s = el('span', { class: `ico ${cls}`, style: color ? `color:${color}` : null });
+// SVG-Grafik (nur eigene, feste Strings aus icons.js / germs.js / movement.js)
+function icon(svg, cls = '') {
+  const s = el('span', { class: `ico ${cls}` });
   s.innerHTML = svg;
   return s;
 }
+const ui = (name, cls = '') => icon(UI_ICONS[name], cls);
 function germPic(germ, color, cls = '') {
   const s = el('span', { class: `germ-pic ${cls}` });
   s.innerHTML = germSvg(GERMS[germ].shape, color);
   return s;
 }
+// Kulturfarbe immer zusammen mit ihrem Symbol (Farbe ist nie das einzige Merkmal)
+const culture = (color, cls = '') => el('span', { class: `culture ${cls}`, style: `background:${color}`, 'aria-hidden': 'true' }, symbolOf(color));
+const specialIcon = (key, cls = '') => icon(SPECIAL_ICONS[key], cls);
 
-// Bewegung als kleine Bahnzeichnung + Beschreibung
-const moveChip = (g) => el('span', { class: 'move-chip' }, icon(pathSvg(g.program), 'path-ico'), describeMove(moveFromProgram(g.program)));
-const specialBadge = (key, cls = '') => icon(SPECIAL_ICONS[key], cls, SPECIAL_COLORS[key]);
-const specialTag = (key) => el('span', { class: 'sp-tag', style: `--c:${SPECIAL_COLORS[key]}` }, specialBadge(key, 'sm'), SPECIALS[key].name);
+// feste Symbole im HTML (data-icon) einsetzen
+function hydrateIcons(root = document) {
+  root.querySelectorAll('[data-icon]').forEach((s) => {
+    if (!s.dataset.done && UI_ICONS[s.dataset.icon]) { s.innerHTML = UI_ICONS[s.dataset.icon]; s.dataset.done = '1'; }
+  });
+}
+
+// Drei Leisten (Ausbreitung, Kampfkraft, Ausdauer); mit `other` als Vergleich „Du vs. Gegner“
+function meterBars(g, other = null, otherLabel = '') {
+  const a = meters(g);
+  const b = other ? meters(other) : null;
+  return el('div', { class: 'meters' },
+    b ? el('div', { class: 'm-legend' }, el('span', {}, el('i', { class: 'm-you' }), 'You'), el('span', {}, el('i', { class: 'm-them' }), otherLabel)) : null,
+    METER_INFO.map((m) => el('div', { class: 'm-row' },
+      el('span', { class: 'm-label' }, m.label),
+      el('div', { class: 'm-bars' },
+        el('div', { class: 'm-bar' }, el('i', { style: `width:${a[m.key] * 10}%` })),
+        b ? el('div', { class: 'm-bar them' }, el('i', { style: `width:${b[m.key] * 10}%` })) : null),
+      el('b', { class: 'm-val' }, b ? `${Math.round(a[m.key])}:${Math.round(b[m.key])}` : String(Math.round(a[m.key]))))));
+}
+
+// ---------- Ton und Musik ----------
+function setToggle(b, on) {
+  b.setAttribute('aria-pressed', String(on));
+  fill(b, el('span', { class: 'set-label' }, ui(b.dataset.iconName || 'sound'), b.dataset.label), el('span', { class: 'switch', 'aria-hidden': 'true' }));
+}
+function refreshSoundButtons() {
+  const on = store.getSettings().sound !== false;
+  setSoundEnabled(on);
+  document.querySelectorAll('.sound-toggle').forEach((b) => setToggle(b, on));
+}
+const musicOn = () => store.getSettings().music !== false;
+function refreshMusicButtons() {
+  document.querySelectorAll('.music-toggle').forEach((b) => setToggle(b, musicOn()));
+}
+document.addEventListener('click', (e) => {
+  if (e.target.closest('.sound-toggle')) {
+    store.updateSettings({ sound: store.getSettings().sound === false });
+    refreshSoundButtons();
+    play('tap');
+  } else if (e.target.closest('.music-toggle')) {
+    store.updateSettings({ music: !musicOn() });
+    refreshMusicButtons();
+    if (current === 'sim' && musicOn() && !run.paused && !run.sim.done) startMusic(); else stopMusic();
+  }
+});
 
 const LABELS = {
   size: { klein: 'Small', mittel: 'Medium', gross: 'Large' },
@@ -128,11 +125,13 @@ function go(id) {
   document.querySelectorAll('.screen').forEach((s) => (s.hidden = s.id !== id));
   current = id;
   window.scrollTo(0, 0);
-  // bottom bar only on the hub screens
   const hub = ['home', 'atlas', 'awards', 'settings'].includes(id);
   $('#bottom-nav').hidden = !hub;
   document.body.classList.toggle('has-nav', hub);
-  document.querySelectorAll('#bottom-nav button').forEach((b) => b.classList.toggle('on', b.dataset.go === id));
+  document.querySelectorAll('#bottom-nav button').forEach((b) => {
+    b.classList.toggle('on', b.dataset.go === id);
+    if (b.dataset.go === id) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
+  });
   if (onEnter[id]) onEnter[id]();
 }
 
@@ -155,7 +154,7 @@ function confirmDialog(title, text, yes = 'Yes') {
     $('#modal-title').textContent = title;
     $('#modal-text').textContent = text;
     const done = (v) => { $('#modal').hidden = true; document.body.classList.remove('modal-open'); resolve(v); };
-    fill($('#modal-buttons'), 
+    fill($('#modal-buttons'),
       el('button', { class: 'btn', onclick: () => done(false) }, 'Cancel'),
       el('button', { class: 'btn primary', onclick: () => done(true) }, yes));
     $('#modal').hidden = false;
@@ -163,16 +162,45 @@ function confirmDialog(title, text, yes = 'Yes') {
   });
 }
 
-const lockedToast = (level) => toast(`🔒 Unlocks when you win level ${level}.`);
+const lockedToast = (level) => toast(`Unlocks when you win level ${level}.`);
+
+// ---------- Welten und Karrieren ----------
+// Jedes Bakterium gehört zu einer Welt. Freigeschaltete Fähigkeiten bleiben: Level früherer Welten
+// (von irgendeinem Bakterium gewonnen) zählen für alle späteren Bakterien mit.
+const currentWorld = () => WORLDS.find((w) => w.playable && !store.getBacteria().some((b) => b.world === w.n && nextLevel(b.career.won, LEVELS.length) > LEVELS.length)) || WORLDS[0];
+const wonBefore = (world) => store.globalWon().filter((n) => worldOfLevel(n).n < world);
+const limitsOf = (b) => getLimits([...b.career.won, ...wonBefore(b.world || 1)]);
+const ptsOf = (b) => careerPoints(b.career.won, b.career.stars);
+const takenNames = (exceptId = null) => [
+  ...store.getBacteria().filter((b) => b.id !== exceptId).map((b) => b.name),
+  ...LEVELS.flatMap((lv) => levelOpponents(lv).map((o) => o.name)),
+];
+const careerCtx = (b, returnTo = 'career') => ({
+  mode: 'career', id: b.id, world: b.world || 1, budget: ptsOf(b), limits: limitsOf(b), label: 'Upgrade points', returnTo,
+});
+const careerNewCtx = (returnTo = 'careers') => {
+  const w = currentWorld();
+  return { mode: 'career', id: null, world: w.n, budget: START_POINTS, limits: getLimits(wonBefore(w.n)), label: 'Upgrade points', returnTo };
+};
+const starsText = (mask) => '★'.repeat(starCount(mask)) + '☆'.repeat(3 - starCount(mask));
+const levelLabel = (b) => {
+  const n = nextLevel(b.career.won, LEVELS.length);
+  return n > LEVELS.length ? 'All levels won' : `Level ${n} of ${LEVELS_PER_WORLD}`;
+};
+const lastCareer = () => {
+  const list = store.getBacteria();
+  return list.find((x) => x.id === store.getSettings().lastCareer) || list[0] || null;
+};
 
 // ---------- Startbildschirm mit Demo-Platte ----------
 const demo = { sim: null, r: null, raf: 0, last: 0, acc: 0 };
 
 function startDemo() {
   const rng = makeRng(randomSeed());
-  const genomes = [0, 1, 2].map((k) => ({ ...randomGenome(rng, 20), color: PALETTE[(k * 3 + rng.int(2)) % PALETTE.length] }));
+  const colors = [PALETTE[0], PALETTE[2], PALETTE[7]];
+  const genomes = colors.map((color) => ({ ...randomGenome(rng, 24), color }));
   demo.sim = new Simulation({ genomes, size: 'klein', distribution: rng.pick(DISTRIBUTIONS), amount: 'normal', regen: 'normal', seed: randomSeed() });
-  demo.r = new PlateRenderer($('#hero-plate'), demo.sim, WORLDS[0].theme);
+  demo.r = new PlateRenderer($('#hero-plate'), demo.sim);
   demo.r.draw();
 }
 
@@ -189,77 +217,101 @@ function demoFrame(t) {
   demo.r.draw();
 }
 
+const reducedMotion = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
 onEnter.home = () => {
-  renderContinue();
-  const unlocked = store.globalWon().includes(3);
-  $('#home-free').classList.toggle('locked', !unlocked);
-  $('#home-free').textContent = unlocked ? '🎲 Free play' : '🔒 Free play · after level 3';
+  renderHome();
   if (!demo.sim) startDemo();
   demo.last = 0;
   cancelAnimationFrame(demo.raf);
+  if (reducedMotion()) { for (let k = 0; k < 300; k++) demo.sim.step1(); demo.r.draw(); return; }
   demo.raf = requestAnimationFrame(demoFrame);
 };
 onLeave.home = () => cancelAnimationFrame(demo.raf);
 
-// "Continue": one tap to the next level of the bacterium you played last
-function renderContinue() {
-  const list = store.getBacteria();
-  if (!list.length) {
-    fill($('#home-continue'), el('button', { class: 'continue-card', onclick: () => openEditor(null, careerNewCtx('home')) },
-      el('span', { class: 'cc-play' }, '＋'),
-      el('span', { class: 'cc-text' }, el('b', {}, 'Create your bacterium'), el('small', {}, 'Design it, then start your career on the skin'))));
-    return;
+function renderHome() {
+  const b = lastCareer();
+  const world = b ? WORLDS.find((w) => w.n === (b.world || 1)) : currentWorld();
+  // nächstes Level: eine Karte mit Gegner, Beobachtung und dem einen grünen Knopf
+  if (!b) {
+    fill($('#home-next'), el('section', { class: 'card next-card' },
+      el('div', { class: 'meta' }, el('span', {}, `World ${world.n} · ${world.name}`), el('span', { class: 'mono' }, `Level 1 / ${LEVELS_PER_WORLD}`)),
+      el('h2', {}, 'Create your bacterium'),
+      el('p', { class: 'sub' }, 'Design it, give it a name, then start your career on the skin.'),
+      el('button', { class: 'btn primary big', onclick: () => openEditor(null, careerNewCtx('home')) }, ui('plus'), 'New bacterium')));
+  } else {
+    const n = nextLevel(b.career.won, LEVELS.length);
+    const done = n > LEVELS.length;
+    if (done) {
+      fill($('#home-next'), el('section', { class: 'card next-card' },
+        el('div', { class: 'meta' }, el('span', {}, `World ${world.n} · ${world.name}`), el('span', { class: 'mono' }, `${b.career.won.length} / ${LEVELS_PER_WORLD}`)),
+        el('h2', {}, 'Every level so far is won'),
+        el('p', { class: 'sub' }, `More ${world.name.toLowerCase()} levels are on the way. Collect missing stars in the meantime.`),
+        el('button', { class: 'btn primary big', onclick: () => { careerId = b.id; go('career'); } }, ui('awards'), 'Open career')));
+    } else {
+      const lv = LEVELS[n - 1];
+      const [boss, ...others] = levelOpponents(lv);
+      fill($('#home-next'), el('section', { class: 'card next-card', 'aria-label': 'Next level' },
+        el('div', { class: 'meta' }, el('span', {}, `World ${world.n} · ${world.name}`), el('span', { class: 'mono' }, `Level ${n} / ${LEVELS_PER_WORLD}`)),
+        el('div', {}, el('h2', {}, lv.name),
+          el('p', { class: 'sub' }, 'Boss: ', el('i', {}, boss.name), others.length ? ` + ${others.length} more` : '')),
+        el('div', { class: 'tip' }, ui('bulb'), el('span', {}, counterTips(boss, 1)[0])),
+        el('button', { class: 'btn primary big', onclick: () => playNext(b, n) }, ui('play'), `Play level ${n}`)));
+    }
   }
-  const b = list.find((x) => x.id === store.getSettings().lastCareer) || list[0];
-  const n = nextLevel(b.career.won, LEVELS.length);
-  const done = n > LEVELS.length;
-  fill($('#home-continue'), el('button', {
-    class: 'continue-card',
-    onclick: () => { careerId = b.id; if (done) go('career'); else openLevel(n); },
-  },
-  el('span', { class: 'cc-play' }, done ? '🏆' : '▶'),
-  el('span', { class: 'cc-text' },
-    el('b', {}, done ? 'All levels done!' : 'Continue'),
-    el('small', {}, done ? `${b.name} beat every level so far` : `${worldOfLevel(n).icon} Level ${n} · ${LEVELS[n - 1].name}`),
-    el('small', { class: 'cc-who' }, el('i', { class: 'dot', style: `background:${b.color}` }), b.name))));
+  // Fortschritt: gewonnene Level, Sterne, Atlas
+  const won = b ? b.career.won.length : 0;
+  const stars = b ? Object.values(b.career.stars).reduce((a, m) => a + starCount(m), 0) : 0;
+  const atlasAll = atlasGerms();
+  const found = new Set(store.getAtlas());
+  fill($('#home-stats'),
+    el('div', { class: 'stat' }, el('b', {}, String(won), el('small', {}, ` / ${LEVELS_PER_WORLD}`)), el('span', {}, 'Levels won')),
+    el('div', { class: 'stat' }, el('b', { class: 'star' }, `★ ${stars}`, el('small', {}, ` / ${LEVELS_PER_WORLD * 3}`)), el('span', {}, 'Stars')),
+    el('div', { class: 'stat' }, el('b', {}, String(atlasAll.filter((g) => found.has(g.germ)).length), el('small', {}, ` / ${atlasAll.length}`)), el('span', {}, 'Germs found')));
+  // dein Bakterium
+  if (b) {
+    const pts = ptsOf(b), free = pts - cost(b);
+    fill($('#home-bact'), el('section', { class: 'card', 'aria-label': 'Your bacterium' },
+      el('div', { class: 'bact-head' }, culture(b.color), el('span', { class: 'name' }, b.name),
+        el('button', { class: 'btn link', onclick: () => openEditor(b, careerCtx(b, 'home')) }, 'Edit')),
+      meterBars(normalize(b)),
+      el('p', { class: `small ${free > 0 ? 'free-pts' : 'muted'}` }, free > 0 ? `${free} upgrade ${free === 1 ? 'point' : 'points'} left to spend` : `${cost(b)} / ${pts} upgrade points used`)));
+  } else fill($('#home-bact'));
+  const freeOpen = store.globalWon().includes(3);
+  $('#home-free').classList.toggle('locked', !freeOpen);
+  $('#home-free-sub').textContent = freeOpen ? 'Any budget, random foes' : 'Unlocks after level 3';
 }
+
+function playNext(b, n) {
+  careerId = b.id;
+  const probs = problems(b, limitsOf(b), ptsOf(b));
+  if (probs.length) return openLevel(n);
+  const lv = LEVELS[n - 1];
+  store.updateSettings({ lastCareer: b.id });
+  startMatch({ mode: 'level', level: n, careerId: b.id, player: b, opponents: levelOpponents(lv), ...lv.plate, seed: randomSeed() });
+}
+
 $('#home-free').addEventListener('click', () => {
   if (store.globalWon().includes(3)) go('setup');
-  else toast('🔒 Free play unlocks when you win level 3.');
+  else toast('Free play unlocks when you win level 3.');
 });
-
 $('#home-career').addEventListener('click', () => {
   if (!store.getBacteria().length) openEditor(null, careerNewCtx('home'));
   else go('careers');
 });
 
 // ---------- Karriere-Übersicht ----------
-const ptsOf = (b) => careerPoints(b.career.won, b.career.stars);
-const starsText = (mask) => '★'.repeat(starCount(mask)) + '☆'.repeat(3 - starCount(mask));
-const careerCtx = (b, returnTo = 'career') => ({
-  mode: 'career', id: b.id, budget: ptsOf(b), limits: getLimits(b.career.won),
-  label: 'Upgrade points', returnTo,
-});
-const careerNewCtx = (returnTo = 'careers') => ({
-  mode: 'career', id: null, budget: START_POINTS, limits: getLimits([]), label: 'Upgrade points', returnTo,
-});
-
-function levelBadge(b) {
-  const n = nextLevel(b.career.won, LEVELS.length);
-  return n > LEVELS.length ? '🏆 Master' : `Level ${n} of ${LEVELS.length}`;
-}
-
 onEnter.careers = () => {
   const list = store.getBacteria();
   fill($('#career-list'), ...(list.length ? list.map((b) => {
-    const pts = ptsOf(b);
-    const free = pts - cost(b);
-    return el('button', { class: 'lab-item career-item', onclick: () => openCareer(b.id) },
-      el('div', { class: 'title' },
-        el('span', { class: 'dot', style: `background:${b.color}` }),
-        el('b', {}, b.name),
-        el('span', { class: 'cost' }, levelBadge(b))),
-      free > 0 ? el('div', { class: 'small free-pts' }, `${free} ${free === 1 ? 'point' : 'points'} free!`) : null);
+    const free = ptsOf(b) - cost(b);
+    const w = WORLDS.find((x) => x.n === (b.world || 1));
+    return el('button', { class: 'career-item', onclick: () => openCareer(b.id) },
+      culture(b.color),
+      el('span', { class: 'main' }, el('b', {}, b.name),
+        el('small', {}, `World ${w.n} · ${w.name} · ${levelLabel(b)}`),
+        free > 0 ? el('small', { class: 'free-pts' }, `${free} ${free === 1 ? 'point' : 'points'} to spend`) : null),
+      ui('chevron', 'sm'));
   }) : [el('div', { class: 'empty' }, 'No bacterium yet. Create your first one!')]));
 };
 $('#career-new').addEventListener('click', () => openEditor(null, careerNewCtx('careers')));
@@ -274,36 +326,40 @@ function openCareer(id) {
   go('career');
 }
 
+function rewardIcon(r) {
+  if (r.type === 'special') return specialIcon(r.key, 'sm');
+  if (r.type === 'move') return icon(pathSvg(actionsOf({ type: r.key, size: 1, dir: 'R' })), 'sm');
+  return ui('plus', 'sm');
+}
+
 onEnter.career = () => {
   const b = curCareer();
   if (!b) return go('careers');
   const won = b.career.won;
   const pts = ptsOf(b);
   const free = pts - cost(b);
-  const lim = getLimits(won);
-  const probs = problems(b, lim, pts);
+  const probs = problems(b, limitsOf(b), pts);
   $('#cr-title').textContent = b.name;
   fill($('#cr-card'),
-    el('div', { class: 'title row gap' }, el('span', { class: 'dot big-dot', style: `background:${b.color}` }), el('b', { class: 'big-name' }, b.name), el('span', { class: 'cost' }, levelBadge(b))),
+    el('div', { class: 'bact-head' }, culture(b.color), el('span', { class: 'name' }, b.name), el('span', { class: 'small muted' }, levelLabel(b))),
     meterBars(normalize(b)),
     probs.length ? el('p', { class: 'small warn' }, probs.join(' · ')) : null,
     el('button', { class: `btn ${free > 0 ? 'primary' : ''}`, onclick: () => openEditor(b, careerCtx(b)) },
-      free > 0 ? `🔧 Upgrade · ${free} ${free === 1 ? 'point' : 'points'} free` : '🔧 Upgrade'));
+      ui('upgrade'), free > 0 ? `Upgrade · ${free} ${free === 1 ? 'point' : 'points'} free` : 'Upgrade'));
 
   const nxt = nextLevel(won, LEVELS.length);
-  const w = WORLDS[0];
+  const w = WORLDS.find((x) => x.n === (b.world || 1)) || WORLDS[0];
   fill($('#cr-world'),
-    el('div', { class: 'world-head', style: `--accent-w:${w.theme.accent}` },
-      el('span', { class: 'world-ico' }, w.icon),
-      el('div', {}, el('small', {}, `World ${w.n}`), el('b', {}, w.name), el('span', { class: 'small muted' }, w.tagline)),
+    el('div', { class: 'world-head' }, ui('hand', 'md'),
+      el('div', { class: 'main' }, el('small', {}, `World ${w.n}`), el('b', {}, w.name), el('small', {}, w.tagline)),
       el('span', { class: 'world-count' }, `${won.length}/${LEVELS_PER_WORLD}`)));
   fill($('#cr-next-worlds'),
     el('h3', {}, 'Coming next'),
-    el('div', { class: 'world-strip' }, WORLDS.slice(1).map((x) => el('button', {
-      class: 'world-chip', style: `--accent-w:${x.theme.accent}`,
-      onclick: () => toast(`${x.icon} ${x.name}: ${x.tagline}. Coming soon!`),
-    }, el('span', {}, x.icon), el('small', {}, x.name)))),
-    el('p', { class: 'small muted' }, 'Later: ', EXPANSIONS.map((x) => `${x.icon} ${x.name}`).join(' · ')));
+    el('p', { class: 'small muted' }, 'Each world gets a new bacterium. Everything you unlock stays unlocked.'),
+    el('div', { class: 'world-strip' }, WORLDS.filter((x) => x.n !== w.n).map((x) => el('button', {
+      class: 'world-chip', onclick: () => toast(`${x.name}: ${x.tagline}. Coming soon!`),
+    }, ui('lock', 'sm'), x.name))),
+    el('p', { class: 'small muted' }, 'Later: ', EXPANSIONS.map((x) => x.name).join(' · ')));
   fill($('#cr-levels'), ...LEVELS.map((lv, i) => {
     const n = i + 1;
     const isWon = won.includes(n);
@@ -312,15 +368,15 @@ onEnter.career = () => {
     return el('button', {
       class: `level-tile ${isWon ? 'won' : ''} ${n === nxt ? 'next' : ''} ${open ? '' : 'locked'}`,
       onclick: () => (open ? openLevel(n) : toast(`Win level ${n - 1} first.`)),
-      'aria-label': `Level ${n}: ${lv.name}`,
+      'aria-label': `Level ${n}: ${lv.name}${isWon ? `, ${starCount(b.career.stars[n] || 0)} of 3 stars` : open ? '' : ', locked'}`,
     },
-    el('span', { class: 'lt-num' }, open ? String(n) : '🔒'),
-    germPic(boss.germ, open ? boss.color : '#3a4554', 'lt-pic'),
+    el('span', { class: 'lt-top' }, el('span', { class: 'lt-num' }, String(n)), open ? null : ui('lock', 'sm')),
+    germPic(boss.germ, open ? boss.color : '#3a4434', 'lt-pic'),
     el('span', { class: 'lt-name' }, lv.name),
-    isWon ? el('span', { class: 'lt-stars' }, starsText(b.career.stars[n] || 0))
+    isWon ? el('span', { class: 'lt-stars', style: 'color:var(--warning)' }, starsText(b.career.stars[n] || 0))
       : el('span', { class: 'lt-rewards' }, rewardsOf(n).map((r) => rewardIcon(r))));
   }),
-  el('div', { class: 'level-tile soon' }, el('span', { class: 'lt-num' }, `${LEVELS.length + 1}–${LEVELS_PER_WORLD}`), el('span', { class: 'lt-soon' }, '🚧'), el('span', { class: 'lt-name' }, 'More skin levels coming soon')));
+  el('div', { class: 'level-tile soon' }, el('span', { class: 'lt-num' }, `${LEVELS.length + 1}–${LEVELS_PER_WORLD}`), el('span', { class: 'lt-name' }, 'More skin levels coming soon')));
 };
 
 $('#cr-delete').addEventListener('click', async () => {
@@ -331,26 +387,23 @@ $('#cr-delete').addEventListener('click', async () => {
   }
 });
 
-function rewardIcon(r) {
-  if (r.type === 'special') return specialBadge(r.key, 'sm');
-  if (r.type === 'move') return icon(pathSvg(actionsOf({ type: r.key, size: 1, dir: 'R' })), 'sm reward-step');
-  return icon(UNLOCK_ICON, 'sm reward-step');
-}
 const rewardRows = (level, withPoints) => [
-  withPoints ? el('div', { class: 'reward' }, el('span', { class: 'plus' }, `+${POINTS_PER_WIN}`), 'upgrade points for your bacterium') : null,
-  ...rewardsOf(level).map((r) => el('div', { class: 'reward' }, rewardIcon(r), r.text)),
+  withPoints ? el('div', { class: 'reward' }, el('span', { class: 'badge' }, ui('plus')), el('span', { class: 'main' }, el('b', {}, `+${POINTS_PER_WIN} upgrade point`), el('small', {}, 'for this bacterium'))) : null,
+  ...rewardsOf(level).map((r) => el('div', { class: 'reward' }, el('span', { class: 'badge' }, rewardIcon(r)), el('span', { class: 'main' }, el('b', {}, r.text), el('small', {}, 'stays unlocked in every world')))),
 ].filter(Boolean);
 
 // ---------- Leveldetails ----------
 let openLevelNo = 1;
 
-// eine Zeile pro Gegner: Bild, Name, Fähigkeiten, Bewegung
+const moveTag = (g) => el('span', { class: 'tag' }, icon(pathSvg(g.program), 'sm'), describeMove(moveFromProgram(g.program)));
+const specialTag = (key) => el('span', { class: 'tag' }, specialIcon(key, 'sm'), SPECIALS[key].name);
+
 function foeRow(o) {
-  return el('div', { class: `foe ${o.boss ? 'boss' : ''}` },
+  return el('div', { class: 'foe' },
     germPic(o.germ, o.color, o.boss ? 'foe-pic big' : 'foe-pic'),
     el('div', { class: 'foe-main' },
-      el('b', { class: 'foe-name' }, o.boss ? '★ ' : '', o.name),
-      el('div', { class: 'foe-tags' }, ...specialsOf(o).map(specialTag), moveChip(o))));
+      el('b', { class: 'foe-name' }, o.name),
+      el('div', { class: 'foe-tags' }, o.boss ? el('span', { class: 'tag' }, 'Boss') : null, ...specialsOf(o).map(specialTag), moveTag(o))));
 }
 
 function openLevel(n) {
@@ -365,37 +418,36 @@ onEnter['level-detail'] = () => {
   const lv = LEVELS[n - 1];
   const [boss, ...others] = levelOpponents(lv);
   const won = b.career.won;
-  $('#ld-title').textContent = `${worldOfLevel(n).icon} Level ${n}`;
-  fill($('#ld-desc'), el('b', {}, lv.name), ' – ', lv.desc);
+  $('#ld-title').textContent = `Level ${n} · ${lv.name}`;
+  fill($('#ld-desc'), lv.desc);
   const pl = lv.plate;
   fill($('#ld-foes'),
     foeRow(boss), ...others.map(foeRow),
-    el('div', { class: 'tip small' }, '💡 ', counterTips(boss, 1)[0]),
-    el('div', { class: 'plate-line small muted' },
-      `🧫 ${LABELS.size[pl.size]} · 🍯 ${LABELS.distribution[pl.distribution]}, ${LABELS.amount[pl.amount].toLowerCase()} · 🔁 ${LABELS.regen[pl.regen].toLowerCase()}`));
-  // Ziele: drei Sterne in einer Zeile, darunter die Belohnung als Symbole
+    el('div', { class: 'tip' }, ui('bulb'), el('span', {}, counterTips(boss, 1)[0])),
+    el('p', { class: 'plate-line' }, `Plate: ${LABELS.size[pl.size].toLowerCase()} · food ${LABELS.distribution[pl.distribution].toLowerCase()}, ${LABELS.amount[pl.amount].toLowerCase()} · regrowth ${LABELS.regen[pl.regen].toLowerCase()}`));
   const mask = b.career.stars[n] || 0;
   fill($('#ld-goals'),
+    el('h3', {}, 'Stars'),
     el('div', { class: 'goal-stars' }, STAR_GOALS.map((g) => el('div', { class: `goal ${mask & g.bit ? 'done' : ''}`, title: g.text },
-      el('span', { class: 'star' }, mask & g.bit ? '★' : '☆'), el('small', {}, `${g.icon} ${g.short}`)))),
-    won.includes(n) ? null : el('div', { class: 'reward-line small' }, 'A win gives ',
+      el('span', { class: 'star', 'aria-hidden': 'true' }, '★'), el('span', {}, starLabel(g))))),
+    won.includes(n) ? null : el('div', { class: 'reward-line' }, 'A first win gives',
       el('span', { class: 'plus' }, `+${POINTS_PER_WIN}`),
       ...rewardsOf(n).map((r) => el('span', { class: 'rw' }, rewardIcon(r), r.short || r.text))));
 
   const pts = ptsOf(b);
   const free = pts - cost(b);
-  const probs = problems(b, getLimits(won), pts);
+  const probs = problems(b, limitsOf(b), pts);
   fill($('#ld-me'),
-    el('div', { class: 'title row gap' }, el('span', { class: 'dot', style: `background:${b.color}` }), el('b', {}, b.name),
-      el('span', { class: `cost ${free > 0 ? 'free-pts' : ''}` }, free > 0 ? `${free} pts free` : `${pts} pts`),
-      el('button', { class: 'btn small', onclick: () => openEditor(b, careerCtx(b, 'level-detail')) }, '🔧 Upgrade')),
+    el('div', { class: 'bact-head' }, culture(b.color), el('span', { class: 'name' }, b.name),
+      el('button', { class: 'btn small', onclick: () => openEditor(b, careerCtx(b, 'level-detail')) }, ui('upgrade', 'sm'), free > 0 ? `${free} pts free` : 'Upgrade')),
     meterBars(normalize(b), boss, boss.name.split(' ')[0]),
-    probs.length ? el('p', { class: 'small warn' }, '⚠ ', probs.join(' · ')) : null);
+    probs.length ? el('p', { class: 'small warn' }, probs.join(' · ')) : null);
   $('#ld-start').disabled = probs.length > 0;
   const coach = $('#ld-coach');
   coach.hidden = n !== 1 || won.includes(1);
-  coach.textContent = 'Tap Start and watch – your bacterium plays on its own. Use 5× or 10× to fast-forward. Win to unlock new abilities.';
+  coach.textContent = 'Tap Start and watch – your bacterium plays on its own. Use 5× or 10× to fast-forward.';
 };
+const starLabel = (g) => ({ 1: 'Win', 2: 'Under 12 h', 4: '25 % plate' }[g.bit]);
 
 $('#ld-start').addEventListener('click', () => {
   const b = curCareer();
@@ -418,16 +470,16 @@ function openEditor(b, ctx) {
     const used = new Set(store.getBacteria().map((x) => x.color));
     ed.color = PALETTE.find((c) => !used.has(c)) || PALETTE[0];
   }
-  // Bewegungsart aus dem Muster ableiten (ältere Spielstände kennen sie noch nicht)
   ed.move = moveFromProgram(ed.program) || ed.move || null;
   if (!ed.move) { ed.move = { type: 'gerade', size: 0, dir: 'R' }; ed.program = ['F']; }
   $('#ed-title').textContent = ctx.mode === 'free' ? 'Free play' : b ? 'Upgrade' : 'New bacterium';
+  const w = WORLDS.find((x) => x.n === ctx.world);
+  $('#ed-world').textContent = ctx.mode === 'free' ? '' : `${w ? w.name : 'Skin'} strain`;
   colony.sim = null;
-  // first bacterium: show the four steps once
   const coach = $('#ed-coach');
   coach.hidden = !!b || ctx.mode !== 'career';
-  coach.textContent = 'Your first bacterium: ① name & colour · ② movement · ③ spend points under Traits · ④ Save';
-  showTab('move');
+  coach.textContent = 'Your first bacterium: name and colour, a movement, spend points under Traits, then save.';
+  showTab(b ? 'traits' : 'move');
   go('editor');
   renderEditor();
   renderMove();
@@ -437,7 +489,6 @@ onEnter.editor = () => { animator.start(); colony.start(); };
 onLeave.editor = () => { animator.stop(); colony.stop(); };
 
 // Lässt das Bakterium allein auf einer kleinen Platte wachsen, damit man die Ausbreitung sieht.
-// Läuft in Schleife; jede Änderung im Editor startet sie sofort sichtbar neu.
 const colony = {
   sim: null, r: null, raf: 0, hold: 0, timer: 0, changed: false,
   build() {
@@ -448,18 +499,15 @@ const colony = {
     this.hold = 0;
     this.r.draw();
     if (this.changed) {
-      // kurzes Aufblitzen, damit man den Neustart erkennt
       const c = $('#ed-colony');
       c.classList.remove('fresh'); void c.offsetWidth; c.classList.add('fresh');
       this.changed = false;
     }
   },
-  // nach Änderungen: kurz bündeln (z. B. beim Schieben eines Reglers), dann neu starten
   restart() {
     this.changed = true;
     clearTimeout(this.timer);
     this.timer = setTimeout(() => this.build(), 150);
-    $('#ed-colony-label').textContent = 'The colony · restarted';
   },
   start() {
     cancelAnimationFrame(this.raf);
@@ -471,10 +519,8 @@ const colony = {
       if (sim.tick < 420 && !sim.done) {
         sim.step1(); sim.step1();
         this.r.draw();
-        if (!this.changed) $('#ed-colony-label').textContent = `The colony · ${Math.round((BREW_HOURS * sim.tick) / MAX_TICKS)} h`;
-      } else if (++this.hold > 90) {
-        this.build(); // Schleife: von vorn beginnen
-      }
+        $('#ed-colony-label').textContent = `Preview · ${Math.round((BREW_HOURS * sim.tick) / MAX_TICKS)} h`;
+      } else if (++this.hold > 90) this.build();
     };
     this.raf = requestAnimationFrame(loop);
   },
@@ -494,145 +540,188 @@ function setMove(move) {
   ed.move = move;
   ed.program = res.program;
   renderMove();
+  renderBudget();
   colony.restart();
 }
 
+// Bewegung: alle Arten als Kacheln (gesperrte mit Freischalt-Level), darunter die Mustergröße.
+// Die Drehrichtung spielt auf der runden Platte keine Rolle mehr und ist fest „rechts herum“.
 function renderMove() {
   const lim = edCtx.limits;
   const cur = ed.move;
-  // Karten der Bewegungsarten (gesperrte nur als kurzer Hinweis)
-  const cards = MOVES.map((m) => {
+  fill($('#ed-moves'), ...MOVES.map((m) => {
     const sizes = m.sizes ? m.sizes.length : 1;
     let firstOk = -1;
     for (let k = 0; k < sizes; k++) if (compile({ type: m.key, size: k, dir: 'R' }, lim).program) { firstOk = k; break; }
-    return { m, firstOk, res: compile({ type: m.key, size: 0, dir: 'R' }, lim) };
-  });
-  const lockedMoves = cards.filter((c) => c.firstOk < 0);
-  fill($('#ed-moves'), ...cards.filter((c) => c.firstOk >= 0).map(({ m, firstOk }) => el('button', {
-    class: `move-card ${cur.type === m.key ? 'on' : ''}`,
-    onclick: () => { if (cur.type !== m.key) setMove({ type: m.key, size: firstOk, dir: cur.dir || 'R' }); },
-  },
-  icon(pathSvg(actionsOf({ type: m.key, size: firstOk, dir: 'R' })), 'move-pic'),
-  el('span', { class: 'move-name' }, m.name))),
-  lockedMoves.length ? el('button', {
-    class: 'move-card locked',
-    onclick: () => toast(`🔒 ${lockedMoves.map((c) => `${c.m.name} (Level ${lockReason(c.res)})`).join(', ')}`),
-  }, el('span', { class: 'move-more' }, `🔒 +${lockedMoves.length}`), el('span', { class: 'move-name' }, 'later')) : null);
-
-  // Größe und Richtung der gewählten Art
+    const locked = firstOk < 0;
+    const res = compile({ type: m.key, size: 0, dir: 'R' }, lim);
+    const on = cur.type === m.key;
+    return el('button', {
+      class: `move-card ${on ? 'on' : ''} ${locked ? 'locked' : ''}`, role: 'radio', 'aria-checked': String(on),
+      onclick: () => { if (locked) lockedToast(lockReason(res)); else if (!on) setMove({ type: m.key, size: firstOk, dir: 'R' }); },
+    },
+    icon(pathSvg(actionsOf({ type: m.key, size: Math.max(0, firstOk), dir: 'R' })), 'move-pic'),
+    el('span', { class: 'move-name' }, m.name),
+    el('span', { class: 'move-sub' }, locked ? `Level ${lockReason(res)}` : on ? 'Selected' : ''));
+  }));
   const m = MOVE_BY_KEY[cur.type];
-  const opts = [];
+  const sizeRow = $('#ed-move-opts');
+  sizeRow.parentElement.hidden = !m.sizes;
   if (m.sizes) {
-    opts.push(el('div', { class: 'seg grow' }, m.sizes.map((label, k) => {
-      const r = compile({ ...cur, size: k }, lim);
+    fill(sizeRow, el('div', { class: 'seg inline', role: 'radiogroup', 'aria-label': 'Pattern size' }, m.sizes.map((label, k) => {
+      const r = compile({ ...cur, size: k, dir: 'R' }, lim);
       return el('button', {
-        class: `${cur.size === k ? 'on' : ''} ${r.program ? '' : 'locked'}`,
-        onclick: () => setMove({ ...cur, size: k }),
-      }, r.program ? label : `🔒 ${label}`);
+        class: `${cur.size === k ? 'on' : ''} ${r.program ? '' : 'locked'}`, role: 'radio', 'aria-checked': String(cur.size === k),
+        onclick: () => setMove({ ...cur, size: k, dir: 'R' }),
+      }, label);
     })));
   }
-  if (m.turn) {
-    opts.push(el('button', {
-      class: 'btn small dir-btn', 'aria-label': 'Richtung wechseln',
-      onclick: () => setMove({ ...cur, dir: cur.dir === 'L' ? 'R' : 'L' }),
-    }, cur.dir === 'L' ? '↺' : '↻'));
-  }
-  fill($('#ed-move-opts'), ...opts);
   renderEnergy(energyProfile(normalize(ed)));
-  fill($('#ed-meters'), meterBars(normalize(ed)));
+  fill($('#ed-meters'), el('section', { class: 'card' }, el('h3', {}, 'At a glance'), meterBars(normalize(ed))));
   animator.setProgram(ed.program, ed.color);
+}
+
+// Wirkung einer Stufe in Zahlen – direkt aus den Spielwerten der Simulation
+const pct = (x) => `${Math.round(x * 100)} %`;
+function beatChance(a, d) {
+  // Kampf: Angriff + Zufall(0..3) gegen Abwehr + Energiebonus (~1) + Zufall(0..3)
+  let w = 0;
+  for (let i = 0; i < 40; i++) for (let j = 0; j < 40; j++) if (a + (3 * (i + 0.5)) / 40 > d + 1 + (3 * (j + 0.5)) / 40) w++;
+  return w / 1600;
+}
+function traitEffect(key, v) {
+  const ph = phenotype({ ...defaultGenome(), [key]: v });
+  switch (key) {
+    case 'speed': return `Moves on ${pct(ph.moveChance)} of turns`;
+    case 'lifespan': return `A cell lives up to ${fmtDuration(ph.maxAge)} of incubation`;
+    case 'efficiency': return `Gets ${pct(ph.efficiency)} of the energy in its food`;
+    case 'chemotaxis': return v ? `Heads for food on ${(ph.chemoChance * 100).toFixed(1).replace('.0', '')} % of moves` : 'Cannot smell food';
+    case 'attack': return `Beats a defense-0 cell in ${pct(beatChance(ph.attack, 0))} of fights`;
+    case 'defense': return `Survives ${pct(1 - beatChance(1, ph.defense))} of attacks by an attack-2 cell`;
+    default: return '';
+  }
+}
+
+const DIVIDE_AT = [26, 38, 52, 66, 80];
+const UPTAKE = [2, 2.8, 3.6, 4.4, 5.2];
+const BASAL = [0.22, 0.32, 0.43, 0.55, 0.68];
+function freeCard(t) {
+  const v = ed[t.key];
+  const set = (e) => { ed[t.key] = Number(e.target.value); renderEditor(); };
+  let vis, text;
+  if (t.key === 'division') {
+    const n = [6, 5, 4, 3, 2][v], size = [10, 14, 18, 24, 32][v];
+    vis = el('div', { class: 'free-vis', 'aria-hidden': 'true', style: `gap:${12 - v * 2}px` },
+      Array.from({ length: n }, (_, i) => el('span', { class: 'cell', style: `width:${size}px;height:${size}px;opacity:${1 - i * 0.06}` })));
+    text = el('p', { class: 'small' }, 'Divides at ', el('b', { class: 'mono' }, String(DIVIDE_AT[v])), ' energy · each daughter starts with ', el('b', { class: 'mono' }, String(Math.round((DIVIDE_AT[v] - 2) / 2))));
+  } else {
+    vis = el('div', { class: 'free-vis bars', 'aria-hidden': 'true' },
+      el('div', { class: 'vbar' }, el('span', {}, 'Eats'), el('div', {}, el('i', { style: `width:${(UPTAKE[v] / 5.2) * 100}%;background:var(--success)` }))),
+      el('div', { class: 'vbar' }, el('span', {}, 'Burns'), el('div', {}, el('i', { style: `width:${(BASAL[v] / 0.68) * 100}%;background:var(--warning)` }))));
+    text = el('p', { class: 'small' }, 'Eats up to ', el('b', { class: 'mono' }, UPTAKE[v].toFixed(1)), ' food per step · burns ', el('b', { class: 'mono' }, BASAL[v].toFixed(2)), ' just staying alive');
+  }
+  const ends = t.key === 'division' ? ['Many small cells', 'Few strong cells'] : ['Frugal', 'Greedy'];
+  const name = t.options[v][0].toUpperCase() + t.options[v].slice(1);
+  return el('section', { class: 'card free-card' },
+    el('div', { class: 'head' }, el('b', {}, t.label), el('span', {}, name)),
+    vis,
+    el('input', { type: 'range', min: '0', max: '4', step: '1', value: String(v), 'aria-label': t.label, 'aria-valuetext': name, oninput: set }),
+    el('div', { class: 'range-labels' }, el('span', {}, ends[0]), el('span', {}, ends[1])),
+    text);
 }
 
 function renderEditor() {
   const lim = edCtx.limits;
-  $('#ed-name').value = ed.name;
+  if (document.activeElement !== $('#ed-name')) $('#ed-name').value = ed.name;
   fill($('#ed-colors'), ...PALETTE.map((c) => el('button', {
-    class: `swatch ${ed.color === c ? 'on' : ''}`, style: `background:${c}`, 'aria-label': c,
+    class: `swatch ${ed.color === c ? 'on' : ''}`, style: `background:${c}`, role: 'radio', 'aria-checked': String(ed.color === c),
+    'aria-label': `Colour ${symbolOf(c)}`,
     onclick: () => { ed.color = c; renderEditor(); animator.setProgram(ed.program, ed.color); },
-  })));
+  }, symbolOf(c))));
 
-  // Kostenlose Abwägungen
-  const ep = energyProfile(normalize(ed));
-  fill($('#ed-free'), ...FREE.map((t) => el('div', { class: 'trait' },
-    el('div', { class: 'trait-head' }, el('span', { class: 'trait-name' }, icon(TRAIT_ICONS[t.key], 'ti'), el('b', {}, t.label))),
-    el('div', { class: 'seg free-seg' }, t.options.map((label, k) => el('button', {
-      class: ed[t.key] === k ? 'on' : '', onclick: () => { ed[t.key] = k; renderEditor(); },
-    }, label))))));
-  renderEnergy(ep);
-  fill($('#ed-meters'), meterBars(normalize(ed)));
+  fill($('#ed-free'), ...FREE.map(freeCard));
+  renderEnergy(energyProfile(normalize(ed)));
+  fill($('#ed-meters'), el('section', { class: 'card' }, el('h3', {}, 'At a glance'), meterBars(normalize(ed))));
 
-  // Eigenschaften mit Punktekosten
   const budget = edCtx.budget;
-  const c = cost(ed);
+  const left = budget - cost(ed);
   fill($('#ed-costed'), ...COSTED.map((t) => {
-    const pips = [];
-    for (let k = 0; k < t.max; k++) pips.push(el('i', { class: k < ed[t.key] ? 'on' : '' }));
+    const v = ed[t.key];
+    const canInc = v < t.max && left > 0;
     return el('div', { class: 'trait' },
-      el('div', { class: 'trait-head' },
-        el('span', { class: 'trait-name' }, icon(TRAIT_ICONS[t.key], 'ti'), el('b', {}, t.label)),
-        el('div', { class: 'stepper' },
-          el('button', { onclick: () => { if (ed[t.key] > 0) { ed[t.key]--; renderEditor(); } }, 'aria-label': 'less' }, '−'),
-          el('div', { class: 'pips' }, pips),
-          el('button', {
-            onclick: () => {
-              if (ed[t.key] >= t.max) return;
-              if (cost(ed) + 1 > budget) return toast('No points left. Beat opponents to earn more.');
-              ed[t.key]++; renderEditor();
-            },
-            'aria-label': 'more',
-          }, '+'))));
+      el('div', { class: 'trait-head' }, icon(TRAIT_ICONS[t.key]), el('b', {}, t.label),
+        el('button', { class: 'step-btn', disabled: v <= 0, 'aria-label': `Lower ${t.label}`, onclick: () => { if (ed[t.key] > 0) { ed[t.key]--; renderEditor(); } } }, '−'),
+        el('span', { class: 'trait-val', 'aria-live': 'polite' }, String(v)),
+        el('button', {
+          class: 'step-btn', disabled: !canInc, 'aria-label': `Raise ${t.label}`,
+          onclick: () => { if (ed[t.key] < t.max && cost(ed) < budget) { ed[t.key]++; renderEditor(); } },
+        }, '+')),
+      el('div', { class: 'pips', 'aria-hidden': 'true' }, Array.from({ length: TRAIT_MAX }, (_, k) => el('i', { class: k < v ? 'on' : '' }))),
+      el('span', { class: 'trait-effect' }, traitEffect(t.key, v)));
   }));
 
-  // Spezialfähigkeit als Kacheln mit Symbol (gesperrte nur als kurzer Hinweis)
-  const lockedSp = SPECIAL_KEYS.filter((k) => !lim.specials.has(k));
-  fill($('#ed-specials'), ...SPECIAL_KEYS.filter((k) => lim.specials.has(k)).map((k) => el('button', {
-    class: `special ${ed.special === k ? 'on' : ''}`,
-    onclick: () => {
-      const extra = SPECIALS[k].cost - SPECIALS[ed.special].cost;
-      if (cost(ed) + extra > budget) return toast(`${SPECIALS[k].name} costs ${SPECIALS[k].cost} points – take points away elsewhere first.`);
-      ed.special = k; renderEditor();
+  // Spezialfähigkeiten: eigenes Symbol, Kosten nach Stärke; gesperrte zeigen, wo man sie bekommt
+  const curCost = SPECIALS[ed.special].cost;
+  const order = [...SPECIAL_KEYS].sort((a, b) => SPECIALS[a].cost - SPECIALS[b].cost);
+  fill($('#ed-specials'), ...order.map((k) => {
+    const sp = SPECIALS[k];
+    const open = lim.specials.has(k);
+    const on = ed.special === k;
+    const lvl = unlockLevelOf('special', k);
+    const lockText = lvl > LEVELS.length ? `World ${worldOfLevel(lvl).n}` : `Level ${lvl}`;
+    return el('button', {
+      class: `special-row ${on ? 'on' : ''} ${open ? '' : 'locked'}`, role: 'radio', 'aria-checked': String(on),
+      onclick: () => {
+        if (!open) return toast(`${sp.name} unlocks in ${lockText.toLowerCase()}.`);
+        if (sp.cost - curCost > left) return toast(`${sp.name} costs ${sp.cost} points – take points away elsewhere first.`);
+        ed.special = k; renderEditor();
+      },
     },
-  },
-  specialBadge(k, 'big'),
-  el('span', { class: 'special-name' }, SPECIALS[k].name))),
-  lockedSp.length ? el('button', {
-    class: 'special locked',
-    onclick: () => toast(`🔒 ${lockedSp.map((k) => `${SPECIALS[k].name} (Level ${unlockLevelOf('special', k)})`).join(', ')}`),
-  }, el('span', { class: 'move-more' }, `🔒 +${lockedSp.length}`), el('span', { class: 'special-name' }, 'later')) : null);
-  $('#ed-special-hint').hidden = ed.special === 'none';
-  fill($('#ed-special-hint'), el('b', {}, `${SPECIALS[ed.special].name}: `), SPECIALS[ed.special].hint);
+    el('span', { class: 'sp-ico' }, specialIcon(k, 'md')),
+    el('span', { class: 'main' }, el('b', {}, sp.name), el('small', {}, SPECIAL_SHORT[k]), open ? null : el('small', {}, ui('lock', 'xs'), ` ${lockText}`)),
+    el('span', { class: 'cost' }, sp.cost ? `${sp.cost} pts` : '0'));
+  }));
+  renderBudget();
+  colony.restart();
+}
 
-  // Budget
-  $('#ed-cost').textContent = `${c} / ${budget}`;
-  $('#ed-left').textContent = c <= budget ? `${budget - c} ${budget - c === 1 ? 'point' : 'points'} left` : `${c - budget} too many`;
-  if (animator.div !== ed.division) { animator.div = ed.division; animator.setDivision(ed.division); }
+const SPECIAL_SHORT = {
+  none: 'Keep all points for traits.',
+  spores: 'Starving cells sleep as spores and wake when food returns.',
+  capsule: 'Absorbs one deadly attack, then slowly grows back.',
+  photo: 'A little energy from light, even where the food is gone.',
+  biofilm: 'Cells that sit still build a tough slime mat.',
+  predator: 'Eats the enemies it kills and gains a lot of energy.',
+  toxin: 'A poison cloud weakens enemy neighbours.',
+};
+
+function renderBudget() {
+  const budget = edCtx.budget;
+  const c = cost(ed);
+  fill($('#ed-cost'), String(c), el('small', {}, ` / ${budget}`));
   $('#ed-budget-label').textContent = edCtx.mode === 'free' ? 'Points (free play)' : 'Upgrade points';
   $('#ed-meter').style.width = `${Math.min(100, (c / budget) * 100)}%`;
   const over = c > budget;
   $('#ed-budget').classList.toggle('over', over);
-  const warn = $('#ed-warn');
-  warn.hidden = !over && c >= budget;
-  if (over) warn.textContent = `${c - budget} points too many – take some away.`;
-  else if (c < budget) warn.textContent = `${budget - c} ${budget - c === 1 ? 'point' : 'points'} left to spend.`;
-  warn.classList.toggle('ok', !over);
-  colony.restart();
+  const left = $('#ed-left');
+  left.className = `small ${over ? 'over' : c < budget ? 'left' : 'muted'}`;
+  left.textContent = over ? `${c - budget} too many – take some away` : c < budget ? `${budget - c} ${budget - c === 1 ? 'point' : 'points'} left to spend` : 'All points spent';
+  if (animator.div !== ed.division) { animator.div = ed.division; animator.setDivision(ed.division); }
 }
 
-// Editor tabs: one section at a time, the previews stay visible above
-function showTab(tab, screen = 'editor') {
-  document.querySelectorAll(`#${screen} .tabs button`).forEach((b) => b.classList.toggle('on', b.dataset.tab === tab));
-  document.querySelectorAll(`#${screen} .pane`).forEach((p) => { p.hidden = p.dataset.pane !== tab; });
-  // the chart needs a visible canvas to know its width
-  if (screen === 'result' && tab === 'history' && run.sim) drawHistory($('#rs-chart'), run.sim.history, run.genomes.map((g) => g.color));
+// Editor-Bereiche: einer auf einmal, die Vorschau bleibt oben sichtbar
+function showTab(tab) {
+  document.querySelectorAll('#ed-tabs button').forEach((b) => { b.classList.toggle('on', b.dataset.tab === tab); b.setAttribute('aria-selected', String(b.dataset.tab === tab)); });
+  document.querySelectorAll('#editor .pane').forEach((p) => { p.hidden = p.dataset.pane !== tab; });
 }
-document.addEventListener('click', (e) => {
-  const b = e.target.closest('.tabs button[data-tab]');
-  if (b) { showTab(b.dataset.tab, b.closest('.screen').id); play('tap'); }
+$('#ed-tabs').addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-tab]');
+  if (b) { showTab(b.dataset.tab); play('tap'); }
 });
 
 $('#ed-name').addEventListener('input', (e) => { ed.name = e.target.value; });
 $('#ed-dice').addEventListener('click', () => {
-  ed.name = randomName(makeRng(randomSeed()));
+  ed.name = randomName(makeRng(randomSeed()), edCtx.mode === 'free' ? null : edCtx.world, takenNames(ed.id));
   $('#ed-name').value = ed.name;
   play('tap');
 });
@@ -646,50 +735,48 @@ $('#ed-save').addEventListener('click', () => {
     toast('Saved.');
     return go('setup');
   }
-  const saved = store.saveBacterium(ed);
+  const saved = store.saveBacterium({ ...ed, world: edCtx.world });
   toast(`“${saved.name}” saved.`);
   careerId = saved.id;
-  go(edCtx.returnTo === 'home' || edCtx.returnTo === 'careers' ? 'career' : edCtx.returnTo);
+  store.updateSettings({ lastCareer: saved.id });
+  go(edCtx.returnTo === 'careers' ? 'career' : edCtx.returnTo);
 });
 
-// Energiebilanz im Editor: Verbrauch (Grundumsatz + Bewegung) gegen Aufnahme bei voller Nahrung
+// Energiebilanz: Verbrauch (Grundumsatz + Bewegung) gegen Aufnahme bei voller Nahrung
 const perHour = (x) => Math.round(x * ROUNDS_PER_HOUR);
 function fmtDuration(rounds) {
-  if (!Number.isFinite(rounds)) return 'unbegrenzt';
-  const min = (rounds * 60) / ROUNDS_PER_HOUR;
-  return min < 60 ? `${Math.max(1, Math.round(min))} min` : `${(min / 60).toFixed(1)} h`;
+  if (!Number.isFinite(rounds)) return 'unlimited';
+  const min = Math.round((rounds * 60) / ROUNDS_PER_HOUR);
+  return min < 60 ? `${Math.max(1, min)} min` : `${Math.floor(min / 60)} h ${String(min % 60).padStart(2, '0')} min`;
 }
 function renderEnergy(ep) {
   const net = perHour(ep.intake - ep.cost);
   fill($('#ed-energy'),
-    el('span', { class: 'echip', title: 'Energy per hour with plenty of food (intake minus use, incl. movement)' },
-      '⚡ ', el('b', { class: net >= 0 ? 'good' : 'bad' }, `${net >= 0 ? '+' : ''}${net}`), ' /h'),
-    el('span', { class: 'echip', title: 'With plenty of food a cell divides about this often' }, '➗ every ', el('b', {}, fmtDuration(ep.roundsToDivide))),
-    el('span', { class: 'echip', title: 'How long a cell survives without food' }, '🍽 ', el('b', {}, fmtDuration(Math.min(ep.roundsWithoutFood, ep.maxAge))), ' without food'));
+    el('span', { class: 'echip', title: 'Energy per hour with plenty of food' }, 'Energy ', el('b', { class: net >= 0 ? '' : 'bad' }, `${net >= 0 ? '+' : ''}${net}`), ' /h'),
+    el('span', { class: 'echip', title: 'With plenty of food a cell divides about this often' }, 'Divides every ', el('b', {}, fmtDuration(ep.roundsToDivide))),
+    el('span', { class: 'echip', title: 'How long a cell survives without food' }, 'Lasts ', el('b', {}, fmtDuration(Math.min(ep.roundsWithoutFood, ep.maxAge))), ' without food'));
 }
 
 // ---------- Freies Spiel ----------
 const freeLimits = () => getLimits(store.globalWon());
-const freeCtx = () => ({ mode: 'free', budget: store.getSettings().budget, limits: freeLimits(), returnTo: 'setup' });
+const freeCtx = () => ({ mode: 'free', world: null, budget: store.getSettings().budget, limits: freeLimits(), returnTo: 'setup' });
 
-// Settings as a compact list: tap a row to cycle through its values
-function segOption(label, key, values, labels, icon = '') {
+function segOption(label, key, values, labels) {
   const cur = store.getSettings()[key];
   const next = values[(values.indexOf(cur) + 1) % values.length];
   return el('button', {
-    class: 'set-row',
-    onclick: () => { store.updateSettings({ [key]: next }); play('tap'); onEnter.setup(); },
-  }, el('span', { class: 'set-label' }, icon ? `${icon} ` : '', label), el('span', { class: 'set-value' }, labels[cur] ?? String(cur), el('i', {}, '›')));
+    class: 'set-row', onclick: () => { store.updateSettings({ [key]: next }); play('tap'); onEnter.setup(); },
+  }, el('span', { class: 'set-label' }, label), el('span', { class: 'set-value' }, labels[cur] ?? String(cur), ui('chevron', 'sm')));
 }
 
-function stepperOption(label, key, min, max, step, fmt = (v) => v, icon = '') {
+function stepperOption(label, key, min, max, step) {
   const s = store.getSettings();
   const set = (v) => { store.updateSettings({ [key]: Math.max(min, Math.min(max, v)) }); onEnter.setup(); };
-  return el('div', { class: 'set-row' }, el('span', { class: 'set-label' }, icon ? `${icon} ` : '', label),
+  return el('div', { class: 'set-row' }, el('span', { class: 'set-label' }, label),
     el('div', { class: 'stepper' },
-      el('button', { onclick: () => set(s[key] - step), 'aria-label': 'less' }, '−'),
-      el('b', { class: 'set-num' }, fmt(s[key])),
-      el('button', { onclick: () => set(s[key] + step), 'aria-label': 'more' }, '+')));
+      el('button', { class: 'step-btn', onclick: () => set(s[key] - step), 'aria-label': `Fewer ${label.toLowerCase()}`, disabled: s[key] <= min }, '−'),
+      el('b', { class: 'set-num' }, String(s[key])),
+      el('button', { class: 'step-btn', onclick: () => set(s[key] + step), 'aria-label': `More ${label.toLowerCase()}`, disabled: s[key] >= max }, '+')));
 }
 
 onEnter.setup = () => {
@@ -699,36 +786,36 @@ onEnter.setup = () => {
   if (!g) {
     fill(me, el('h3', {}, 'Your bacterium'),
       el('p', { class: 'small muted' }, 'Free play has its own bacterium. You can spend all points right away.'),
-      el('button', { class: 'btn primary', onclick: () => openEditor(null, freeCtx()) }, 'Create bacterium'));
+      el('button', { class: 'btn primary', onclick: () => openEditor(null, freeCtx()) }, ui('plus'), 'Create bacterium'));
     $('#su-start').disabled = true;
   } else {
     const probs = problems(g, freeLimits(), s.budget);
-    fill(me, el('h3', {}, 'Your bacterium'),
-      el('div', { class: 'title row gap' }, el('span', { class: 'dot', style: `background:${g.color}` }), el('b', {}, g.name), el('span', { class: 'cost' }, `${cost(g)} / ${s.budget} Pkt`)),
+    fill(me,
+      el('div', { class: 'bact-head' }, culture(g.color), el('span', { class: 'name' }, g.name), el('span', { class: 'small muted mono' }, `${cost(g)} / ${s.budget}`)),
       meterBars(normalize(g)),
       probs.length ? el('p', { class: 'small warn' }, probs.join(' · ')) : null,
-      el('button', { class: 'btn small', onclick: () => openEditor(g, freeCtx()) }, 'Edit'));
+      el('button', { class: 'btn small', onclick: () => openEditor(g, freeCtx()) }, ui('upgrade', 'sm'), 'Edit'));
     $('#su-start').disabled = probs.length > 0;
   }
-  fill($('#su-options'), 
-    el('h3', {}, 'Settings'),
-    stepperOption('Opponents', 'opponents', 1, 5, 1, (v) => v, '🦠'),
-    stepperOption('Points', 'budget', MIN_BUDGET, MAX_BUDGET, 1, (v) => v, '⭐'),
-    segOption('Plate size', 'size', ['klein', 'mittel', 'gross'], LABELS.size, '🧫'),
-    segOption('Food layout', 'distribution', DISTRIBUTIONS, LABELS.distribution, '🍯'),
-    segOption('Food amount', 'amount', ['wenig', 'normal', 'viel'], LABELS.amount, '🥣'),
-    segOption('Regrowth', 'regen', ['aus', 'langsam', 'normal', 'schnell'], LABELS.regen, '🔁'),
-    el('p', { class: 'small muted' }, 'Special abilities and special movements are unlocked in your career – for you and the random opponents.'),
-  );
+  fill($('#su-options'),
+    stepperOption('Opponents', 'opponents', 1, 5, 1),
+    stepperOption('Points', 'budget', MIN_BUDGET, MAX_BUDGET, 2),
+    segOption('Plate size', 'size', ['klein', 'mittel', 'gross'], LABELS.size),
+    segOption('Food layout', 'distribution', DISTRIBUTIONS, LABELS.distribution),
+    segOption('Food amount', 'amount', ['wenig', 'normal', 'viel'], LABELS.amount),
+    segOption('Regrowth', 'regen', ['aus', 'langsam', 'normal', 'schnell'], LABELS.regen));
 };
 
 function randomOpponents(n, budget, playerColor, seed) {
   const rng = makeRng(seed ^ 0x9e3779b9);
   const colors = PALETTE.filter((c) => c !== playerColor);
   const lim = freeLimits();
-  return Array.from({ length: n }, (_, k) => ({
-    ...randomGenome(rng, budget, lim), name: randomName(rng), color: colors[k % colors.length],
-  }));
+  const taken = [];
+  return Array.from({ length: n }, (_, k) => {
+    const name = randomName(rng, null, taken);
+    taken.push(name);
+    return { ...randomGenome(rng, budget, lim), name, color: colors[k % colors.length] };
+  });
 }
 
 $('#su-start').addEventListener('click', () => {
@@ -747,7 +834,7 @@ $('#su-start').addEventListener('click', () => {
 const TICKS_PER_SECOND = 15;
 const run = { cfg: null, sim: null, r: null, raf: 0, speed: 1, paused: false, last: 0, acc: 0, frame: 0, endTimer: 0, ev: null };
 
-// Live-Ereignisse während der Simulation (Banner über der Platte)
+// Live-Ereignisse: eine Zeile direkt unter der Platte (nie über der Platte)
 const banners = { queue: [], timer: 0 };
 function banner(text, kind = '') {
   banners.queue.push({ text, kind });
@@ -759,7 +846,7 @@ function nextBanner() {
   if (!item) { b.classList.remove('show'); banners.timer = 0; return; }
   b.textContent = item.text;
   b.className = `banner show ${item.kind}`;
-  banners.timer = setTimeout(() => { b.classList.remove('show'); banners.timer = setTimeout(nextBanner, 250); }, 1900);
+  banners.timer = setTimeout(() => { b.classList.remove('show'); banners.timer = setTimeout(nextBanner, 250); }, 2200);
 }
 function resetBanners() {
   clearTimeout(banners.timer);
@@ -767,15 +854,17 @@ function resetBanners() {
   $('#sim-banner').className = 'banner';
 }
 
+const shortName = (g, i) => (i === 0 ? 'You' : g.name.split(' ')[0]);
+
 function checkEvents() {
   const sim = run.sim, ev = run.ev;
-  const names = run.genomes.map((g, i) => (i === 0 ? 'Your culture' : g.name));
-  if (!ev.contact && sim.contactTick >= 0) { ev.contact = true; banner('⚔️ First contact – the fight begins!'); play('contact'); }
+  const names = run.genomes.map((g, i) => (i === 0 ? 'Your culture' : g.name.split(' ')[0]));
+  if (!ev.contact && sim.contactTick >= 0) { ev.contact = true; banner('First contact'); play('contact'); }
   sim.players.forEach((p, i) => {
     if (p.count === 0 && !ev.dead.has(i)) {
       ev.dead.add(i);
       if (!sim.done || sim.players.length > 2) {
-        banner(i === 0 ? '☠️ Your culture died out!' : `☠️ ${names[i]} wiped out!`, i === 0 ? 'bad' : 'good');
+        banner(i === 0 ? 'Your culture died out' : `${names[i]} wiped out`, i === 0 ? 'bad' : 'good');
         play('extinct');
       }
     }
@@ -785,18 +874,16 @@ function checkEvents() {
     const lead = alive[0];
     if (ev.leader !== lead.id && lead.share - alive[1].share > 0.06 && sim.tick - ev.leaderTick > 150) {
       if (ev.leader) {
-        banner(lead.id === 1 ? '🔄 Turning point! You take the lead!' : `🔄 Turning point! ${names[lead.id - 1]} takes the lead`, lead.id === 1 ? 'good' : '');
+        banner(lead.id === 1 ? 'Lead change: you lead' : `Lead change: ${names[lead.id - 1]} leads`, lead.id === 1 ? 'good' : '');
         play('lead');
       }
       ev.leader = lead.id; ev.leaderTick = sim.tick;
     }
-    // Knappes Rennen kurz vor Schluss: Zeitlupe
-    // (3 h Brutzeit = 250 Simulationsschritte)
     if (!ev.slow && sim.tick >= MAX_TICKS - 250 && alive[0].share - alive[1].share < 0.12) {
-      ev.slow = true; banner('🎬 Close race – slow motion!'); play('alarm');
+      ev.slow = true; banner('Close race – slow motion'); play('alarm');
     }
   }
-  if (!ev.sixH && sim.tick >= MAX_TICKS - 500) { ev.sixH = true; banner('⏰ 6 hours of incubation left!'); play('alarm'); }
+  if (!ev.sixH && sim.tick >= MAX_TICKS - 500) { ev.sixH = true; banner('6 hours of incubation left'); play('alarm'); }
 }
 
 function fixColors(player, opponents) {
@@ -820,20 +907,26 @@ function startMatch(cfg) {
   });
   const theme = cfg.mode === 'level' ? worldOfLevel(cfg.level).theme : null;
   run.r = new PlateRenderer($('#plate'), run.sim, theme);
-  $('#plate').style.setProperty('--rim', theme ? theme.rim : '');
   run.paused = false;
   run.acc = 0;
   run.last = 0;
-  run.ev = { contact: false, dead: new Set(), leader: 0, leaderTick: -999, slow: false, sixH: false };
+  run.ev = { contact: false, dead: new Set(), leader: 0, leaderTick: -999, slow: false, sixH: false, peakPlate: 0 };
   resetBanners();
   clearTimeout(run.endTimer);
-  $('#sim-title').textContent = cfg.mode === 'level' ? `${worldOfLevel(cfg.level).icon} Level ${cfg.level}` : 'Free play';
+  if (cfg.mode === 'level') {
+    $('#sim-title').textContent = LEVELS[cfg.level - 1].name;
+    $('#sim-sub').textContent = `World ${worldOfLevel(cfg.level).n} · Level ${cfg.level}`;
+  } else {
+    $('#sim-title').textContent = 'Free play';
+    $('#sim-sub').textContent = `${run.genomes.length - 1} ${run.genomes.length === 2 ? 'opponent' : 'opponents'}`;
+  }
   fill($('#sim-shares'), ...run.genomes.map((g) => el('div', { style: `background:${g.color}` })));
-  fill($('#sim-legend'), ...run.genomes.map((g, i) => el('div', { class: 'legend-row' },
-    el('span', { class: 'dot', style: `background:${g.color}` }),
-    el('span', { class: 'legend-name' }, i === 0 ? el('b', {}, `${g.name} (you)`) : g.boss ? el('span', {}, '★ ', g.name) : g.name),
-    ...specialsOf(g).map((k) => specialBadge(k, 'sm')),
-    el('span', { class: 'n' }, '0'))));
+  fill($('#sim-legend'), ...run.genomes.map((g, i) => el('div', { class: 'legend-row', title: g.name },
+    culture(g.color, 'sm'),
+    el('span', { class: 'legend-name' }, shortName(g, i)),
+    ...specialsOf(g).map((k) => specialIcon(k, 'xs')),
+    el('span', { class: 'n' }, '0 %'))));
+  $('#sim-goals').hidden = cfg.mode !== 'level';
   setSpeed(run.speed);
   go('sim');
   updateSimUi();
@@ -845,12 +938,12 @@ function startMatch(cfg) {
 
 function setSpeed(v) {
   run.speed = v;
-  document.querySelectorAll('#sim-speed button').forEach((b) => b.classList.toggle('on', Number(b.dataset.speed) === v));
+  document.querySelectorAll('#sim-speed button').forEach((b) => { const on = Number(b.dataset.speed) === v; b.classList.toggle('on', on); b.setAttribute('aria-checked', String(on)); });
 }
 
 const fmtHours = (h) => {
   const hh = Math.floor(h), mm = Math.floor((h - hh) * 60);
-  return `${hh}:${String(mm).padStart(2, '0')} h`;
+  return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')} h`;
 };
 
 function updateSimUi() {
@@ -861,17 +954,24 @@ function updateSimUi() {
   sim.players.forEach((p, i) => {
     const pc = (p.count / total) * 100;
     bars[i].style.width = `${pc}%`;
-    bars[i].textContent = pc >= 9 ? `${Math.round(pc)}%` : '';
-    rows[i].querySelector('.n').textContent = p.count.toLocaleString('en-US');
+    rows[i].querySelector('.n').textContent = `${Math.round(pc)} %`;
     rows[i].classList.toggle('dead', p.count === 0);
   });
-  // ablaufende Uhr
   const frac = Math.min(1, sim.tick / MAX_TICKS);
-  $('#clock-arc').setAttribute('stroke-dashoffset', String(100.5 * frac));
-  $('#clock-hand').setAttribute('transform', `rotate(${frac * 360} 20 20)`);
+  $('#clock-bar').style.width = `${frac * 100}%`;
   $('#clock-left').textContent = fmtHours(BREW_HOURS * (1 - frac));
-  $('#clock-elapsed').textContent = `${Math.floor(BREW_HOURS * frac)} / ${BREW_HOURS} h`;
   $('#clock-left').classList.toggle('urgent', frac > 0.85);
+  // Sterne live: Sieg offen, „unter 12 h“ verfällt, „25 % Platte“ leuchtet auf
+  if (run.cfg.mode === 'level') {
+    const me = sim.players[0];
+    const fastLost = sim.tick > 1000;
+    const big = me.peakPlate >= 0.25;
+    const won = sim.done && sim.winner === 1;
+    fill($('#sim-goals'),
+      el('div', { class: `goal-chip ${won ? 'done' : sim.done ? 'lost' : ''}` }, el('span', { class: 'star', 'aria-hidden': 'true' }, '★'), 'Win'),
+      el('div', { class: `goal-chip ${won && !fastLost ? 'done' : fastLost ? 'lost' : ''}` }, el('span', { class: 'star', 'aria-hidden': 'true' }, '★'), 'Under 12 h'),
+      el('div', { class: `goal-chip ${big ? 'done' : ''}` }, el('span', { class: 'star', 'aria-hidden': 'true' }, '★'), '25 % plate'));
+  }
   if (run.ev) checkEvents();
 }
 
@@ -898,11 +998,17 @@ $('#sim-speed').addEventListener('click', (e) => {
   const b = e.target.closest('button[data-speed]');
   if (b) setSpeed(Number(b.dataset.speed));
 });
-// Pause menu: resume, restart, sound settings, quit
+
 function openPause() {
   if (current !== 'sim' || run.sim.done) return;
   run.paused = true;
   stopMusic();
+  const sim = run.sim;
+  const total = sim.players.reduce((s, p) => s + p.count, 0) || 1;
+  const lead = [...sim.players].sort((a, b) => b.count - a.count)[0];
+  const share = Math.round((sim.players[0].count / total) * 100);
+  $('#pm-sub').textContent = `${fmtHours((BREW_HOURS * sim.tick) / MAX_TICKS)} in · ${lead.id === 1 ? `you lead with ${share} %` : `you have ${share} % of all cells`}`;
+  $('#pm-restart').hidden = run.cfg.mode !== 'level' && run.cfg.mode !== 'free';
   $('#pause-modal').hidden = false;
   document.body.classList.add('modal-open');
 }
@@ -920,7 +1026,6 @@ $('#pm-quit').addEventListener('click', () => {
   go(run.cfg.mode === 'level' ? 'level-detail' : 'setup');
 });
 onLeave.sim = () => { cancelAnimationFrame(run.raf); stopMusic(); };
-// leaving the app (call, home button …) pauses the game automatically
 document.addEventListener('visibilitychange', () => {
   run.last = 0; demo.last = 0;
   if (document.hidden) openPause();
@@ -932,17 +1037,18 @@ $('#set-reset').addEventListener('click', async () => {
   location.reload();
 });
 
-// ---------- Ergebnis ----------
+// ---------- Ergebnis: das Wichtige oben, alle Details darunter auf einer Seite ----------
 function showResult() {
   if (current !== 'sim') return;
   const { sim, cfg } = run;
   const won = sim.winner === 1;
   const title = $('#rs-title');
-  title.textContent = won ? 'Victory!' : sim.winner === 0 ? 'Draw' : 'Defeat';
+  title.textContent = won ? 'Victory' : sim.winner === 0 ? 'Draw' : 'Defeat';
   title.className = won ? 'win' : sim.winner === 0 ? '' : 'lose';
   const winnerName = sim.winner ? run.genomes[sim.winner - 1].name : null;
-  const hours = Math.round((BREW_HOURS * sim.tick) / MAX_TICKS);
-  $('#rs-reason').textContent = `${sim.endReason}${winnerName && !won ? ` Winner: ${winnerName}.` : ''} (after ${hours} h of incubation)`;
+  const h = (BREW_HOURS * sim.tick) / MAX_TICKS;
+  $('#rs-reason').textContent = `${sim.endReason}${winnerName && !won ? ` Winner: ${winnerName}.` : ''} After ${Math.floor(h)} h ${String(Math.round((h % 1) * 60)).padStart(2, '0')} min.`;
+  $('#rs-where').textContent = cfg.mode === 'level' ? `Level ${cfg.level} · ${LEVELS[cfg.level - 1].name}` : 'Free play';
 
   const firstWin = cfg.mode === 'level' && won && store.markWon(cfg.careerId, cfg.level);
   const mask = cfg.mode === 'level' ? starMask(sim) : 0;
@@ -955,58 +1061,70 @@ function showResult() {
   const newAch = ACHIEVEMENTS.filter((a) => a.check(ctx) && store.grantAchievement(a.key));
 
   go('result');
-  // average share of all cells over the whole game (the final share is often just 100 %)
-  const avg = sim.players.map((_, i) => sim.history.reduce((a, h) => a + (h[i] / (h.reduce((x, y) => x + y, 0) || 1)), 0) / (sim.history.length || 1));
+  const avg = sim.players.map((_, i) => sim.history.reduce((a, row) => a + (row[i] / (row.reduce((x, y) => x + y, 0) || 1)), 0) / (sim.history.length || 1));
   const total = avg.reduce((a, b) => a + b, 0) || 1;
-  fill($('#rs-shares'), ...sim.players.map((p, i) => {
-    const pc = (avg[i] / total) * 100;
-    return el('div', { style: `background:${run.genomes[i].color};width:${pc}%` }, pc >= 9 ? `${Math.round(pc)}%` : '');
-  }));
-  const rc = $('#rs-plate');
-  rc.width = sim.N; rc.height = sim.N;
-  rc.getContext('2d').drawImage($('#plate'), 0, 0);
-  drawHistory($('#rs-chart'), sim.history, run.genomes.map((g) => g.color));
-
-  const rows = sim.players.map((p, i) => {
-    const g = run.genomes[i];
-    const status = sim.winner === p.id ? '🏆' : p.count === 0 ? `✝ ${Math.round((BREW_HOURS * p.extinctAt) / MAX_TICKS)} h` : 'alive';
-    return el('tr', {},
-      el('td', {}, el('span', { class: 'dot', style: `background:${g.color};vertical-align:-2px;margin-right:6px` }), i === 0 ? el('b', {}, g.name) : g.name),
-      el('td', { class: 'num' }, p.count.toLocaleString('en-US')),
-      el('td', { class: 'num' }, p.peak.toLocaleString('en-US')),
-      el('td', { class: 'num' }, p.kills.toLocaleString('en-US')),
-      el('td', { class: 'num' }, status));
-  });
-  fill($('#rs-table'), el('table', {},
-    el('thead', {}, el('tr', {}, el('th', {}, 'Culture'), el('th', { class: 'num' }, 'End'), el('th', { class: 'num' }, 'Max.'), el('th', { class: 'num' }, 'Kills'), el('th', { class: 'num' }, 'Status'))),
-    el('tbody', {}, rows)));
+  fill($('#rs-shares'), ...sim.players.map((p, i) => el('div', { style: `background:${run.genomes[i].color};width:${(avg[i] / total) * 100}%` })));
+  fill($('#rs-legend'), ...sim.players.map((p, i) => el('span', { class: 'legend-row' },
+    culture(run.genomes[i].color, 'sm'), el('span', {}, shortName(run.genomes[i], i)), el('span', { class: 'n' }, `${Math.round((avg[i] / total) * 100)} %`))));
 
   // Sterne
   const sb = $('#rs-stars');
   sb.hidden = cfg.mode !== 'level';
   if (cfg.mode === 'level') {
     const all = store.getBacterium(cfg.careerId)?.career.stars[cfg.level] || mask;
-    fill(sb, ...STAR_GOALS.map((g) => el('div', { class: 'star-col', title: g.text },
-      el('span', { class: `big-star ${mask & g.bit ? 'got' : all & g.bit ? 'old' : ''} ${newStars & g.bit ? 'new' : ''}` }, mask & g.bit || all & g.bit ? '★' : '☆'),
-      el('small', {}, `${g.icon} ${g.short}`))));
+    fill(sb, ...STAR_GOALS.map((g) => {
+      const got = mask & g.bit, old = all & g.bit;
+      return el('div', { class: 'star-col', title: g.text },
+        el('span', { class: `big-star ${got ? 'got' : old ? 'old' : ''} ${newStars & g.bit ? 'new' : ''}`, 'aria-hidden': 'true' }, '★'),
+        el('small', {}, starLabel(g)),
+        el('span', { class: 'state' }, got ? (newStars & g.bit ? 'New' : 'Earned') : old ? 'Earned before' : 'Missed'));
+    }));
     if (newStars && (all & 7) === 7) toast('All three stars! +1 upgrade point');
   }
-  // Analyse
-  fill($('#rs-analysis'), el('h3', {}, won ? 'Summary' : 'What went wrong?'), ...analyze(sim, run.genomes, mask).map((a) =>
-    el('div', { class: `insight ${a.kind}` }, el('span', { class: 'insight-ico' }, a.kind === 'tip' ? '💡' : a.kind === 'good' ? '👍' : '📊'), a.text)));
-  // neue Erfolge & Atlas
-  const ach = $('#rs-achievements');
-  ach.hidden = !newAch.length && !newGerms.length;
-  fill(ach, el('h3', {}, 'Newly unlocked'),
-    ...newAch.map((a) => el('div', { class: 'ach-row got' }, el('span', { class: 'ach-ico' }, a.icon), el('div', {}, el('b', {}, a.name), el('div', { class: 'small muted' }, a.desc)))),
-    newGerms.length ? el('div', { class: 'ach-row got' }, el('span', { class: 'ach-ico' }, '📖'), el('div', {}, el('b', {}, 'New in the atlas'), el('div', { class: 'small muted' }, newGerms.map((k) => GERMS[k].name).join(', ')))) : null);
+  // Belohnungen
+  const rw = $('#rs-rewards');
+  const rewardKids = [
+    ...(firstWin ? rewardRows(cfg.level, true) : []),
+    ...newAch.map((a) => el('div', { class: 'reward' }, el('span', { class: 'badge' }, icon(ACH_ICONS[a.key])), el('span', { class: 'main' }, el('b', {}, a.name), el('small', {}, a.desc)))),
+    newGerms.length ? el('div', { class: 'reward' }, el('span', { class: 'badge' }, ui('atlas')), el('span', { class: 'main' }, el('b', {}, 'New in your atlas'), el('small', {}, newGerms.map((k) => GERMS[k].name).join(', ')))) : null,
+  ].filter(Boolean);
+  rw.hidden = !rewardKids.length;
+  fill(rw, ...rewardKids);
+
+  // Details
+  fill($('#rs-analysis'), ...analyze(sim, run.genomes, mask).map((a) =>
+    el('div', { class: `insight kind-${a.kind}` }, el('span', { class: 'dot', 'aria-hidden': 'true' }), el('span', {}, a.text))));
+  const rc = $('#rs-plate');
+  rc.width = sim.N; rc.height = sim.N;
+  rc.getContext('2d').drawImage($('#plate'), 0, 0);
+  $('#rs-plate-note').textContent = `At ${fmtHours(h)} · dark agar = food eaten up`;
+  drawHistory($('#rs-chart'), sim.history, run.genomes.map((g) => g.color));
+  const rows = sim.players.map((p, i) => {
+    const g = run.genomes[i];
+    const status = sim.winner === p.id ? 'Winner' : p.count === 0 ? `† ${Math.round((BREW_HOURS * p.extinctAt) / MAX_TICKS)} h` : 'Alive';
+    return el('tr', {},
+      el('td', {}, culture(g.color, 'sm'), ' ', i === 0 ? el('b', {}, 'You') : g.name.split(' ')[0]),
+      el('td', {}, p.count.toLocaleString('en-US')),
+      el('td', {}, p.peak.toLocaleString('en-US')),
+      el('td', {}, p.kills.toLocaleString('en-US')),
+      el('td', { class: sim.winner === p.id ? 'win' : '' }, status));
+  });
+  fill($('#rs-table'), el('table', {},
+    el('thead', {}, el('tr', {}, el('th', { scope: 'col' }, 'Culture'), el('th', { class: 'num', scope: 'col' }, 'End'), el('th', { class: 'num', scope: 'col' }, 'Max'), el('th', { class: 'num', scope: 'col' }, 'Kills'), el('th', { class: 'num', scope: 'col' }, 'Status'))),
+    el('tbody', {}, rows)));
 
   const lvMode = cfg.mode === 'level';
-  $('#rs-next').hidden = !(lvMode && won && cfg.level < LEVELS.length);
+  // genau ein grüner Knopf: „Nächstes Level“ nach einem Sieg, sonst „Nochmal“
+  const next = lvMode && won && cfg.level < LEVELS.length;
+  $('#rs-next').hidden = !next;
   $('#rs-upgrade').hidden = !lvMode;
   $('#rs-new').hidden = lvMode;
-  $('#rs-rematch').textContent = lvMode ? '↻ Again' : '↻ Rematch';
-  showTab('summary', 'result');
+  const again = $('#rs-rematch');
+  again.className = next ? 'btn' : 'btn primary';
+  fill(again, ui('restart'), lvMode ? (won ? 'Again' : 'Try again') : 'Rematch');
+  const stack = document.querySelector('#result .cta-stack');
+  const two = stack.querySelector('.two-col');
+  if (next) { if (again.parentElement !== two) two.append(again); } else stack.insertBefore(again, two);
   play(won ? 'win' : 'lose');
   if (newStars) setTimeout(() => play('star'), 700);
   if (firstWin) showWinModal(cfg.level);
@@ -1015,9 +1133,8 @@ function showResult() {
 function showWinModal(level) {
   const lv = LEVELS[level - 1];
   const germ = GERMS[lv.boss.germ];
-  fill($('#win-sub'), 'You beat ', el('b', {}, germ.name), ` and cleared level ${level}!`);
-  const pic = $('#win-germ');
-  pic.innerHTML = germSvg(germ.shape, lv.boss.color);
+  fill($('#win-sub'), 'You beat ', el('i', {}, germ.name), ` and cleared level ${level}.`);
+  $('#win-germ').innerHTML = germSvg(germ.shape, lv.boss.color);
   $('#win-fact').textContent = germ.fact;
   fill($('#win-rewards'), ...rewardRows(level, true));
   $('#win-modal').hidden = false;
@@ -1025,53 +1142,6 @@ function showWinModal(level) {
   document.body.classList.add('modal-open');
   setTimeout(() => play('unlock'), 400);
 }
-
-// ---------- Atlas & Erfolge ----------
-// alle Keime in der Reihenfolge ihres ersten Auftretens
-function atlasGerms() {
-  const seen = [];
-  LEVELS.forEach((lv, i) => levelOpponents(lv).forEach((o) => { if (!seen.find((x) => x.germ === o.germ)) seen.push({ germ: o.germ, color: o.color, level: i + 1, boss: o.boss, ability: o.boss ? rewardsOf(i + 1) : [] }); }));
-  return seen;
-}
-
-onEnter.atlas = () => {
-  const found = new Set(store.getAtlas());
-  const list = atlasGerms();
-  $('#atlas-count').textContent = `${list.filter((g) => found.has(g.germ)).length} of ${list.length} germs discovered`;
-  const card = (g) => {
-    const known = found.has(g.germ);
-    const germ = GERMS[g.germ];
-    return el('div', { class: `atlas-card ${known ? '' : 'unknown'}` },
-      germPic(g.germ, known ? g.color : '#3a4554', 'atlas-pic'),
-      el('div', { class: 'atlas-text' },
-        el('b', {}, known ? germ.name : '???'),
-        known ? el('p', { class: 'small atlas-home' }, '📍 ', germ.home) : null,
-        known && PHOTOS[g.germ] ? el('figure', { class: 'atlas-photo' },
-          el('img', { src: PHOTOS[g.germ].src, alt: germ.name, loading: 'lazy' }),
-          el('figcaption', {}, `Photo: ${PHOTOS[g.germ].author} · ${PHOTOS[g.germ].license} · Wikimedia Commons`)) : null,
-        known ? el('p', { class: 'small' }, germ.fact) : el('p', { class: 'small muted' }, `Beat level ${g.level} to discover this germ.`),
-        known && g.ability.length ? el('p', { class: 'small atlas-ability' }, 'Unlocks: ', g.ability.map((r) => r.text).join(', ')) : null));
-  };
-  // germs are sorted by the world they really live in; later worlds show silhouettes
-  fill($('#atlas-list'), ...WORLDS.map((w) => {
-    const germs = list.filter((g) => GERMS[g.germ].world === w.n);
-    const waiting = Object.entries(GERMS).filter(([k, x]) => x.world === w.n && !list.find((g) => g.germ === k));
-    const head = el('div', { class: 'world-head small-head', style: `--accent-w:${w.theme.accent}` },
-      el('span', { class: 'world-ico' }, w.icon),
-      el('div', {}, el('small', {}, `World ${w.n}`), el('b', {}, w.name), el('span', { class: 'small muted' }, w.playable ? w.habitat : `Coming soon · ${waiting.length} germs waiting here`)),
-      w.playable ? el('span', { class: 'world-count' }, `${germs.filter((g) => found.has(g.germ)).length}/${germs.length}`) : el('span', { class: 'world-count' }, '🔒'));
-    return el('section', { class: `atlas-world ${w.playable ? '' : 'locked'}` }, head, ...germs.map(card),
-      waiting.length ? el('div', { class: 'atlas-silhouettes' }, waiting.map(([k]) => germPic(k, '#3a4554', 'sil-pic'))) : null);
-  }));
-  const got = ACHIEVEMENTS.filter((a) => store.hasAchievement(a.key)).length;
-  $('#ach-count').textContent = `${got} of ${ACHIEVEMENTS.length} achievements`;
-  fill($('#ach-list'), ...ACHIEVEMENTS.map((a) => {
-    const has = store.hasAchievement(a.key);
-    return el('div', { class: `ach-row ${has ? 'got' : ''}` }, el('span', { class: 'ach-ico' }, has ? a.icon : '🔒'), el('div', {}, el('b', {}, a.name), el('div', { class: 'small muted' }, a.desc)));
-  }));
-};
-// Schließen per Knopf oder Tipp daneben. touchend zusätzlich, weil iOS-In-App-Browser
-// Klicks auf feststehenden Ebenen manchmal verschlucken.
 function closeWin(e) {
   if (e && e.target.closest('.modal-box') && !e.target.closest('#win-ok')) return;
   if (e && e.type === 'touchend') e.preventDefault();
@@ -1080,7 +1150,6 @@ function closeWin(e) {
 }
 $('#win-modal').addEventListener('click', closeWin);
 $('#win-ok').addEventListener('touchend', closeWin);
-// Diagramm neu zeichnen, sobald die Details aufgeklappt werden (vorher hat es keine Breite)
 
 $('#rs-back').addEventListener('click', () => go(run.cfg.mode === 'level' ? 'career' : 'setup'));
 $('#rs-rematch').addEventListener('click', () => {
@@ -1088,7 +1157,7 @@ $('#rs-rematch').addEventListener('click', () => {
   if (cfg.mode === 'level') {
     const b = store.getBacterium(cfg.careerId);
     if (!b) return go('careers');
-    const probs = problems(b, getLimits(b.career.won), ptsOf(b));
+    const probs = problems(b, limitsOf(b), ptsOf(b));
     if (probs.length) return toast(probs.join(' · '));
     startMatch({ ...cfg, player: b, seed: randomSeed() });
   } else {
@@ -1105,11 +1174,111 @@ $('#rs-new').addEventListener('click', () => {
 $('#rs-next').addEventListener('click', () => { careerId = run.cfg.careerId; openLevel(run.cfg.level + 1); });
 $('#rs-upgrade').addEventListener('click', () => {
   const b = store.getBacterium(run.cfg.careerId);
-  if (b) openEditor(b, careerCtx(b, 'career'));
+  if (b) openEditor(b, careerCtx(b, 'result'));
 });
 
+// ---------- Atlas ----------
+// alle Keime der Level in der Reihenfolge ihres ersten Auftretens
+function atlasGerms() {
+  const seen = [];
+  LEVELS.forEach((lv, i) => levelOpponents(lv).forEach((o) => { if (!seen.find((x) => x.germ === o.germ)) seen.push({ germ: o.germ, color: o.color, level: i + 1, boss: o.boss, ability: o.boss ? rewardsOf(i + 1) : [] }); }));
+  return seen;
+}
+
+let atlasWorld = 1;
+onEnter.atlas = () => {
+  const found = new Set(store.getAtlas());
+  const list = atlasGerms();
+  fill($('#atlas-worlds'), ...WORLDS.map((w) => el('button', {
+    class: `chip ${atlasWorld === w.n ? 'on' : ''} ${w.playable ? '' : 'locked'}`, role: 'tab', 'aria-selected': String(atlasWorld === w.n),
+    onclick: () => { atlasWorld = w.n; onEnter.atlas(); },
+  }, w.playable ? null : ui('lock', 'xs'), w.name)));
+  const w = WORLDS.find((x) => x.n === atlasWorld);
+  const germs = list.filter((g) => GERMS[g.germ].world === w.n);
+  const waiting = Object.entries(GERMS).filter(([k, x]) => x.world === w.n && !list.find((g) => g.germ === k));
+  const known = germs.filter((g) => found.has(g.germ)).length;
+  const totalHere = w.playable ? germs.length : waiting.length;
+  fill($('#atlas-progress'),
+    el('div', { class: 'row between' }, el('b', {}, w.name), el('span', { class: 'mono' }, String(known), el('span', { class: 'muted' }, ` / ${totalHere}`))),
+    el('div', { class: 'meter' }, el('div', { style: `width:${totalHere ? (known / totalHere) * 100 : 0}%` })),
+    el('p', { class: 'small muted' }, w.playable ? w.habitat : `Coming soon · ${waiting.length} germs are waiting here.`));
+  const card = (g) => {
+    const isKnown = found.has(g.germ);
+    const germ = GERMS[g.germ];
+    return el('button', {
+      class: `germ-card ${isKnown ? '' : 'unknown'}`, 'aria-label': isKnown ? germ.name : `Undiscovered germ, beat level ${g.level}`,
+      onclick: () => (isKnown ? openGerm(g) : toast(`Beat level ${g.level} to discover this germ.`)),
+    },
+    el('span', { class: 'pic' }, germPic(g.germ, isKnown ? g.color : '#3a4434')),
+    el('b', {}, isKnown ? germ.name : 'Undiscovered'),
+    el('small', {}, isKnown ? `Level ${g.level}${g.boss ? ' · boss' : ''}` : `Beat level ${g.level}`));
+  };
+  fill($('#atlas-list'), ...(w.playable ? germs.map(card) : waiting.map(([k]) => el('div', { class: 'germ-card unknown' },
+    el('span', { class: 'pic' }, germPic(k, '#3a4434')), el('b', {}, 'Undiscovered'), el('small', {}, 'Coming soon')))));
+};
+
+function openGerm(g) {
+  const germ = GERMS[g.germ];
+  fill($('#gm-body'),
+    el('div', { class: 'gm-pic' }, germPic(g.germ, g.color)),
+    PHOTOS[g.germ] ? el('figure', { class: 'atlas-photo' },
+      el('img', { src: PHOTOS[g.germ].src, alt: germ.name, loading: 'lazy' }),
+      el('figcaption', {}, `Photo: ${PHOTOS[g.germ].author} · ${PHOTOS[g.germ].license} · Wikimedia Commons`)) : null,
+    el('h2', { id: 'gm-title' }, germ.name),
+    el('p', { class: 'small muted' }, `World ${germ.world} · Level ${g.level}${g.boss ? ' · boss' : ''}`),
+    el('dl', { class: 'gm-facts' },
+      el('dt', {}, 'Lives in'), el('dd', {}, germ.home),
+      el('dt', {}, 'Unlocks'), el('dd', {}, g.ability.length ? g.ability.map((r) => r.short || r.text).join(', ') : '–')),
+    el('p', { class: 'win-fact' }, germ.fact));
+  $('#germ-modal').hidden = false;
+  document.body.classList.add('modal-open');
+}
+function closeGerm(e) {
+  if (e && e.target.closest('.modal-box') && !e.target.closest('#gm-close')) return;
+  $('#germ-modal').hidden = true;
+  document.body.classList.remove('modal-open');
+}
+$('#germ-modal').addEventListener('click', closeGerm);
+
+// ---------- Auszeichnungen ----------
+onEnter.awards = () => {
+  const list = store.getBacteria();
+  // Sterne: das Bakterium der aktuellen Welt mit den meisten Sternen
+  const best = [...list].sort((a, b) => Object.values(b.career.stars).reduce((s, m) => s + starCount(m), 0) - Object.values(a.career.stars).reduce((s, m) => s + starCount(m), 0))[0];
+  const starsOf = (b) => (b ? Object.values(b.career.stars).reduce((s, m) => s + starCount(m), 0) : 0);
+  const got = ACHIEVEMENTS.filter((a) => store.hasAchievement(a.key)).length;
+  const found = new Set(store.getAtlas());
+  const atlasAll = atlasGerms();
+  fill($('#aw-totals'),
+    el('div', { class: 'stat' }, el('b', { class: 'star' }, String(starsOf(best)), el('small', {}, ` / ${LEVELS_PER_WORLD * 3}`)), el('span', {}, 'Stars')),
+    el('div', { class: 'stat' }, el('b', {}, String(got), el('small', {}, ` / ${ACHIEVEMENTS.length}`)), el('span', {}, 'Achievements')),
+    el('div', { class: 'stat' }, el('b', {}, String(atlasAll.filter((g) => found.has(g.germ)).length), el('small', {}, ` / ${atlasAll.length}`)), el('span', {}, 'Germs found')));
+  fill($('#aw-stars'),
+    el('div', { class: 'row between' }, el('h2', {}, 'Skin stars'), best ? el('span', { class: 'small muted' }, el('i', {}, best.name)) : null),
+    el('div', { class: 'star-grid' }, Array.from({ length: LEVELS_PER_WORLD }, (_, i) => {
+      const n = i + 1, m = best ? best.career.stars[n] || 0 : 0, soon = n > LEVELS.length;
+      return el('div', { class: `star-cell ${soon ? 'soon' : ''}`, 'aria-label': `Level ${n}${soon ? ', coming soon' : `, ${starCount(m)} of 3 stars`}` },
+        el('b', {}, String(n)),
+        el('span', { 'aria-hidden': 'true' }, [1, 2, 4].map((bit) => el('i', { class: m & bit ? 'on' : '' }, '★'))));
+    })),
+    el('p', { class: 'small muted' }, '★ Win · ★ Under 12 h · ★ 25 % of the plate. All three in a level give +1 upgrade point.'));
+  $('#ach-count').textContent = `${got} / ${ACHIEVEMENTS.length}`;
+  const when = (ts) => new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  fill($('#ach-list'), ...ACHIEVEMENTS.map((a) => {
+    const ts = store.achievementTime(a.key);
+    return el('div', { class: `ach-row ${ts ? 'got' : ''}` },
+      el('span', { class: 'ach-badge', 'aria-hidden': 'true' }, icon(ACH_ICONS[a.key], 'md')),
+      el('span', { class: 'main' }, el('b', {}, a.name), el('small', {}, a.desc)),
+      el('span', { class: 'when' }, ts ? when(ts) : 'Locked'));
+  }));
+  const master = store.hasAchievement('master');
+  fill($('#aw-titles'),
+    el('div', { class: 'reward' }, el('span', { class: 'badge' }, master ? icon(ACH_ICONS.master) : ui('lock')),
+      el('span', { class: 'main' }, el('b', {}, 'Title “Wound Healer”'), el('small', {}, master ? 'Earned – you beat the chapter boss of the skin.' : 'Beat the chapter boss in level 10.'))));
+};
+
 // ---------- Start ----------
-// Atlas nachtragen: Keime aus bereits gewonnenen Leveln gelten als entdeckt
+hydrateIcons();
 store.discover(store.globalWon().filter((n) => LEVELS[n - 1]).flatMap((n) => levelOpponents(LEVELS[n - 1]).map((o) => o.germ)));
 refreshSoundButtons();
 refreshMusicButtons();
@@ -1118,4 +1287,3 @@ go('home');
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
   navigator.serviceWorker.register('sw.js').catch(() => {});
 }
-onEnter.awards = () => onEnter.atlas();

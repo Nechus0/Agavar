@@ -18,15 +18,22 @@ const SPORE_LIFE = 400;
 const DX = [0, 1, 1, 1, 0, -1, -1, -1];
 const DY = [-1, -1, 0, 1, 1, 1, 0, -1];
 
-// Spielwerte je Stufe der Eigenschaften.
+// Spielwerte der Eigenschaften an den Stützstellen 0, 2, 4 … 10 (dazwischen linear).
 const T = {
-  moveChance: [0.25, 0.4, 0.55, 0.75, 0.95],
-  maxAge: [50, 80, 115, 155, 200],
-  efficiency: [0.5, 0.64, 0.78, 0.92, 1.06],
+  moveChance: [0.25, 0.4, 0.55, 0.75, 0.95, 0.98],
+  maxAge: [50, 80, 115, 155, 200, 250],
+  efficiency: [0.5, 0.64, 0.78, 0.92, 1.06, 1.2],
+  chemo: [0, 0.03, 0.06, 0.09, 0.12, 0.15],
   // Stoffwechsel: sparsam = weniger Verbrauch und effizienter, gefräßig = frisst schneller
   uptake: [2.0, 2.8, 3.6, 4.4, 5.2],
   basal: [0.22, 0.32, 0.43, 0.55, 0.68],
   divideAt: [26, 38, 52, 66, 80],
+};
+// Stufe 0–10 einer Eigenschaft in den Spielwert übersetzen
+const level = (table, v) => {
+  const x = Math.max(0, Math.min(10, Number(v) || 0)) / 2;
+  const i = Math.min(table.length - 2, Math.floor(x));
+  return table[i] + (table[i + 1] - table[i]) * (x - i);
 };
 const MOVE_COST = 0.3;
 const PHOTO_GAIN = 0.45;
@@ -44,20 +51,20 @@ function expandProgram(program) {
   return out.length ? out : [4];
 }
 
-function phenotype(g) {
+export function phenotype(g) {
   const sp = new Set([g.special, g.bonusSpecial]);
   return {
     program: expandProgram(g.program),
-    moveChance: T.moveChance[g.speed],
-    maxAge: T.maxAge[g.lifespan],
-    efficiency: T.efficiency[g.efficiency],
+    moveChance: level(T.moveChance, g.speed),
+    maxAge: Math.round(level(T.maxAge, g.lifespan)),
+    efficiency: level(T.efficiency, g.efficiency),
     uptake: T.uptake[g.metabolism],
     basal: T.basal[g.metabolism],
     divideAt: T.divideAt[g.division],
-    attack: g.attack,
-    defense: g.defense,
+    attack: g.attack / 2,
+    defense: g.defense / 2,
     spores: sp.has('spores'),
-    chemoChance: [0, 0.03, 0.06, 0.09, 0.12][g.chemotaxis | 0],
+    chemoChance: level(T.chemo, g.chemotaxis),
     capsule: sp.has('capsule'),
     photo: sp.has('photo'),
     predator: sp.has('predator'),

@@ -4,7 +4,7 @@ import { Simulation } from '../js/sim.js';
 import { defaultGenome, randomGenome, cost, normalize, maxCost, parseStep } from '../js/genome.js';
 import { LEVELS, levelOpponents } from '../js/levels.js';
 import { GERMS, germSvg } from '../js/germs.js';
-import { getLimits, problems, rewardsOf, unlockLevelOf, careerPoints, nextLevel, START_POINTS } from '../js/progression.js';
+import { getLimits, problems, rewardsOf, unlockLevelOf, careerPoints, nextLevel, START_POINTS, POINTS_PER_WIN } from '../js/progression.js';
 import { makeRng } from '../js/rng.js';
 
 const opts = (genomes, seed = 1) => ({ genomes, size: 'klein', distribution: 'gleichmaessig', amount: 'normal', regen: 'normal', seed });
@@ -44,7 +44,7 @@ test('Muster mit Wiederholungen werden gelesen und repariert', () => {
   assert.deepEqual(parseStep('M'), { s: 'M', n: 1 });
   assert.equal(parseStep('X2'), null);
   const g = normalize({ speed: 99, attack: -3, program: ['X', 'F9', 'R2'], special: 'laser', color: 'rot' });
-  assert.equal(g.speed, 4);
+  assert.equal(g.speed, 10);
   assert.equal(g.attack, 0);
   assert.deepEqual(g.program, ['F4', 'R2']);
   assert.equal(g.special, 'none');
@@ -93,7 +93,7 @@ test('Besondere Gegner zeigen die Fähigkeit, die man bei ihnen freischaltet', (
 
 test('Karriere: Startpunkte, Punkte pro Sieg, nächstes Level', () => {
   assert.equal(careerPoints([]), START_POINTS);
-  assert.equal(careerPoints([1, 2]), START_POINTS + 4);
+  assert.equal(careerPoints([1, 2]), START_POINTS + 2 * POINTS_PER_WIN);
   assert.equal(nextLevel([], 10), 1);
   assert.equal(nextLevel([1, 2], 10), 3);
   assert.equal(nextLevel([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 10), 11);
@@ -117,8 +117,8 @@ test('Freischalten: am Anfang eingeschränkt, nach Welt 1 die Haut-Fähigkeiten 
 
 test('problems() erkennt Verstöße', () => {
   const lim = getLimits([]);
-  assert.deepEqual(problems({ ...defaultGenome(), speed: 2, attack: 2, defense: 2 }, lim, START_POINTS), []);
-  const bad = { ...defaultGenome(), speed: 4, attack: 4, special: 'toxin', program: ['F2', 'Z'] };
+  assert.deepEqual(problems({ ...defaultGenome(), speed: 4, attack: 4, defense: 4 }, lim, START_POINTS), []);
+  const bad = { ...defaultGenome(), speed: 8, attack: 8, special: 'toxin', program: ['F2', 'Z'] };
   assert.ok(problems(bad, lim, START_POINTS).length >= 3);
 });
 
@@ -165,9 +165,9 @@ test('Neue Spezialfähigkeiten: Kapsel schützt, Räuber frisst, Chemotaxis ist 
   // alte Spielstände mit Chemotaxis als Spezialfähigkeit werden umgewandelt
   const old = normalize({ special: 'chemo', speed: 1 });
   assert.equal(old.special, 'none');
-  assert.equal(old.chemotaxis, 3);
-  const cap = { ...defaultGenome(), special: 'capsule', program: ['F', 'R'], efficiency: 4, lifespan: 4, speed: 2 };
-  const hunter = { ...defaultGenome(), special: 'predator', attack: 5, speed: 4, efficiency: 2 };
+  assert.equal(old.chemotaxis, 6);
+  const cap = { ...defaultGenome(), special: 'capsule', program: ['F', 'R'], efficiency: 8, lifespan: 8, speed: 4 };
+  const hunter = { ...defaultGenome(), special: 'predator', attack: 10, speed: 8, efficiency: 4 };
   const sim = new Simulation(opts([hunter, cap], 9));
   assert.ok(sim.shield.some((v, i) => v && sim.owner[i] === 2), 'Kapsel-Zellen haben Schutz');
   sim.run(400);
@@ -181,9 +181,9 @@ import { starMask, starCount } from '../js/progression.js';
 import { analyze, ACHIEVEMENTS } from '../js/insights.js';
 
 test('Sterne, Bonuspunkt, Auswertung und Erfolge', () => {
-  assert.equal(careerPoints([1, 2], { 1: 7, 2: 3 }), START_POINTS + 4 + 1);
+  assert.equal(careerPoints([1, 2], { 1: 7, 2: 3 }), START_POINTS + 2 * POINTS_PER_WIN + 1);
   assert.equal(starCount(5), 2);
-  const strong = { ...defaultGenome(), name: 'Stark', speed: 3, efficiency: 4, attack: 5, defense: 5, lifespan: 3 };
+  const strong = { ...defaultGenome(), name: 'Stark', speed: 6, efficiency: 8, attack: 10, defense: 10, lifespan: 6 };
   const weak = { ...defaultGenome(), name: 'Schwach', program: ['P'] };
   const sim = new Simulation(opts([strong, weak], 11)).run();
   const p = sim.players[0];
@@ -199,7 +199,7 @@ test('Sterne, Bonuspunkt, Auswertung und Erfolge', () => {
 import { energyProfile } from '../js/sim.js';
 
 test('Energiebilanz: Warten spart Bewegungsenergie, sparsamer Stoffwechsel verbraucht weniger', () => {
-  const base = { ...defaultGenome(), speed: 3, efficiency: 2 };
+  const base = { ...defaultGenome(), speed: 6, efficiency: 4 };
   const moving = energyProfile({ ...base, program: ['F'] });
   const sitting = energyProfile({ ...base, program: ['F', 'P', 'P', 'P'] });
   assert.ok(sitting.move < moving.move);
@@ -215,9 +215,9 @@ test('Energiebilanz: Warten spart Bewegungsenergie, sparsamer Stoffwechsel verbr
 import { meters, counterTips } from '../js/meters.js';
 
 test('Leisten und Konter-Hinweise', () => {
-  const runner = meters({ ...defaultGenome(), speed: 4, efficiency: 4, division: 0, program: ['F'] });
-  const tank = meters({ ...defaultGenome(), attack: 5, defense: 5, special: 'capsule', program: ['P'] });
-  const camper = meters({ ...defaultGenome(), lifespan: 4, efficiency: 4, metabolism: 0, special: 'spores', program: ['P'] });
+  const runner = meters({ ...defaultGenome(), speed: 8, efficiency: 8, division: 0, program: ['F'] });
+  const tank = meters({ ...defaultGenome(), attack: 10, defense: 10, special: 'capsule', program: ['P'] });
+  const camper = meters({ ...defaultGenome(), lifespan: 8, efficiency: 8, metabolism: 0, special: 'spores', program: ['P'] });
   assert.ok(runner.spread > tank.spread);
   assert.ok(tank.fight > runner.fight);
   assert.ok(camper.survive > runner.survive);
@@ -227,4 +227,27 @@ test('Leisten und Konter-Hinweise', () => {
     assert.ok(tips.length >= 1 && tips.length <= 2 && tips.every((t) => t.length > 15));
   }
   assert.ok(counterTips({ ...defaultGenome(), special: 'toxin' })[0].includes('Poison'));
+});
+
+import { namePool, randomName } from '../js/names.js';
+import { SPECIALS } from '../js/genome.js';
+
+test('Zufallsnamen passen zur Welt und doppeln keine echten Keime oder vergebenen Namen', () => {
+  const skinGerms = Object.values(GERMS).filter((g) => g.world === 1).map((g) => g.name);
+  const pool = namePool(1);
+  assert.ok(pool.length > 50);
+  for (const n of skinGerms) assert.ok(!pool.includes(n), n);
+  const rng = makeRng(3);
+  const taken = [];
+  for (let k = 0; k < 40; k++) {
+    const n = randomName(rng, 1, taken);
+    assert.ok(!taken.includes(n) && !skinGerms.includes(n));
+    taken.push(n);
+  }
+});
+
+test('Spezialfähigkeiten kosten je nach Stärke unterschiedlich viel', () => {
+  const costs = Object.entries(SPECIALS).filter(([k]) => k !== 'none').map(([, s]) => s.cost);
+  assert.ok(new Set(costs).size >= 3);
+  assert.ok(SPECIALS.toxin.cost > SPECIALS.spores.cost);
 });

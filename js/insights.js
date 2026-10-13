@@ -26,34 +26,34 @@ export function analyze(sim, genomes, mask = 0) {
     const byKiller = killer ? p.killedBy[killer] : 0;
     const name = killer ? genomes[killer - 1].name : '';
     if (byKiller / deaths >= 0.3) {
-      if (d.toxin > d.fight) out.push({ kind: 'tip', text: `${name}'s toxins killed ${byKiller.toLocaleString('en-US')} of your cells. Tip: distance helps against poison – spread fast with a roaming movement, or divide earlier so losses grow back.` });
-      else out.push({ kind: 'tip', text: `${name} killed ${byKiller.toLocaleString('en-US')} of your cells in combat. Tip: more defense, a capsule, or higher attack to strike first.` });
+      if (d.toxin > d.fight) out.push({ kind: 'tip', text: `${name}'s toxins killed ${byKiller.toLocaleString('en-US')} of your cells.` });
+      else out.push({ kind: 'tip', text: `${name} killed ${byKiller.toLocaleString('en-US')} of your cells in combat.` });
     } else if (d.starve / deaths >= 0.5) {
-      out.push({ kind: 'tip', text: 'Most of your cells starved. Tip: more efficiency, a more frugal metabolism, or a movement that reaches new food (Straight, Tumble, Chemotaxis).' });
+      out.push({ kind: 'tip', text: 'Most of your cells starved.' });
     } else if (d.age / deaths >= 0.4) {
-      out.push({ kind: 'tip', text: 'Many cells died of old age. Tip: more lifespan or earlier division.' });
+      out.push({ kind: 'tip', text: 'Many of your cells died of old age.' });
     }
   }
 
   if (won && mask) {
-    if (!(mask & 2)) out.push({ kind: 'tip', text: 'For the “fast” star: win in under 12 h – with more attack or faster spread.' });
-    if (!(mask & 4)) out.push({ kind: 'tip', text: `For the “big” star: cover ${pct(BIG_PLATE)} of the plate at some point – e.g. with early division and good efficiency.` });
+    if (!(mask & 2)) out.push({ kind: 'tip', text: `Missing star: win in under 12 h. This time it took ${Math.round((48 * sim.tick) / 4000)} h.` });
+    if (!(mask & 4)) out.push({ kind: 'tip', text: `Missing star: cover ${pct(BIG_PLATE)} of the plate. Your best was ${pct(p.peakPlate)}.` });
   }
   return out.slice(0, 4);
 }
 
 // ctx: { sim, mode, level, mask, genome, globalLimits, atlasCount, atlasTotal, opponents }
 export const ACHIEVEMENTS = [
-  { key: 'first_win', icon: '🥇', name: 'First Win', desc: 'Win a game.', check: (c) => c.sim.winner === 1 },
-  { key: 'three_stars', icon: '⭐', name: 'Triple', desc: 'Get all three stars in a level.', check: (c) => c.mask === 7 },
-  { key: 'blitz', icon: '⚡', name: 'Blitz', desc: 'Win in under 6 h of incubation.', check: (c) => c.sim.winner === 1 && c.sim.tick <= 500 },
-  { key: 'giant', icon: '🌕', name: 'Colony Giant', desc: 'Cover half of the plate at some point.', check: (c) => c.sim.players[0].peakPlate >= 0.5 },
-  { key: 'hunter', icon: '🗡', name: 'Hunter', desc: 'Kill 1,000 enemy cells in one game.', check: (c) => c.sim.players[0].kills >= 1000 },
-  { key: 'comeback', icon: '🔥', name: 'Comeback', desc: 'Win after dropping below 20 % of all cells.', check: (c) => c.sim.winner === 1 && c.sim.players[0].lowShareAfterContact < 0.2 },
-  { key: 'sitter', icon: '🪑', name: 'Couch Potato', desc: 'Win with the “Sit” movement.', check: (c) => c.sim.winner === 1 && moveFromProgram(c.genome.program)?.type === 'sitzen' },
-  { key: 'pure', icon: '🧫', name: 'Purist', desc: 'Win from level 3 on without a special ability.', check: (c) => c.sim.winner === 1 && c.mode === 'level' && c.level >= 3 && c.genome.special === 'none' },
-  { key: 'crowd', icon: '🎪', name: 'Against All', desc: 'Win a free game against at least 4 opponents.', check: (c) => c.sim.winner === 1 && c.mode === 'free' && c.opponents >= 4 },
-  { key: 'all_specials', icon: '🧬', name: 'Toolbox', desc: 'Unlock all three special abilities of the skin world.', check: (c) => ['capsule', 'biofilm', 'toxin'].every((k) => c.globalLimits.specials.has(k)) },
-  { key: 'collector', icon: '📖', name: 'Collector', desc: 'Discover every germ of the skin world.', check: (c) => c.atlasCount >= c.atlasTotal },
-  { key: 'master', icon: '🏆', name: 'Wound Healer', desc: 'Beat the chapter boss in level 10.', check: (c) => c.sim.winner === 1 && c.mode === 'level' && c.level === 10 },
+  { key: 'first_win', name: 'First Win', desc: 'Win a game.', check: (c) => c.sim.winner === 1 },
+  { key: 'three_stars', name: 'Triple', desc: 'Get all three stars in a level.', check: (c) => c.mask === 7 },
+  { key: 'blitz', name: 'Blitz', desc: 'Win in under 6 h of incubation.', check: (c) => c.sim.winner === 1 && c.sim.tick <= 500 },
+  { key: 'giant', name: 'Colony Giant', desc: 'Cover half of the plate at some point.', check: (c) => c.sim.players[0].peakPlate >= 0.5 },
+  { key: 'hunter', name: 'Hunter', desc: 'Kill 1,000 enemy cells in one game.', check: (c) => c.sim.players[0].kills >= 1000 },
+  { key: 'comeback', name: 'Comeback', desc: 'Win after dropping below 20 % of all cells.', check: (c) => c.sim.winner === 1 && c.sim.players[0].lowShareAfterContact < 0.2 },
+  { key: 'sitter', name: 'Couch Potato', desc: 'Win with the “Sit” movement.', check: (c) => c.sim.winner === 1 && moveFromProgram(c.genome.program)?.type === 'sitzen' },
+  { key: 'pure', name: 'Purist', desc: 'Win from level 3 on without a special ability.', check: (c) => c.sim.winner === 1 && c.mode === 'level' && c.level >= 3 && c.genome.special === 'none' },
+  { key: 'crowd', name: 'Against All', desc: 'Win a free game against at least 4 opponents.', check: (c) => c.sim.winner === 1 && c.mode === 'free' && c.opponents >= 4 },
+  { key: 'all_specials', name: 'Toolbox', desc: 'Unlock all three special abilities of the skin world.', check: (c) => ['capsule', 'biofilm', 'toxin'].every((k) => c.globalLimits.specials.has(k)) },
+  { key: 'collector', name: 'Collector', desc: 'Discover every germ of the skin world.', check: (c) => c.atlasCount >= c.atlasTotal },
+  { key: 'master', name: 'Wound Healer', desc: 'Beat the chapter boss in level 10.', check: (c) => c.sim.winner === 1 && c.mode === 'level' && c.level === 10 },
 ];
