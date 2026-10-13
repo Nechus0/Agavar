@@ -540,3 +540,61 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .opp .counter { background: none; padding: 0; color: #9fc4a4; }
 .sound-toggle { background: none; border: 0; font-size: 20px; cursor: pointer; justify-self: end; }
 .center-row { justify-content: center; }
+
+/* ---------- Kompaktere Ansichten ---------- */
+#ed-name { margin-bottom: 10px; }
+.swatch { width: 30px; height: 30px; }
+.moves { grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.move-card { padding: 8px 2px 6px; gap: 2px; }
+.move-card .move-pic { width: 30px; height: 30px; min-width: 30px; }
+.move-card .move-name { font-size: 12px; }
+.move-more { font-size: 15px; font-weight: 700; color: var(--muted); min-height: 30px; display: grid; place-items: center; }
+.special .move-more { min-height: 32px; }
+.move-opts { display: flex; gap: 8px; align-items: center; margin: 10px 0; }
+.move-opts:empty { display: none; }
+.seg.grow { flex: 1; }
+.seg.grow button { font-size: 13px; padding: 7px 4px; }
+.dir-btn { width: 44px; font-size: 20px; padding: 4px 0; flex: none; }
+.previews { margin-top: 10px; }
+.energy { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.echip { font-size: 13px; background: var(--card2); border-radius: 999px; padding: 5px 10px; color: #c9d1db; }
+.echip .good { color: var(--good); }
+.echip .bad { color: var(--bad); }
+
+/* Gegnerliste im Level */
+#ld-foes { display: flex; flex-direction: column; gap: 10px; }
+.foe { display: flex; align-items: center; gap: 12px; }
+.foe-pic { width: 56px; height: 38px; flex: none; display: grid; place-items: center; }
+.foe-pic.big { width: 76px; height: 52px; }
+.foe-pic svg { width: 100%; height: 100%; }
+.foe-main { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.foe-name { font-style: italic; }
+.foe.boss .foe-name { color: var(--accent); font-size: 17px; }
+.foe-tags { display: flex; flex-wrap: wrap; gap: 6px; font-size: 12px; color: var(--muted); align-items: center; }
+.tip { background: #1d2a1f; color: #cfe8d2; border-radius: 10px; padding: 8px 10px; }
+.plate-line { text-align: center; }
+.goal { padding: 6px 4px; }
+.goal .star { font-size: 22px; }
+.reward-line { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 10px; margin-top: 10px; color: var(--muted); }
+.reward-line .plus { font-size: 12px; padding: 1px 6px; }
+.rw { display: inline-flex; align-items: center; gap: 4px; color: var(--text); }
+.rw .ico { color: var(--good); }
+#ld-me, #cr-card { display: flex; flex-direction: column; gap: 10px; }
+.level-list { gap: 6px; }
+
+/* Dialoge: nie höher als der Bildschirm, Hintergrund scrollt nicht mit */
+.modal { overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; touch-action: manipulation; }
+.modal-box { max-height: calc(100dvh - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); overflow-y: auto; }
+body.modal-open { overflow: hidden; }
+.win-box { gap: 8px; padding: 16px; }
+.win-box h2 { font-size: 22px; margin: 0; }
+.confetti { font-size: 30px; }
+.win-germ { width: 130px; height: 80px; }
+.win-germ svg { width: 116px; height: 77px; }
+.win-fact { font-size: 14px; margin: 0; }
+.win-box .rewards { gap: 6px; }
+
+/* Uhr schlanker */
+.clock-row { padding: 6px 12px; gap: 10px; }
+.clock { width: 30px; height: 30px; }
+.clock-text .small { display: none; }

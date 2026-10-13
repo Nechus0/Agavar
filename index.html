@@ -40,7 +40,6 @@
     <!-- Karrieren-Übersicht -->
     <section class="screen" id="careers" hidden>
       <header class="bar"><button class="back" data-go="home">‹ Zurück</button><h2>Karriere</h2><span></span></header>
-      <p class="note">Jedes Bakterium hat seine eigene Karriere: Es startet ganz einfach und wird mit jedem besiegten Gegner stärker.</p>
       <div id="career-list" class="lab-list"></div>
       <button class="btn primary big" id="career-new">+ Neues Bakterium</button>
     </section>
@@ -49,10 +48,7 @@
     <section class="screen" id="career" hidden>
       <header class="bar"><button class="back" data-go="careers">‹ Karriere</button><h2 id="cr-title">Bakterium</h2><span></span></header>
       <div class="card" id="cr-card"></div>
-      <div class="card">
-        <h3>Level</h3>
-        <div id="cr-levels" class="level-list"></div>
-      </div>
+      <div id="cr-levels" class="level-list"></div>
       <button class="btn ghost danger" id="cr-delete">Bakterium löschen</button>
     </section>
 
@@ -60,16 +56,8 @@
     <section class="screen" id="level-detail" hidden>
       <header class="bar"><button class="back" data-go="career">‹ Zurück</button><h2 id="ld-title">Level</h2><span></span></header>
       <p id="ld-desc" class="note"></p>
-      <div class="card boss-card" id="ld-boss"></div>
-      <div class="card" id="ld-others-card">
-        <h3>Weitere Gegner</h3>
-        <div id="ld-opponents" class="opp-list"></div>
-      </div>
-      <div id="ld-plate" class="plate-chips"></div>
-      <div class="card">
-        <h3>Ziele</h3>
-        <div id="ld-stars"></div>
-      </div>
+      <div class="card" id="ld-foes"></div>
+      <div class="card" id="ld-goals"></div>
       <div class="card" id="ld-me"></div>
       <button class="btn primary big" id="ld-start">Simulation starten</button>
     </section>
@@ -84,15 +72,13 @@
         <p class="small warn" id="ed-warn" hidden></p>
       </div>
       <div class="card">
-        <label class="field"><span>Name</span><input id="ed-name" type="text" maxlength="32" autocomplete="off" placeholder="z. B. Bacillus furiosus"></label>
-        <div class="field"><span>Farbe</span><div id="ed-colors" class="swatches"></div></div>
+        <input id="ed-name" type="text" maxlength="32" autocomplete="off" placeholder="Name, z. B. Bacillus furiosus" aria-label="Name">
+        <div id="ed-colors" class="swatches"></div>
       </div>
       <div class="card">
         <h3>Bewegung</h3>
-        <p class="small muted">Wähle, wie sich deine Zellen bewegen – die ganze Kolonie folgt diesem Muster.</p>
         <div id="ed-moves" class="moves"></div>
         <div id="ed-move-opts" class="move-opts"></div>
-        <p id="ed-move-desc" class="small move-desc"></p>
         <div class="previews">
           <figure><canvas id="ed-preview" class="preview-cell"></canvas><figcaption>Eine Zelle</figcaption></figure>
           <figure><canvas id="ed-colony" class="preview-colony"></canvas><figcaption id="ed-colony-label">Die Kolonie</figcaption></figure>
@@ -101,14 +87,14 @@
       <div class="card">
         <h3>Stoffwechsel &amp; Teilung <span class="muted small">· kostenlos</span></h3>
         <div id="ed-free"></div>
+        <div id="ed-energy" class="energy"></div>
       </div>
-      <div class="card energy-card" id="ed-energy"></div>
       <div class="card">
-        <h3>Eigenschaften <span class="muted small">· 1 Punkt pro Stufe · ⓘ = Erklärung</span></h3>
+        <h3>Eigenschaften <span class="muted small">· 1 Punkt pro Stufe</span></h3>
         <div id="ed-costed"></div>
       </div>
       <div class="card">
-        <h3>Spezialfähigkeit <span class="muted small">· höchstens eine · 3 Punkte</span></h3>
+        <h3>Spezialfähigkeit <span class="muted small">· 3 Punkte</span></h3>
         <div id="ed-specials" class="specials"></div>
         <p id="ed-special-hint" class="small muted"></p>
       </div>

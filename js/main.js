@@ -92,8 +92,6 @@ function germPic(germ, color, cls = '') {
 const moveChip = (g) => el('span', { class: 'move-chip' }, icon(pathSvg(g.program), 'path-ico'), describeMove(moveFromProgram(g.program)));
 const specialBadge = (key, cls = '') => icon(SPECIAL_ICONS[key], cls, SPECIAL_COLORS[key]);
 const specialTag = (key) => el('span', { class: 'sp-tag', style: `--c:${SPECIAL_COLORS[key]}` }, specialBadge(key, 'sm'), SPECIALS[key].name);
-const traitRow = (g) => el('div', { class: 'trait-grid' }, COSTED.map((t) =>
-  el('span', { class: 'tcell', title: t.label }, icon(TRAIT_ICONS[t.key], 'sm'), el('b', {}, String(g[t.key])), el('small', {}, t.short))));
 
 const LABELS = {
   size: { klein: 'Klein', mittel: 'Mittel', gross: 'Groß' },
@@ -133,11 +131,12 @@ function confirmDialog(title, text, yes = 'Ja') {
   return new Promise((resolve) => {
     $('#modal-title').textContent = title;
     $('#modal-text').textContent = text;
-    const done = (v) => { $('#modal').hidden = true; resolve(v); };
+    const done = (v) => { $('#modal').hidden = true; document.body.classList.remove('modal-open'); resolve(v); };
     fill($('#modal-buttons'), 
       el('button', { class: 'btn', onclick: () => done(false) }, 'Abbrechen'),
       el('button', { class: 'btn primary', onclick: () => done(true) }, yes));
     $('#modal').hidden = false;
+    document.body.classList.add('modal-open');
   });
 }
 
@@ -207,9 +206,7 @@ onEnter.careers = () => {
         el('span', { class: 'dot', style: `background:${b.color}` }),
         el('b', {}, b.name),
         el('span', { class: 'cost' }, levelBadge(b))),
-      el('div', { class: 'stats' }, moveChip(b), b.special !== 'none' ? specialTag(b.special) : null),
-      traitRow(b),
-      el('div', { class: 'small muted' }, `${cost(b)} von ${pts} Ausbaupunkten verteilt`, free > 0 ? el('span', { class: 'free-pts' }, ` · ${free} frei!`) : null));
+      free > 0 ? el('div', { class: 'small free-pts' }, `${free} ${free === 1 ? 'Punkt' : 'Punkte'} frei!`) : null);
   }) : [el('div', { class: 'empty' }, 'Noch kein Bakterium. Erstelle dein erstes!')]));
 };
 $('#career-new').addEventListener('click', () => openEditor(null, careerNewCtx('careers')));
@@ -232,15 +229,12 @@ onEnter.career = () => {
   const lim = getLimits(won);
   const probs = problems(b, lim, pts);
   $('#cr-title').textContent = b.name;
-  fill($('#cr-card'), 
+  fill($('#cr-card'),
     el('div', { class: 'title row gap' }, el('span', { class: 'dot big-dot', style: `background:${b.color}` }), el('b', { class: 'big-name' }, b.name), el('span', { class: 'cost' }, levelBadge(b))),
-    el('div', { class: 'stats' }, moveChip(b), b.special !== 'none' ? specialTag(b.special) : null),
-    traitRow(b),
-    el('div', { class: `points-box ${free > 0 ? 'has-free' : ''}` },
-      el('span', {}, el('b', {}, `${cost(b)} / ${pts}`), ' Ausbaupunkte verteilt'),
-      free > 0 ? el('span', { class: 'free-pts' }, `${free} ${free === 1 ? 'Punkt' : 'Punkte'} frei!`) : null),
+    meterBars(normalize(b)),
     probs.length ? el('p', { class: 'small warn' }, probs.join(' · ')) : null,
-    el('button', { class: 'btn primary', onclick: () => openEditor(b, careerCtx(b)) }, 'Bakterium ausbauen'));
+    el('button', { class: `btn ${free > 0 ? 'primary' : ''}`, onclick: () => openEditor(b, careerCtx(b)) },
+      free > 0 ? `🔧 Ausbauen · ${free} ${free === 1 ? 'Punkt' : 'Punkte'} frei` : '🔧 Ausbauen'));
 
   const nxt = nextLevel(won, LEVELS.length);
   fill($('#cr-levels'), ...LEVELS.map((lv, i) => {
@@ -283,14 +277,13 @@ const rewardRows = (level, withPoints) => [
 // ---------- Leveldetails ----------
 let openLevelNo = 1;
 
-function opponentCard(o) {
-  return el('div', { class: 'opp' },
-    germPic(o.germ, o.color, 'mini'),
-    el('div', {},
-      el('b', {}, o.name),
-      el('div', { class: 'stats' }, moveChip(o), ...specialsOf(o).map(specialTag)),
-      traitRow(o),
-      el('div', { class: 'counter small' }, '💡 ', counterTips(o, 1)[0])));
+// eine Zeile pro Gegner: Bild, Name, Fähigkeiten, Bewegung
+function foeRow(o) {
+  return el('div', { class: `foe ${o.boss ? 'boss' : ''}` },
+    germPic(o.germ, o.color, o.boss ? 'foe-pic big' : 'foe-pic'),
+    el('div', { class: 'foe-main' },
+      el('b', { class: 'foe-name' }, o.boss ? '★ ' : '', o.name),
+      el('div', { class: 'foe-tags' }, ...specialsOf(o).map(specialTag), moveChip(o))));
 }
 
 function openLevel(n) {
@@ -307,40 +300,30 @@ onEnter['level-detail'] = () => {
   const won = b.career.won;
   $('#ld-title').textContent = `Level ${n}`;
   fill($('#ld-desc'), el('b', {}, lv.name), ' – ', lv.desc);
-  fill($('#ld-boss'),
-    el('div', { class: 'boss-label' }, '★ Besonderer Gegner'),
-    el('div', { class: 'boss-head' }, germPic(boss.germ, boss.color, 'boss-pic'),
-      el('div', {}, el('h3', { class: 'boss-name' }, boss.name),
-        el('div', { class: 'stats' }, ...specialsOf(boss).map(specialTag), moveChip(boss)))),
-    traitRow(boss),
-    el('div', { class: 'counter' }, el('b', {}, '💡 So schlägst du ihn'), ...counterTips(boss, 2).map((t) => el('div', { class: 'small' }, t))));
-  $('#ld-others-card').hidden = !others.length;
-  fill($('#ld-opponents'), ...others.map(opponentCard));
   const pl = lv.plate;
-  fill($('#ld-plate'),
-    el('span', { class: 'pchip2', title: 'Plattengröße' }, '🧫 ', LABELS.size[pl.size]),
-    el('span', { class: 'pchip2', title: 'Nährboden' }, '🍯 ', `${LABELS.distribution[pl.distribution]}, ${LABELS.amount[pl.amount].toLowerCase()}`),
-    el('span', { class: 'pchip2', title: 'Nachwachsen' }, '🔁 ', `nachwachsen ${LABELS.regen[pl.regen].toLowerCase()}`));
-  // Ziele: Sterne + Belohnung in einer Karte
+  fill($('#ld-foes'),
+    foeRow(boss), ...others.map(foeRow),
+    el('div', { class: 'tip small' }, '💡 ', counterTips(boss, 1)[0]),
+    el('div', { class: 'plate-line small muted' },
+      `🧫 ${LABELS.size[pl.size]} · 🍯 ${LABELS.distribution[pl.distribution]}, ${LABELS.amount[pl.amount].toLowerCase()} · 🔁 ${LABELS.regen[pl.regen].toLowerCase()}`));
+  // Ziele: drei Sterne in einer Zeile, darunter die Belohnung als Symbole
   const mask = b.career.stars[n] || 0;
-  fill($('#ld-stars'),
+  fill($('#ld-goals'),
     el('div', { class: 'goal-stars' }, STAR_GOALS.map((g) => el('div', { class: `goal ${mask & g.bit ? 'done' : ''}`, title: g.text },
       el('span', { class: 'star' }, mask & g.bit ? '★' : '☆'), el('small', {}, `${g.icon} ${g.short}`)))),
-    el('p', { class: 'small muted center' }, mask === 7 ? 'Alle Sterne geholt ✓' : '3 Sterne = +1 Ausbaupunkt (zählen über alle Versuche)'),
-    won.includes(n) ? null : el('div', { class: 'goal-reward' }, el('div', { class: 'small muted' }, 'Belohnung für den ersten Sieg:'), ...rewardRows(n, true)));
+    won.includes(n) ? null : el('div', { class: 'reward-line small' }, 'Sieg bringt ',
+      el('span', { class: 'plus' }, `+${POINTS_PER_WIN}`),
+      ...rewardsOf(n).map((r) => el('span', { class: 'rw' }, rewardIcon(r), r.short || r.text))));
 
   const pts = ptsOf(b);
+  const free = pts - cost(b);
   const probs = problems(b, getLimits(won), pts);
   fill($('#ld-me'),
-    el('h3', {}, 'Dein Bakterium'),
     el('div', { class: 'title row gap' }, el('span', { class: 'dot', style: `background:${b.color}` }), el('b', {}, b.name),
-      el('span', { class: 'cost' }, `${cost(b)} / ${pts} Pkt`),
+      el('span', { class: `cost ${free > 0 ? 'free-pts' : ''}` }, free > 0 ? `${free} Pkt frei` : `${pts} Pkt`),
       el('button', { class: 'btn small', onclick: () => openEditor(b, careerCtx(b, 'level-detail')) }, '🔧 Ausbauen')),
-    el('div', { class: 'stats' }, moveChip(b), b.special !== 'none' ? specialTag(b.special) : null),
-    traitRow(b),
     meterBars(normalize(b), boss, boss.name.split(' ')[0]),
-    probs.length ? el('p', { class: 'small warn' }, '⚠ ', probs.join(' · ')) : null,
-    pts - cost(b) > 0 ? el('p', { class: 'small free-pts' }, `＋ ${pts - cost(b)} ${pts - cost(b) === 1 ? 'Punkt' : 'Punkte'} frei`) : null);
+    probs.length ? el('p', { class: 'small warn' }, '⚠ ', probs.join(' · ')) : null);
   $('#ld-start').disabled = probs.length > 0;
 };
 
@@ -441,47 +424,44 @@ function setMove(move) {
 function renderMove() {
   const lim = edCtx.limits;
   const cur = ed.move;
-  // Karten der Bewegungsarten
-  fill($('#ed-moves'), ...MOVES.map((m) => {
+  // Karten der Bewegungsarten (gesperrte nur als kurzer Hinweis)
+  const cards = MOVES.map((m) => {
     const sizes = m.sizes ? m.sizes.length : 1;
     let firstOk = -1;
     for (let k = 0; k < sizes; k++) if (compile({ type: m.key, size: k, dir: 'R' }, lim).program) { firstOk = k; break; }
-    const locked = firstOk < 0;
-    const res = compile({ type: m.key, size: 0, dir: 'R' }, lim);
-    return el('button', {
-      class: `move-card ${cur.type === m.key ? 'on' : ''} ${locked ? 'locked' : ''}`,
-      onclick: () => {
-        if (locked) return lockedToast(lockReason(res));
-        if (cur.type === m.key) return;
-        setMove({ type: m.key, size: firstOk, dir: cur.dir || 'R' });
-      },
-    },
-    icon(pathSvg(actionsOf({ type: m.key, size: Math.max(0, firstOk), dir: 'R' })), 'move-pic'),
-    el('span', { class: 'move-name' }, m.name),
-    locked ? el('span', { class: 'move-lock' }, `🔒 Level ${lockReason(res)}`) : null);
-  }));
+    return { m, firstOk, res: compile({ type: m.key, size: 0, dir: 'R' }, lim) };
+  });
+  const lockedMoves = cards.filter((c) => c.firstOk < 0);
+  fill($('#ed-moves'), ...cards.filter((c) => c.firstOk >= 0).map(({ m, firstOk }) => el('button', {
+    class: `move-card ${cur.type === m.key ? 'on' : ''}`,
+    onclick: () => { if (cur.type !== m.key) setMove({ type: m.key, size: firstOk, dir: cur.dir || 'R' }); },
+  },
+  icon(pathSvg(actionsOf({ type: m.key, size: firstOk, dir: 'R' })), 'move-pic'),
+  el('span', { class: 'move-name' }, m.name))),
+  lockedMoves.length ? el('button', {
+    class: 'move-card locked',
+    onclick: () => toast(`🔒 ${lockedMoves.map((c) => `${c.m.name} (Level ${lockReason(c.res)})`).join(', ')}`),
+  }, el('span', { class: 'move-more' }, `🔒 +${lockedMoves.length}`), el('span', { class: 'move-name' }, 'später')) : null);
 
   // Größe und Richtung der gewählten Art
   const m = MOVE_BY_KEY[cur.type];
   const opts = [];
   if (m.sizes) {
-    opts.push(el('div', { class: 'opt' }, el('span', {}, m.key === 'sitzen' ? 'Aktivität' : 'Größe'),
-      el('div', { class: 'seg' }, m.sizes.map((label, k) => {
-        const r = compile({ ...cur, size: k }, lim);
-        return el('button', {
-          class: `${cur.size === k ? 'on' : ''} ${r.program ? '' : 'locked'}`,
-          onclick: () => setMove({ ...cur, size: k }),
-        }, r.program ? label : `🔒 ${label}`);
-      }))));
+    opts.push(el('div', { class: 'seg grow' }, m.sizes.map((label, k) => {
+      const r = compile({ ...cur, size: k }, lim);
+      return el('button', {
+        class: `${cur.size === k ? 'on' : ''} ${r.program ? '' : 'locked'}`,
+        onclick: () => setMove({ ...cur, size: k }),
+      }, r.program ? label : `🔒 ${label}`);
+    })));
   }
   if (m.turn) {
-    opts.push(el('div', { class: 'opt' }, el('span', {}, 'Richtung'),
-      el('div', { class: 'seg' },
-        el('button', { class: cur.dir !== 'L' ? 'on' : '', onclick: () => setMove({ ...cur, dir: 'R' }) }, '↻ rechts herum'),
-        el('button', { class: cur.dir === 'L' ? 'on' : '', onclick: () => setMove({ ...cur, dir: 'L' }) }, '↺ links herum'))));
+    opts.push(el('button', {
+      class: 'btn small dir-btn', 'aria-label': 'Richtung wechseln',
+      onclick: () => setMove({ ...cur, dir: cur.dir === 'L' ? 'R' : 'L' }),
+    }, cur.dir === 'L' ? '↺' : '↻'));
   }
   fill($('#ed-move-opts'), ...opts);
-  fill($('#ed-move-desc'), el('b', {}, `${m.name}: `), m.desc);
   renderEnergy(energyProfile(normalize(ed)));
   fill($('#ed-meters'), meterBars(normalize(ed)));
   animator.setProgram(ed.program, ed.color);
@@ -497,17 +477,12 @@ function renderEditor() {
 
   // Kostenlose Abwägungen
   const ep = energyProfile(normalize(ed));
-  const effect = {
-    metabolism: `Grundumsatz ${perHour(ep.basal)}/h · frisst bis ${perHour(ep.intake - ep.photo)}/h`,
-    division: `Teilt sich bei ${ep.divideAt} Energie · Tochter startet mit ${Math.round(ep.birth)}`,
-  };
   fill($('#ed-free'), ...FREE.map((t) => el('div', { class: 'trait' },
     el('div', { class: 'trait-head' }, el('span', { class: 'trait-name' }, icon(TRAIT_ICONS[t.key], 'ti'), el('b', {}, t.label), infoBtn())),
     el('div', { class: 'hint', hidden: true }, t.hint),
     el('div', { class: 'seg free-seg' }, t.options.map((label, k) => el('button', {
       class: ed[t.key] === k ? 'on' : '', onclick: () => { ed[t.key] = k; renderEditor(); },
-    }, label))),
-    el('div', { class: 'free-effect small' }, effect[t.key]))));
+    }, label))))));
   renderEnergy(ep);
   fill($('#ed-meters'), meterBars(normalize(ed)));
 
@@ -534,22 +509,23 @@ function renderEditor() {
       el('div', { class: 'hint', hidden: true }, t.hint));
   }));
 
-  // Spezialfähigkeit als Kacheln mit Symbol
-  fill($('#ed-specials'), ...SPECIAL_KEYS.map((k) => {
-    const locked = !lim.specials.has(k);
-    return el('button', {
-      class: `special ${ed.special === k ? 'on' : ''} ${locked ? 'locked' : ''}`,
-      onclick: () => {
-        if (locked) return lockedToast(unlockLevelOf('special', k));
-        const extra = SPECIALS[k].cost - SPECIALS[ed.special].cost;
-        if (cost(ed) + extra > budget) return toast(`${SPECIALS[k].name} kostet ${SPECIALS[k].cost} Punkte – nimm dafür woanders Punkte weg.`);
-        ed.special = k; renderEditor();
-      },
+  // Spezialfähigkeit als Kacheln mit Symbol (gesperrte nur als kurzer Hinweis)
+  const lockedSp = SPECIAL_KEYS.filter((k) => !lim.specials.has(k));
+  fill($('#ed-specials'), ...SPECIAL_KEYS.filter((k) => lim.specials.has(k)).map((k) => el('button', {
+    class: `special ${ed.special === k ? 'on' : ''}`,
+    onclick: () => {
+      const extra = SPECIALS[k].cost - SPECIALS[ed.special].cost;
+      if (cost(ed) + extra > budget) return toast(`${SPECIALS[k].name} kostet ${SPECIALS[k].cost} Punkte – nimm dafür woanders Punkte weg.`);
+      ed.special = k; renderEditor();
     },
-    specialBadge(k, 'big'),
-    el('span', { class: 'special-name' }, SPECIALS[k].name),
-    el('span', { class: 'special-cost' }, locked ? `🔒 Level ${unlockLevelOf('special', k)}` : `${SPECIALS[k].cost} Pkt`));
-  }));
+  },
+  specialBadge(k, 'big'),
+  el('span', { class: 'special-name' }, SPECIALS[k].name))),
+  lockedSp.length ? el('button', {
+    class: 'special locked',
+    onclick: () => toast(`🔒 ${lockedSp.map((k) => `${SPECIALS[k].name} (Level ${unlockLevelOf('special', k)})`).join(', ')}`),
+  }, el('span', { class: 'move-more' }, `🔒 +${lockedSp.length}`), el('span', { class: 'special-name' }, 'später')) : null);
+  $('#ed-special-hint').hidden = ed.special === 'none';
   fill($('#ed-special-hint'), el('b', {}, `${SPECIALS[ed.special].name}: `), SPECIALS[ed.special].hint);
 
   // Budget
@@ -591,33 +567,12 @@ function fmtDuration(rounds) {
   return min < 60 ? `${Math.max(1, Math.round(min))} min` : `${(min / 60).toFixed(1).replace('.', ',')} h`;
 }
 function renderEnergy(ep) {
-  const scale = Math.max(ep.intake, ep.cost) || 1;
-  const pct = (x) => `${Math.max(0, (x / scale) * 100)}%`;
-  const facts = [
-    ['🍽', 'Ohne Nahrung hält eine Zelle', fmtDuration(Math.min(ep.roundsWithoutFood, ep.maxAge)), ep.roundsWithoutFood > ep.maxAge ? 'durch (bis zum Höchstalter)' : 'durch'],
-    ['➗', 'Bei voller Nahrung Teilung etwa alle', fmtDuration(ep.roundsToDivide), ''],
-    ['⌛', 'Höchstalter etwa', fmtDuration(ep.maxAge), ''],
-  ];
+  const net = perHour(ep.intake - ep.cost);
   fill($('#ed-energy'),
-    el('h3', {}, '⚡ Energiebilanz ', el('span', { class: 'muted small' }, '· pro Stunde Brutzeit')),
-    el('div', { class: 'ebar-row' }, el('span', { class: 'ebar-label' }, 'Verbrauch'),
-      el('div', { class: 'ebar' },
-        el('i', { class: 'e-basal', style: `width:${pct(ep.basal)}` }),
-        el('i', { class: 'e-move', style: `width:${pct(ep.move)}` })),
-      el('b', { class: 'e-num bad' }, `−${perHour(ep.cost)}`)),
-    el('div', { class: 'ebar-row' }, el('span', { class: 'ebar-label' }, 'Aufnahme'),
-      el('div', { class: 'ebar' },
-        el('i', { class: 'e-food', style: `width:${pct(ep.intake - ep.photo)}` }),
-        ep.photo ? el('i', { class: 'e-photo', style: `width:${pct(ep.photo)}` }) : null),
-      el('b', { class: 'e-num good' }, `+${perHour(ep.intake)}`)),
-    el('div', { class: 'e-legend small' },
-      el('span', {}, el('i', { class: 'e-basal' }), `Grundumsatz ${perHour(ep.basal)}`),
-      el('span', {}, el('i', { class: 'e-move' }), `Bewegung ${perHour(ep.move)}`),
-      el('span', {}, el('i', { class: 'e-food' }), 'Nahrung (wenn vorhanden)'),
-      ep.photo ? el('span', {}, el('i', { class: 'e-photo' }), `Licht ${perHour(ep.photo)}`) : null),
-    el('p', { class: 'small muted' }, `🚶 Bewegung = Tempo (${Math.round(ep.moveChance * 100)} % pro Runde) × Muster (bewegt sich bei ${Math.round(ep.moveFrac * 100)} % der Schritte). Warten kostet keine Bewegungsenergie.`),
-    el('div', { class: 'e-facts' }, facts.map(([ic, a, v, b]) => el('div', { class: 'small' }, `${ic} ${a} `, el('b', {}, v), b ? ` ${b}` : ''))),
-    ed.special === 'biofilm' ? el('p', { class: 'small muted' }, '🟦 Biofilm: Im Stillstand sinkt der Grundumsatz um 30 %.') : null);
+    el('span', { class: 'echip', title: 'Energie pro Stunde bei voller Nahrung (Aufnahme minus Verbrauch inkl. Bewegung)' },
+      '⚡ ', el('b', { class: net >= 0 ? 'good' : 'bad' }, `${net >= 0 ? '+' : ''}${net}`), ' /h'),
+    el('span', { class: 'echip', title: 'Bei voller Nahrung teilt sich eine Zelle etwa so oft' }, '➗ alle ', el('b', {}, fmtDuration(ep.roundsToDivide))),
+    el('span', { class: 'echip', title: 'So lange hält eine Zelle ohne Nahrung durch' }, '🍽 ', el('b', {}, fmtDuration(Math.min(ep.roundsWithoutFood, ep.maxAge))), ' ohne Futter'));
 }
 
 // ---------- Freies Spiel ----------
@@ -656,8 +611,7 @@ onEnter.setup = () => {
     const probs = problems(g, freeLimits(), s.budget);
     fill(me, el('h3', {}, 'Dein Bakterium'),
       el('div', { class: 'title row gap' }, el('span', { class: 'dot', style: `background:${g.color}` }), el('b', {}, g.name), el('span', { class: 'cost' }, `${cost(g)} / ${s.budget} Pkt`)),
-      el('div', { class: 'stats' }, moveChip(g), g.special !== 'none' ? specialTag(g.special) : null),
-      traitRow(g),
+      meterBars(normalize(g)),
       probs.length ? el('p', { class: 'small warn' }, probs.join(' · ')) : null,
       el('button', { class: 'btn small', onclick: () => openEditor(g, freeCtx()) }, 'Bearbeiten'));
     $('#su-start').disabled = probs.length > 0;
@@ -943,6 +897,8 @@ function showWinModal(level) {
   $('#win-fact').textContent = germ.fact;
   fill($('#win-rewards'), ...rewardRows(level, true));
   $('#win-modal').hidden = false;
+  $('#win-modal').scrollTop = 0;
+  document.body.classList.add('modal-open');
   setTimeout(() => play('unlock'), 400);
 }
 
@@ -975,7 +931,16 @@ onEnter.atlas = () => {
     return el('div', { class: `ach-row ${has ? 'got' : ''}` }, el('span', { class: 'ach-ico' }, has ? a.icon : '🔒'), el('div', {}, el('b', {}, a.name), el('div', { class: 'small muted' }, a.desc)));
   }));
 };
-$('#win-ok').addEventListener('click', () => { $('#win-modal').hidden = true; });
+// Schließen per Knopf oder Tipp daneben. touchend zusätzlich, weil iOS-In-App-Browser
+// Klicks auf feststehenden Ebenen manchmal verschlucken.
+function closeWin(e) {
+  if (e && e.target.closest('.modal-box') && !e.target.closest('#win-ok')) return;
+  if (e && e.type === 'touchend') e.preventDefault();
+  $('#win-modal').hidden = true;
+  document.body.classList.remove('modal-open');
+}
+$('#win-modal').addEventListener('click', closeWin);
+$('#win-ok').addEventListener('touchend', closeWin);
 // Diagramm neu zeichnen, sobald die Details aufgeklappt werden (vorher hat es keine Breite)
 document.querySelector('#result details').addEventListener('toggle', (e) => {
   if (e.target.open && run.sim) drawHistory($('#rs-chart'), run.sim.history, run.genomes.map((g) => g.color));

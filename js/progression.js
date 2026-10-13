@@ -78,10 +78,10 @@ export function unlockLevelOf(kind, key) {
 export function rewardsOf(level) {
   const out = [];
   for (const u of UNLOCKS.filter((x) => x.after === level)) {
-    for (const s of u.steps || []) out.push({ type: 'move', key: STEP_MOVES[s][0], text: `Bewegungsart ${moveNames(s)}` });
-    for (const s of u.specials || []) out.push({ type: 'special', key: s, text: `Spezialfähigkeit „${SPECIALS[s].name}“` });
-    if (u.repeat || u.programMax) out.push({ type: 'bigger', text: 'Größere Bewegungsmuster (weitere Größenstufen)' });
-    if (u.title) out.push({ type: 'title', text: `Titel „${u.title}“` });
+    for (const s of u.steps || []) out.push({ type: 'move', key: STEP_MOVES[s][0], text: `Bewegungsart ${moveNames(s)}`, short: moveNames(s).replace(/[„“]/g, '') });
+    for (const s of u.specials || []) out.push({ type: 'special', key: s, text: `Spezialfähigkeit „${SPECIALS[s].name}“`, short: SPECIALS[s].name });
+    if (u.repeat || u.programMax) out.push({ type: 'bigger', text: 'Größere Bewegungsmuster (weitere Größenstufen)', short: 'größere Muster' });
+    if (u.title) out.push({ type: 'title', text: `Titel „${u.title}“`, short: u.title });
   }
   return out;
 }
