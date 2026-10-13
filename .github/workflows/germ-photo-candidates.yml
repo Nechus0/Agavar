@@ -1,0 +1,19 @@
+# Lists photo candidates on Wikimedia Commons for the given germ keys (see tools/list-germ-photos.mjs).
+name: List germ photo candidates
+on:
+  workflow_dispatch:
+    inputs:
+      germs:
+        description: Comma-separated germ keys from js/germs.js
+        required: true
+jobs:
+  list:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node tools/list-germ-photos.mjs
+        env:
+          GERMS: ${{ inputs.germs }}
