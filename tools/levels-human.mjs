@@ -10,6 +10,7 @@ import { compile } from '../js/movement.js';
 
 const n = Number(process.argv[2] || 6);
 const seeds = Number(process.argv[3] || 6);
+const FAST = process.env.FAST === '1';
 const lv = LEVELS[n - 1];
 const won = Array.from({ length: n - 1 }, (_, k) => k + 1);
 const lim = getLimits(won);
@@ -50,8 +51,12 @@ for (const arch of Object.keys(ARCHETYPES)) {
       let w = 0;
       const lost = {};
       for (let s = 0; s < seeds; s++) {
-        const sim = new Simulation({ genomes: [g, ...levelOpponents(lv)], ...lv.plate, seed: 500 + s }).run();
-        if (sim.winner === 1) w++;
+        // Schnellmodus (FAST=1): kleine Platte, Abbruch nach 1500 Schritten, dann zählt die größte Kolonie
+        const sim = FAST
+          ? new Simulation({ genomes: [g, ...levelOpponents(lv)], ...lv.plate, size: 'klein', seed: 500 + s }).run(1500)
+          : new Simulation({ genomes: [g, ...levelOpponents(lv)], ...lv.plate, seed: 500 + s }).run();
+        const leader = sim.done ? sim.winner : sim.players.reduce((a, b) => (b.count > a.count ? b : a)).id;
+        if (leader === 1) w++;
         else {
           const p = sim.players[0];
           const why = p.died.starve > (p.died.fight + p.died.toxin) ? 'verhungert' : 'getötet';
