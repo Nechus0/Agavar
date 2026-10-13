@@ -635,3 +635,25 @@ body.modal-open { overflow: hidden; }
 .set-num { min-width: 34px; text-align: center; }
 .set-row .stepper button { width: 36px; height: 36px; }
 #su-options > p { margin: 8px 0 10px; }
+
+/* Share bar with percentages */
+.shares { height: 20px; border-radius: 10px; }
+.shares > div { display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; color: rgba(0,0,0,.72); overflow: hidden; white-space: nowrap; }
+.shares.big { height: 24px; border-radius: 12px; }
+.shares.big > div { font-size: 12px; }
+#result .pane { display: flex; flex-direction: column; gap: 12px; }
+#result .pane[hidden] { display: none; }
+.share-box { display: flex; flex-direction: column; gap: 4px; align-items: center; } .share-box .shares { width: 100%; } .share-box small { font-size: 11px; }
+
+/* Level grid (like the level maps of most mobile games) */
+.level-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.level-tile { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 4px 8px; background: var(--card); border: 1px solid var(--line); border-radius: 14px; color: var(--text); font: inherit; cursor: pointer; min-height: 118px; }
+.level-tile.won { border-color: #3b6b3f; }
+.level-tile.next { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset, 0 0 18px rgba(233,196,106,.25); }
+.level-tile.locked { opacity: .45; }
+.lt-num { position: absolute; top: 6px; left: 8px; font-size: 12px; font-weight: 800; color: var(--muted); }
+.level-tile.next .lt-num { color: var(--accent); }
+.lt-pic { width: 60px; height: 40px; margin-top: 8px; }
+.lt-name { font-size: 12px; font-weight: 700; text-align: center; line-height: 1.2; }
+.lt-stars { color: var(--accent); font-size: 13px; letter-spacing: 1px; }
+.lt-rewards { display: flex; gap: 4px; min-height: 16px; }

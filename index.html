@@ -49,7 +49,7 @@
     <section class="screen" id="career" hidden>
       <header class="bar"><button class="back" data-go="careers">‹ Career</button><h2 id="cr-title">Bacterium</h2><span></span></header>
       <div class="card" id="cr-card"></div>
-      <div id="cr-levels" class="level-list"></div>
+      <div id="cr-levels" class="level-grid"></div>
       <button class="btn ghost danger" id="cr-delete">Delete bacterium</button>
     </section>
 
@@ -151,6 +151,7 @@
         <h1 id="rs-title">Victory!</h1>
         <p id="rs-reason" class="muted"></p>
       </div>
+      <div class="share-box"><div class="shares big" id="rs-shares"></div><small class="muted">Average share of all cells during the game</small></div>
       <div id="rs-stars" class="stars-row" hidden></div>
       <div class="menu">
         <button class="btn primary big" id="rs-next" hidden>▶ Next level</button>
@@ -160,14 +161,19 @@
           <button class="btn" id="rs-new" hidden>🎲 New opponents</button>
         </div>
       </div>
-      <div class="card insights" id="rs-analysis"></div>
-      <div class="card reward-card" id="rs-achievements" hidden></div>
-      <details class="card details">
-        <summary>📊 Details: plate, history, statistics</summary>
-        <div class="result-plate"><canvas id="rs-plate" class="plate small-plate"></canvas></div>
-        <canvas id="rs-chart" class="chart"></canvas>
-        <div id="rs-table"></div>
-      </details>
+      <nav class="tabs" id="rs-tabs">
+        <button data-tab="summary" class="on"><span>💡</span>Summary</button>
+        <button data-tab="plate"><span>🧫</span>Plate</button>
+        <button data-tab="history"><span>📈</span>History</button>
+        <button data-tab="stats"><span>📋</span>Stats</button>
+      </nav>
+      <div class="pane" data-pane="summary">
+        <div class="card insights" id="rs-analysis"></div>
+        <div class="card reward-card" id="rs-achievements" hidden></div>
+      </div>
+      <div class="card pane" data-pane="plate" hidden><div class="result-plate"><canvas id="rs-plate" class="plate small-plate"></canvas></div></div>
+      <div class="card pane" data-pane="history" hidden><p class="small muted pane-note">Number of cells over time</p><canvas id="rs-chart" class="chart"></canvas></div>
+      <div class="card pane" data-pane="stats" hidden><div id="rs-table"></div></div>
     </section>
 
     <!-- Atlas & achievements -->

@@ -251,16 +251,15 @@ onEnter.career = () => {
     const open = isWon || n === nxt;
     const boss = lv.boss;
     return el('button', {
-      class: `level-row ${isWon ? 'won' : ''} ${n === nxt ? 'next' : ''} ${open ? '' : 'locked'}`,
-      onclick: () => (open ? openLevel(n) : toast(`Gewinne zuerst Level ${n - 1}.`)),
+      class: `level-tile ${isWon ? 'won' : ''} ${n === nxt ? 'next' : ''} ${open ? '' : 'locked'}`,
+      onclick: () => (open ? openLevel(n) : toast(`Win level ${n - 1} first.`)),
+      'aria-label': `Level ${n}: ${lv.name}`,
     },
-    el('span', { class: 'lv-state' }, isWon ? '✓' : n === nxt ? '▶' : '🔒'),
-    germPic(boss.germ, boss.color, 'mini'),
-    el('span', { class: 'lv-main' },
-      el('b', {}, `${n}. ${lv.name}`),
-      el('span', { class: 'small muted' }, GERMS[boss.germ].name)),
-    isWon ? el('span', { class: 'lv-stars' }, starsText(b.career.stars[n] || 0))
-      : el('span', { class: 'lv-rewards' }, rewardsOf(n).map((r) => rewardIcon(r))));
+    el('span', { class: 'lt-num' }, open ? String(n) : '🔒'),
+    germPic(boss.germ, open ? boss.color : '#3a4554', 'lt-pic'),
+    el('span', { class: 'lt-name' }, lv.name),
+    isWon ? el('span', { class: 'lt-stars' }, starsText(b.career.stars[n] || 0))
+      : el('span', { class: 'lt-rewards' }, rewardsOf(n).map((r) => rewardIcon(r))));
   }));
 };
 
@@ -552,13 +551,15 @@ function renderEditor() {
 }
 
 // Editor tabs: one section at a time, the previews stay visible above
-function showTab(tab) {
-  document.querySelectorAll('#ed-tabs button').forEach((b) => b.classList.toggle('on', b.dataset.tab === tab));
-  document.querySelectorAll('#editor .pane').forEach((p) => { p.hidden = p.dataset.pane !== tab; });
+function showTab(tab, screen = 'editor') {
+  document.querySelectorAll(`#${screen} .tabs button`).forEach((b) => b.classList.toggle('on', b.dataset.tab === tab));
+  document.querySelectorAll(`#${screen} .pane`).forEach((p) => { p.hidden = p.dataset.pane !== tab; });
+  // the chart needs a visible canvas to know its width
+  if (screen === 'result' && tab === 'history' && run.sim) drawHistory($('#rs-chart'), run.sim.history, run.genomes.map((g) => g.color));
 }
-$('#ed-tabs').addEventListener('click', (e) => {
-  const b = e.target.closest('button[data-tab]');
-  if (b) { showTab(b.dataset.tab); play('tap'); }
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('.tabs button[data-tab]');
+  if (b) { showTab(b.dataset.tab, b.closest('.screen').id); play('tap'); }
 });
 
 $('#ed-name').addEventListener('input', (e) => { ed.name = e.target.value; });
@@ -789,7 +790,9 @@ function updateSimUi() {
   const bars = $('#sim-shares').children;
   const rows = $('#sim-legend').children;
   sim.players.forEach((p, i) => {
-    bars[i].style.width = `${(p.count / total) * 100}%`;
+    const pc = (p.count / total) * 100;
+    bars[i].style.width = `${pc}%`;
+    bars[i].textContent = pc >= 9 ? `${Math.round(pc)}%` : '';
     rows[i].querySelector('.n').textContent = p.count.toLocaleString('en-US');
     rows[i].classList.toggle('dead', p.count === 0);
   });
@@ -865,6 +868,13 @@ function showResult() {
   const newAch = ACHIEVEMENTS.filter((a) => a.check(ctx) && store.grantAchievement(a.key));
 
   go('result');
+  // average share of all cells over the whole game (the final share is often just 100 %)
+  const avg = sim.players.map((_, i) => sim.history.reduce((a, h) => a + (h[i] / (h.reduce((x, y) => x + y, 0) || 1)), 0) / (sim.history.length || 1));
+  const total = avg.reduce((a, b) => a + b, 0) || 1;
+  fill($('#rs-shares'), ...sim.players.map((p, i) => {
+    const pc = (avg[i] / total) * 100;
+    return el('div', { style: `background:${run.genomes[i].color};width:${pc}%` }, pc >= 9 ? `${Math.round(pc)}%` : '');
+  }));
   const rc = $('#rs-plate');
   rc.width = sim.N; rc.height = sim.N;
   rc.getContext('2d').drawImage($('#plate'), 0, 0);
@@ -909,7 +919,7 @@ function showResult() {
   $('#rs-upgrade').hidden = !lvMode;
   $('#rs-new').hidden = lvMode;
   $('#rs-rematch').textContent = lvMode ? '↻ Again' : '↻ Rematch';
-  document.querySelector('#result details').open = false;
+  showTab('summary', 'result');
   play(won ? 'win' : 'lose');
   if (newStars) setTimeout(() => play('star'), 700);
   if (firstWin) showWinModal(cfg.level);
@@ -969,9 +979,6 @@ function closeWin(e) {
 $('#win-modal').addEventListener('click', closeWin);
 $('#win-ok').addEventListener('touchend', closeWin);
 // Diagramm neu zeichnen, sobald die Details aufgeklappt werden (vorher hat es keine Breite)
-document.querySelector('#result details').addEventListener('toggle', (e) => {
-  if (e.target.open && run.sim) drawHistory($('#rs-chart'), run.sim.history, run.genomes.map((g) => g.color));
-});
 
 $('#rs-back').addEventListener('click', () => go(run.cfg.mode === 'level' ? 'career' : 'setup'));
 $('#rs-rematch').addEventListener('click', () => {
