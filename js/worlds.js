@@ -7,7 +7,7 @@ export const WORLDS = [
     tagline: 'From a harmless touch to an infected wound',
     habitat: 'Human skin: dry, salty, a little acidic – and full of tiny pores. When the skin is cut, germs from outside get in.',
     // food colours on the plate: eaten up (lo) to full (hi)
-    theme: { lo: [44, 24, 26], hi: [236, 178, 152], rim: '#5a3b3b', accent: '#f2a48a' },
+    theme: { lo: [48, 30, 14], hi: [192, 153, 60], rim: '#3a4434', accent: '#c0993c' },
   },
   { n: 2, key: 'gut', name: 'Mouth & Gut', icon: '🌀', tagline: 'Sugar on the teeth, darkness in the gut',
     habitat: 'From the teeth through the stomach into the large intestine: sugar waves, acid and a constant flow that pushes everything onward.',

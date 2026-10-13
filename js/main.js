@@ -328,7 +328,7 @@ function openCareer(id) {
 
 function rewardIcon(r) {
   if (r.type === 'special') return specialIcon(r.key, 'sm');
-  if (r.type === 'move') return icon(pathSvg(actionsOf({ type: r.key, size: 1, dir: 'R' })), 'sm');
+  if (r.type === 'move') return icon(pathSvg(actionsOf({ type: r.key, size: 0, dir: 'R' })), 'sm');
   return ui('plus', 'sm');
 }
 
@@ -345,7 +345,7 @@ onEnter.career = () => {
     meterBars(normalize(b)),
     probs.length ? el('p', { class: 'small warn' }, probs.join(' · ')) : null,
     el('button', { class: `btn ${free > 0 ? 'primary' : ''}`, onclick: () => openEditor(b, careerCtx(b)) },
-      ui('upgrade'), free > 0 ? `Upgrade · ${free} ${free === 1 ? 'point' : 'points'} free` : 'Upgrade'));
+      ui('flask'), free > 0 ? `Go to lab · ${free} ${free === 1 ? 'point' : 'points'} free` : 'Go to lab'));
 
   const nxt = nextLevel(won, LEVELS.length);
   const w = WORLDS.find((x) => x.n === (b.world || 1)) || WORLDS[0];
@@ -418,20 +418,24 @@ onEnter['level-detail'] = () => {
   const lv = LEVELS[n - 1];
   const [boss, ...others] = levelOpponents(lv);
   const won = b.career.won;
-  $('#ld-title').textContent = `Level ${n} · ${lv.name}`;
-  fill($('#ld-desc'), lv.desc);
   const pl = lv.plate;
+  $('#ld-title').textContent = `Level ${n}`;
+  fill($('#ld-intro'),
+    el('h1', {}, lv.name),
+    el('p', { class: 'sub' }, lv.desc),
+    el('div', { class: 'plate-chips' },
+      el('span', { class: 'pchip' }, ui('dish', 'sm'), `${LABELS.size[pl.size]} plate`),
+      el('span', { class: 'pchip' }, ui('food', 'sm'), `${LABELS.distribution[pl.distribution]} food`),
+      el('span', { class: 'pchip' }, ui('restart', 'sm'), `${LABELS.regen[pl.regen]} regrowth`)));
   fill($('#ld-foes'),
     foeRow(boss), ...others.map(foeRow),
-    el('div', { class: 'tip' }, ui('bulb'), el('span', {}, counterTips(boss, 1)[0])),
-    el('p', { class: 'plate-line' }, `Plate: ${LABELS.size[pl.size].toLowerCase()} · food ${LABELS.distribution[pl.distribution].toLowerCase()}, ${LABELS.amount[pl.amount].toLowerCase()} · regrowth ${LABELS.regen[pl.regen].toLowerCase()}`));
+    el('div', { class: 'tip' }, ui('bulb'), el('span', {}, counterTips(boss, 1)[0])));
   const mask = b.career.stars[n] || 0;
   fill($('#ld-goals'),
-    el('h3', {}, 'Stars'),
     el('div', { class: 'goal-stars' }, STAR_GOALS.map((g) => el('div', { class: `goal ${mask & g.bit ? 'done' : ''}`, title: g.text },
       el('span', { class: 'star', 'aria-hidden': 'true' }, '★'), el('span', {}, starLabel(g))))),
-    won.includes(n) ? null : el('div', { class: 'reward-line' }, 'A first win gives',
-      el('span', { class: 'plus' }, `+${POINTS_PER_WIN}`),
+    won.includes(n) ? null : el('div', { class: 'reward-line' }, 'First win:',
+      el('span', { class: 'plus' }, `+${POINTS_PER_WIN} point`),
       ...rewardsOf(n).map((r) => el('span', { class: 'rw' }, rewardIcon(r), r.short || r.text))));
 
   const pts = ptsOf(b);
@@ -439,9 +443,9 @@ onEnter['level-detail'] = () => {
   const probs = problems(b, limitsOf(b), pts);
   fill($('#ld-me'),
     el('div', { class: 'bact-head' }, culture(b.color), el('span', { class: 'name' }, b.name),
-      el('button', { class: 'btn small', onclick: () => openEditor(b, careerCtx(b, 'level-detail')) }, ui('upgrade', 'sm'), free > 0 ? `${free} pts free` : 'Upgrade')),
-    meterBars(normalize(b), boss, boss.name.split(' ')[0]),
-    probs.length ? el('p', { class: 'small warn' }, probs.join(' · ')) : null);
+      el('button', { class: 'btn small', onclick: () => openEditor(b, careerCtx(b, 'level-detail')) }, ui('flask', 'sm'), 'Lab')),
+    probs.length ? el('p', { class: 'small warn' }, probs.join(' · '), ' – fix it in the lab.')
+      : el('p', { class: `small ${free > 0 ? 'free-pts' : 'muted'}` }, free > 0 ? `${free} upgrade ${free === 1 ? 'point' : 'points'} left to spend` : `Ready · ${cost(b)} / ${pts} points used`));
   $('#ld-start').disabled = probs.length > 0;
   const coach = $('#ld-coach');
   coach.hidden = n !== 1 || won.includes(1);
@@ -472,7 +476,7 @@ function openEditor(b, ctx) {
   }
   ed.move = moveFromProgram(ed.program) || ed.move || null;
   if (!ed.move) { ed.move = { type: 'gerade', size: 0, dir: 'R' }; ed.program = ['F']; }
-  $('#ed-title').textContent = ctx.mode === 'free' ? 'Free play' : b ? 'Upgrade' : 'New bacterium';
+  $('#ed-title').textContent = ctx.mode === 'free' ? 'Free play' : b ? 'Lab' : 'New bacterium';
   const w = WORLDS.find((x) => x.n === ctx.world);
   $('#ed-world').textContent = ctx.mode === 'free' ? '' : `${w ? w.name : 'Skin'} strain`;
   colony.sim = null;
@@ -577,7 +581,6 @@ function renderMove() {
     })));
   }
   renderEnergy(energyProfile(normalize(ed)));
-  fill($('#ed-meters'), el('section', { class: 'card' }, el('h3', {}, 'At a glance'), meterBars(normalize(ed))));
   animator.setProgram(ed.program, ed.color);
 }
 
@@ -605,27 +608,44 @@ function traitEffect(key, v) {
 const DIVIDE_AT = [26, 38, 52, 66, 80];
 const UPTAKE = [2, 2.8, 3.6, 4.4, 5.2];
 const BASAL = [0.22, 0.32, 0.43, 0.55, 0.68];
-function freeCard(t) {
-  const v = ed[t.key];
-  const set = (e) => { ed[t.key] = Number(e.target.value); renderEditor(); };
-  let vis, text;
+function freeVisual(t, v) {
   if (t.key === 'division') {
     const n = [6, 5, 4, 3, 2][v], size = [10, 14, 18, 24, 32][v];
-    vis = el('div', { class: 'free-vis', 'aria-hidden': 'true', style: `gap:${12 - v * 2}px` },
-      Array.from({ length: n }, (_, i) => el('span', { class: 'cell', style: `width:${size}px;height:${size}px;opacity:${1 - i * 0.06}` })));
-    text = el('p', { class: 'small' }, 'Divides at ', el('b', { class: 'mono' }, String(DIVIDE_AT[v])), ' energy · each daughter starts with ', el('b', { class: 'mono' }, String(Math.round((DIVIDE_AT[v] - 2) / 2))));
-  } else {
-    vis = el('div', { class: 'free-vis bars', 'aria-hidden': 'true' },
-      el('div', { class: 'vbar' }, el('span', {}, 'Eats'), el('div', {}, el('i', { style: `width:${(UPTAKE[v] / 5.2) * 100}%;background:var(--success)` }))),
-      el('div', { class: 'vbar' }, el('span', {}, 'Burns'), el('div', {}, el('i', { style: `width:${(BASAL[v] / 0.68) * 100}%;background:var(--warning)` }))));
-    text = el('p', { class: 'small' }, 'Eats up to ', el('b', { class: 'mono' }, UPTAKE[v].toFixed(1)), ' food per step · burns ', el('b', { class: 'mono' }, BASAL[v].toFixed(2)), ' just staying alive');
+    return [el('div', { class: 'free-vis', 'aria-hidden': 'true', style: `gap:${12 - v * 2}px` },
+      Array.from({ length: n }, (_, i) => el('span', { class: 'cell', style: `width:${size}px;height:${size}px;opacity:${1 - i * 0.06}` }))),
+    el('p', { class: 'small' }, 'Divides at ', el('b', { class: 'mono' }, String(DIVIDE_AT[v])), ' energy · each daughter starts with ', el('b', { class: 'mono' }, String(Math.round((DIVIDE_AT[v] - 2) / 2))))];
   }
+  return [el('div', { class: 'free-vis bars', 'aria-hidden': 'true' },
+    el('div', { class: 'vbar' }, el('span', {}, 'Eats'), el('div', {}, el('i', { style: `width:${(UPTAKE[v] / 5.2) * 100}%;background:var(--success)` }))),
+    el('div', { class: 'vbar' }, el('span', {}, 'Burns'), el('div', {}, el('i', { style: `width:${(BASAL[v] / 0.68) * 100}%;background:var(--warning)` })))),
+  el('p', { class: 'small' }, 'Eats up to ', el('b', { class: 'mono' }, UPTAKE[v].toFixed(1)), ' food per step · burns ', el('b', { class: 'mono' }, BASAL[v].toFixed(2)), ' just staying alive')];
+}
+const freeName = (t, v) => t.options[v][0].toUpperCase() + t.options[v].slice(1);
+function freeCard(t) {
+  const v = ed[t.key];
   const ends = t.key === 'division' ? ['Many small cells', 'Few strong cells'] : ['Frugal', 'Greedy'];
-  const name = t.options[v][0].toUpperCase() + t.options[v].slice(1);
+  const name = el('span', {}, freeName(t, v));
+  const [vis0, text0] = freeVisual(t, v);
+  const vis = el('div', {}, vis0), text = el('div', {}, text0);
+  const slider = el('input', { type: 'range', min: '0', max: '4', step: '1', value: String(v), 'aria-label': t.label, 'aria-valuetext': freeName(t, v) });
+  // nur die Anzeige neu zeichnen – der Regler selbst bleibt erhalten, sonst bricht das Ziehen ab
+  const update = () => {
+    const nv = Number(slider.value);
+    if (nv === ed[t.key]) return;
+    ed[t.key] = nv;
+    const [a, b] = freeVisual(t, nv);
+    fill(vis, a); fill(text, b);
+    name.textContent = freeName(t, nv);
+    slider.setAttribute('aria-valuetext', freeName(t, nv));
+    renderEnergy(energyProfile(normalize(ed)));
+    renderBudget();
+    colony.restart();
+  };
+  slider.addEventListener('input', update);
+  slider.addEventListener('change', update);
   return el('section', { class: 'card free-card' },
-    el('div', { class: 'head' }, el('b', {}, t.label), el('span', {}, name)),
-    vis,
-    el('input', { type: 'range', min: '0', max: '4', step: '1', value: String(v), 'aria-label': t.label, 'aria-valuetext': name, oninput: set }),
+    el('div', { class: 'head' }, el('b', {}, t.label), name),
+    vis, slider,
     el('div', { class: 'range-labels' }, el('span', {}, ends[0]), el('span', {}, ends[1])),
     text);
 }
@@ -641,7 +661,6 @@ function renderEditor() {
 
   fill($('#ed-free'), ...FREE.map(freeCard));
   renderEnergy(energyProfile(normalize(ed)));
-  fill($('#ed-meters'), el('section', { class: 'card' }, el('h3', {}, 'At a glance'), meterBars(normalize(ed))));
 
   const budget = edCtx.budget;
   const left = budget - cost(ed);
@@ -1123,8 +1142,9 @@ function showResult() {
   again.className = next ? 'btn' : 'btn primary';
   fill(again, ui('restart'), lvMode ? (won ? 'Again' : 'Try again') : 'Rematch');
   const stack = document.querySelector('#result .cta-stack');
-  const two = stack.querySelector('.two-col');
+  const two = $('#rs-more');
   if (next) { if (again.parentElement !== two) two.append(again); } else stack.insertBefore(again, two);
+  two.classList.toggle('single', two.querySelectorAll('button:not([hidden])').length === 1);
   play(won ? 'win' : 'lose');
   if (newStars) setTimeout(() => play('star'), 700);
   if (firstWin) showWinModal(cfg.level);
@@ -1209,7 +1229,8 @@ onEnter.atlas = () => {
       class: `germ-card ${isKnown ? '' : 'unknown'}`, 'aria-label': isKnown ? germ.name : `Undiscovered germ, beat level ${g.level}`,
       onclick: () => (isKnown ? openGerm(g) : toast(`Beat level ${g.level} to discover this germ.`)),
     },
-    el('span', { class: 'pic' }, germPic(g.germ, isKnown ? g.color : '#3a4434')),
+    el('span', { class: `pic ${isKnown && PHOTOS[g.germ] ? 'photo' : ''}` },
+      isKnown && PHOTOS[g.germ] ? el('img', { src: PHOTOS[g.germ].src, alt: '', loading: 'lazy' }) : germPic(g.germ, isKnown ? g.color : '#3a4434')),
     el('b', {}, isKnown ? germ.name : 'Undiscovered'),
     el('small', {}, isKnown ? `Level ${g.level}${g.boss ? ' · boss' : ''}` : `Beat level ${g.level}`));
   };
@@ -1220,10 +1241,9 @@ onEnter.atlas = () => {
 function openGerm(g) {
   const germ = GERMS[g.germ];
   fill($('#gm-body'),
-    el('div', { class: 'gm-pic' }, germPic(g.germ, g.color)),
     PHOTOS[g.germ] ? el('figure', { class: 'atlas-photo' },
       el('img', { src: PHOTOS[g.germ].src, alt: germ.name, loading: 'lazy' }),
-      el('figcaption', {}, `Photo: ${PHOTOS[g.germ].author} · ${PHOTOS[g.germ].license} · Wikimedia Commons`)) : null,
+      el('figcaption', {}, `Photo: ${PHOTOS[g.germ].author} · ${PHOTOS[g.germ].license} · Wikimedia Commons`)) : el('div', { class: 'gm-pic' }, germPic(g.germ, g.color)),
     el('h2', { id: 'gm-title' }, germ.name),
     el('p', { class: 'small muted' }, `World ${germ.world} · Level ${g.level}${g.boss ? ' · boss' : ''}`),
     el('dl', { class: 'gm-facts' },
@@ -1278,6 +1298,25 @@ onEnter.awards = () => {
 };
 
 // ---------- Start ----------
+// Bakterien aus der alten Punkteskala passen evtl. nicht ins neue Budget: die stärksten Eigenschaften kürzen
+function fitToBudget() {
+  let changed = 0;
+  for (const b of store.getBacteria()) {
+    const budget = ptsOf(b);
+    if (cost(b) <= budget) continue;
+    const g = normalize(JSON.parse(JSON.stringify(b)));
+    if (SPECIALS[g.special].cost > budget / 2) g.special = 'none';
+    while (cost(g) > budget) {
+      const t = [...COSTED].sort((x, y) => g[y.key] - g[x.key])[0];
+      if (!g[t.key]) { g.special = 'none'; continue; }
+      g[t.key]--;
+    }
+    store.saveBacterium({ ...g, id: b.id, world: b.world });
+    changed++;
+  }
+  if (changed) setTimeout(() => toast('Your bacteria were adapted to the new point system.'), 600);
+}
+fitToBudget();
 hydrateIcons();
 store.discover(store.globalWon().filter((n) => LEVELS[n - 1]).flatMap((n) => levelOpponents(LEVELS[n - 1]).map((o) => o.germ)));
 refreshSoundButtons();

@@ -73,6 +73,7 @@ export const UI_ICONS = {
   food: wrap('<path d="M12 3c3.5 4.2 5.5 7 5.5 10a5.5 5.5 0 0 1-11 0C6.5 10 8.5 7.2 12 3z"/>'),
   close: wrap('<path d="M6 6l12 12M18 6L6 18"/>'),
   check: wrap('<path d="M5 12l5 5 9-10"/>'),
+  flask: wrap('<path d="M9 3h6M10 3v6L4.5 18.5A1.7 1.7 0 0 0 6 21h12a1.7 1.7 0 0 0 1.5-2.5L14 9V3"/><path d="M7.5 15h9"/>'),
   lock: wrap('<rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/>'),
 };
 

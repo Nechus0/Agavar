@@ -53,12 +53,12 @@
     <!-- Level details -->
     <section class="screen" id="level-detail" hidden>
       <header class="bar"><button class="back" data-go="career"><span class="ico" data-icon="back"></span>Levels</button><h2 id="ld-title">Level</h2><span></span></header>
-      <p id="ld-desc" class="note"></p>
-      <div class="card" id="ld-foes"></div>
-      <div class="card" id="ld-goals"></div>
-      <div class="card" id="ld-me"></div>
+      <div class="intro" id="ld-intro"></div>
+      <section class="rs-section"><h2>Opponents</h2><div class="card" id="ld-foes"></div></section>
+      <section class="rs-section"><h2>Stars</h2><div class="card" id="ld-goals"></div></section>
+      <section class="rs-section"><h2>Your bacterium</h2><div class="card" id="ld-me"></div></section>
       <p class="coach" id="ld-coach" hidden></p>
-      <button class="btn primary big" id="ld-start"><span class="ico" data-icon="play"></span>Start simulation</button>
+      <div class="sticky-cta"><button class="btn primary big" id="ld-start"><span class="ico" data-icon="play"></span>Start simulation</button></div>
     </section>
 
     <!-- Editor -->
@@ -79,7 +79,7 @@
           <span class="small muted" id="ed-colony-label">The colony</span>
         </div>
       </div>
-      <div id="ed-colors" class="swatches" role="radiogroup" aria-label="Colour"></div>
+      <div id="ed-colors" class="swatches chip-row" role="radiogroup" aria-label="Colour"></div>
       <nav class="seg tabs" id="ed-tabs" role="tablist">
         <button data-tab="move" class="on" role="tab">Movement</button>
         <button data-tab="body" role="tab">Body</button>
@@ -103,7 +103,6 @@
         <p class="small muted">One ability · stronger ones cost more · beat a boss to unlock its ability</p>
         <div class="card list-card" id="ed-specials" role="radiogroup" aria-label="Special ability"></div>
       </div>
-      <div id="ed-meters"></div>
       <p class="small warn" id="ed-warn" hidden></p>
       <div class="sticky-cta"><button class="btn primary big" id="ed-save">Save bacterium</button></div>
     </section>
@@ -148,8 +147,8 @@
       <div class="card" id="rs-rewards" hidden></div>
       <div class="cta-stack">
         <button class="btn primary big" id="rs-next" hidden><span class="ico" data-icon="play"></span>Next level</button>
-        <div class="two-col">
-          <button class="btn" id="rs-upgrade" hidden><span class="ico" data-icon="upgrade"></span>Upgrade</button>
+        <div class="two-col" id="rs-more">
+          <button class="btn" id="rs-upgrade" hidden><span class="ico" data-icon="flask"></span>Go to lab</button>
           <button class="btn" id="rs-rematch"><span class="ico" data-icon="restart"></span>Again</button>
           <button class="btn" id="rs-new" hidden><span class="ico" data-icon="dice"></span>New opponents</button>
         </div>
