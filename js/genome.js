@@ -30,6 +30,7 @@ export const COSTED = [
   { key: 'speed', label: 'Geschwindigkeit', max: 4, hint: 'Wie oft sich eine Zelle bewegt. Bewegung kostet Energie.' },
   { key: 'lifespan', label: 'Lebensdauer', max: 4, hint: 'Wie alt eine Zelle maximal wird.' },
   { key: 'efficiency', label: 'Verwertung', max: 4, hint: 'Wie viel Energie aus der aufgenommenen Nahrung gewonnen wird.' },
+  { key: 'chemotaxis', label: 'Chemotaxis', max: 4, hint: 'Die Zellen „riechen“ Nahrung und weichen öfter vom Muster ab, um gezielt dorthin zu laufen.' },
   { key: 'attack', label: 'Angriff', max: 5, hint: 'Chance, gegnerische Zellen zu töten, in die man hineinläuft.' },
   { key: 'defense', label: 'Abwehr (Zellwand)', max: 5, hint: 'Schutz gegen Angriffe.' },
 ];
@@ -44,7 +45,9 @@ export const FREE = [
 
 export const SPECIALS = {
   none: { name: 'Keine', cost: 0, hint: 'Keine Spezialfähigkeit.' },
-  chemo: { name: 'Chemotaxis', cost: 3, hint: 'Die Zellen „riechen“ Nahrung und bewegen sich oft gezielt dorthin statt stur dem Muster zu folgen.' },
+  capsule: { name: 'Kapsel', cost: 3, hint: 'Eine Schleimkapsel schützt jede Zelle einmal vor einem tödlichen Angriff (Zellen mit Kapsel leuchten heller).' },
+  photo: { name: 'Photosynthese', cost: 3, hint: 'Die Zellen gewinnen ständig etwas Energie aus Licht – auch dort, wo die Nahrung aufgebraucht ist (Zellen schimmern).' },
+  predator: { name: 'Räuber', cost: 3, hint: 'Getötete Gegner werden gefressen und liefern viel Energie (rote Fraßspuren).' },
   spores: { name: 'Sporen', cost: 3, hint: 'Verhungernde Zellen werden zu ruhenden Sporen (helle Punkte) und erwachen, wenn wieder Nahrung da ist.' },
   biofilm: { name: 'Biofilm', cost: 3, hint: 'Zellen, die eine Weile stillstehen, bilden eine schützende Schleimschicht (dunkle Matte) und werden viel widerstandsfähiger.' },
   toxin: { name: 'Toxine', cost: 3, hint: 'Die Zellen geben Giftstoffe ab (sichtbar als Giftwolke), die gegnerische Nachbarzellen schwächen und töten können.' },
@@ -66,7 +69,7 @@ export function defaultGenome() {
     name: '',
     color: PALETTE[0],
     program: ['F'],
-    speed: 0, lifespan: 0, efficiency: 0, attack: 0, defense: 0,
+    speed: 0, lifespan: 0, efficiency: 0, chemotaxis: 0, attack: 0, defense: 0,
     division: 2, metabolism: 2,
     special: 'none',
   };
@@ -99,6 +102,8 @@ export function normalize(raw) {
     if (raw[t.key] !== undefined) g[t.key] = clampInt(raw[t.key], 0, t.max);
   }
   if (SPECIAL_KEYS.includes(raw.special)) g.special = raw.special;
+  // ältere Spielstände: Chemotaxis war früher eine Spezialfähigkeit (3 Punkte) -> jetzt Eigenschaft Stufe 3
+  if (raw.special === 'chemo') g.chemotaxis = Math.max(g.chemotaxis, 3);
   // gewählte Bewegungsart (für den Editor); das Muster in program ist maßgeblich für die Simulation
   if (raw.move && typeof raw.move.type === 'string') {
     g.move = { type: raw.move.type, size: clampInt(raw.move.size, 0, 5), dir: raw.move.dir === 'L' ? 'L' : 'R' };

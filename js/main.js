@@ -319,6 +319,7 @@ function openEditor(b, ctx) {
   ed.move = moveFromProgram(ed.program) || ed.move || null;
   if (!ed.move) { ed.move = { type: 'gerade', size: 0, dir: 'R' }; ed.program = ['F']; }
   $('#ed-title').textContent = ctx.mode === 'free' ? 'Freies Spiel' : b ? 'Ausbauen' : 'Neues Bakterium';
+  colony.sim = null;
   go('editor');
   renderEditor();
   renderMove();
@@ -328,20 +329,33 @@ onEnter.editor = () => { animator.start(); colony.start(); };
 onLeave.editor = () => { animator.stop(); colony.stop(); };
 
 // Lässt das Bakterium allein auf einer kleinen Platte wachsen, damit man die Ausbreitung sieht.
+// Läuft in Schleife; jede Änderung im Editor startet sie sofort sichtbar neu.
 const colony = {
-  sim: null, r: null, raf: 0, hold: 0, timer: 0,
-  restart() {
+  sim: null, r: null, raf: 0, hold: 0, timer: 0, changed: false,
+  build() {
     clearTimeout(this.timer);
-    this.timer = setTimeout(() => {
-      const g = normalize({ ...ed, name: ed.name || 'Bakterium' });
-      this.sim = new Simulation({ genomes: [g], size: 'klein', distribution: 'gleichmaessig', amount: 'normal', regen: 'normal', seed: 4242 });
-      this.r = new PlateRenderer($('#ed-colony'), this.sim);
-      this.hold = 0;
-      this.r.draw();
-    }, 120);
+    const g = normalize({ ...ed, name: ed.name || 'Bakterium' });
+    this.sim = new Simulation({ genomes: [g], size: 'klein', distribution: 'gleichmaessig', amount: 'normal', regen: 'normal', seed: 4242 });
+    this.r = new PlateRenderer($('#ed-colony'), this.sim);
+    this.hold = 0;
+    this.r.draw();
+    if (this.changed) {
+      // kurzes Aufblitzen, damit man den Neustart erkennt
+      const c = $('#ed-colony');
+      c.classList.remove('fresh'); void c.offsetWidth; c.classList.add('fresh');
+      this.changed = false;
+    }
+  },
+  // nach Änderungen: kurz bündeln (z. B. beim Schieben eines Reglers), dann neu starten
+  restart() {
+    this.changed = true;
+    clearTimeout(this.timer);
+    this.timer = setTimeout(() => this.build(), 150);
+    $('#ed-colony-label').textContent = 'Die Kolonie · neu gestartet';
   },
   start() {
     cancelAnimationFrame(this.raf);
+    if (!this.sim) this.build();
     const loop = () => {
       this.raf = requestAnimationFrame(loop);
       const sim = this.sim;
@@ -349,8 +363,10 @@ const colony = {
       if (sim.tick < 420 && !sim.done) {
         sim.step1(); sim.step1();
         this.r.draw();
-        $('#ed-colony-label').textContent = `Die Kolonie · ${Math.round((BREW_HOURS * sim.tick) / MAX_TICKS)} h`;
-      } else if (++this.hold > 90) this.restart();
+        if (!this.changed) $('#ed-colony-label').textContent = `Die Kolonie · ${Math.round((BREW_HOURS * sim.tick) / MAX_TICKS)} h`;
+      } else if (++this.hold > 90) {
+        this.build(); // Schleife: von vorn beginnen
+      }
     };
     this.raf = requestAnimationFrame(loop);
   },

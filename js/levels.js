@@ -17,14 +17,14 @@ export const LEVELS = [
     name: 'Hautkontakt',
     desc: 'Dein erster Gegner kann sich nicht bewegen – er wächst einfach dort, wo er ist.',
     plate: { size: 'klein', distribution: 'gleichmaessig', amount: 'normal', regen: 'normal' },
-    boss: g('sepidermidis', '#ff9f43', ['P'], [0, 2, 3, 0, 3, 2, 1]),
+    boss: g('sepidermidis', '#ff9f43', ['P'], [0, 3, 3, 0, 3, 2, 1]),
     opponents: [],
   },
   {
     name: 'Das Rudel',
     desc: 'Myxococcus gleitet vor und zurück und greift alles an, was ihm in den Weg kommt.',
     plate: { size: 'klein', distribution: 'gleichmaessig', amount: 'normal', regen: 'normal' },
-    boss: g('mxanthus', '#c77dff', ['F3', 'B'], [2, 1, 2, 3, 1, 2, 2]),
+    boss: g('mxanthus', '#c77dff', ['F3', 'B'], [2, 2, 2, 3, 1, 2, 2]),
     opponents: [],
   },
   {
@@ -35,18 +35,18 @@ export const LEVELS = [
     opponents: [g('mluteus', '#ffd23f', ['P'], [0, 2, 2, 1, 2, 3, 1])],
   },
   {
-    name: 'Der Spürhund',
-    desc: 'Pseudomonas putida riecht die Nahrung auf den Flecken und schwimmt gezielt hin.',
+    name: 'Die Kapsel',
+    desc: 'Klebsiella steckt in einer dicken Schleimkapsel – jeder Angriff muss zweimal treffen. Dazu kommt ein Spürhund, der Nahrung riecht.',
     plate: { size: 'mittel', distribution: 'flecken', amount: 'normal', regen: 'normal' },
-    boss: g('pputida', '#5ee06a', ['F2', 'R'], [2, 1, 3, 1, 2, 1, 3], 'chemo'),
-    opponents: [g('lacidophilus', '#ff6ec7', ['F', 'P'], [1, 2, 3, 3, 2, 2, 1])],
+    boss: g('kpneumoniae', '#c77dff', ['F', 'R'], [2, 2, 3, 1, 2, 2, 2], 'capsule'),
+    opponents: [g('pputida', '#5ee06a', ['F2', 'R'], [2, 1, 3, 2, 1, 1, 3], 'none', { chemotaxis: 2 })],
   },
   {
-    name: 'Schwärmer',
-    desc: 'Proteus schwärmt in langen Bahnen über die Platte – nur am Rand ist der Boden reich.',
+    name: 'Lichtfänger',
+    desc: 'Synechococcus lebt vom Licht und hält auch auf leergefressenem Boden durch. Proteus schwärmt am nahrhaften Rand.',
     plate: { size: 'mittel', distribution: 'ring', amount: 'normal', regen: 'normal' },
-    boss: g('pmirabilis', '#2ee6d6', ['F4', 'R'], [4, 1, 3, 3, 2, 1, 3]),
-    opponents: [g('ecoli', '#3fa9f5', ['F3', 'Z'], [3, 1, 3, 3, 2, 1, 2])],
+    boss: g('synechococcus', '#5ee06a', ['F', 'P'], [1, 2, 3, 1, 3, 2, 1], 'photo'),
+    opponents: [g('pmirabilis', '#2ee6d6', ['F4', 'R'], [4, 1, 3, 2, 2, 1, 3])],
   },
   {
     name: 'Hungersnot',
@@ -56,14 +56,11 @@ export const LEVELS = [
     opponents: [g('smarcescens', '#ff5d5d', ['F2', 'R'], [3, 1, 3, 4, 3, 1, 2])],
   },
   {
-    name: 'Korkenzieher',
-    desc: 'Helicobacter schlängelt sich im Wechsel nach rechts und links über die Platte.',
+    name: 'Der Räuber',
+    desc: 'Bdellovibrio jagt andere Bakterien und frisst sie auf. Begleitet wird er vom schlängelnden Helicobacter.',
     plate: { size: 'mittel', distribution: 'zentrum', amount: 'normal', regen: 'normal' },
-    boss: g('hpylori', '#ff6ec7', ['R4', 'M'], [3, 2, 3, 4, 4, 1, 2]),
-    opponents: [
-      g('mxanthus', '#c77dff', ['F3', 'B'], [3, 2, 3, 4, 3, 1, 2]),
-      g('vcholerae', '#3fa9f5', ['F'], [4, 1, 3, 4, 2, 1, 3]),
-    ],
+    boss: g('bdellovibrio', '#ff5d5d', ['F'], [4, 2, 3, 5, 3, 1, 3], 'predator'),
+    opponents: [g('hpylori', '#ff6ec7', ['R4', 'M'], [3, 2, 4, 4, 4, 1, 2])],
   },
   {
     name: 'Schleimfestung',
@@ -89,7 +86,7 @@ export const LEVELS = [
     boss: g('cbotulinum', '#ff5d5d', ['F2', 'Z'], [3, 3, 4, 5, 5, 1, 2], 'spores', { bonusSpecial: 'toxin' }),
     opponents: [
       g('saureus', '#ffd23f', ['F', 'P2', 'R'], [3, 2, 4, 4, 4, 2, 2], 'toxin'),
-      g('ecoli', '#3fa9f5', ['F3', 'Z'], [4, 2, 4, 4, 4, 1, 2], 'chemo'),
+      g('ecoli', '#3fa9f5', ['F3', 'Z'], [4, 2, 4, 4, 4, 1, 2], 'none', { chemotaxis: 3 }),
     ],
   },
 ];

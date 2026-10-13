@@ -25,9 +25,10 @@ Man entwirft ein Bakterium und setzt es mit Gegnern auf eine runde Agarplatte. S
 | Geschwindigkeit | 0–4 | 1/Stufe | Bewegungschance pro Runde 25–95 % |
 | Lebensdauer | 0–4 | 1/Stufe | maximales Alter |
 | Verwertung | 0–4 | 1/Stufe | Energie pro Nahrungseinheit |
+| Chemotaxis | 0–4 | 1/Stufe | Chance je Bewegung (3–12 %), gezielt zur nahrhaftesten Nachbarstelle zu laufen |
 | Angriff | 0–5 | 1/Stufe | Kampfwert beim Hineinlaufen in Gegner |
 | Abwehr | 0–5 | 1/Stufe | Kampfwert beim Verteidigen |
-| Spezialfähigkeit | eine | 3 | Chemotaxis, Sporen, Biofilm, Toxine |
+| Spezialfähigkeit | eine | 3 | Kapsel, Photosynthese, Räuber, Sporen, Biofilm, Toxine |
 
 **Bewegungsarten:**
 - Von Anfang an verfügbar:
@@ -45,7 +46,9 @@ Man entwirft ein Bakterium und setzt es mit Gegnern auf eine runde Agarplatte. S
 - Im Editor zeigen zwei Live-Vorschauen die Bahn einer einzelnen Zelle und die Ausbreitung der ganzen Kolonie auf einer kleinen Platte.
 
 **Spezialfähigkeiten und wie man sie auf der Platte erkennt:**
-- **Chemotaxis**: Die Kolonie zieht gezielt zu nahrhaften Stellen.
+- **Kapsel**: Jede Zelle übersteht einen tödlichen Angriff. Zellen mit intakter Kapsel leuchten heller.
+- **Photosynthese**: +0,3 Energie pro Runde aus Licht, auch ohne Nahrung. Die Zellen schimmern.
+- **Räuber**: Ein getöteter Gegner liefert +25 Energie. Rote Fraßspuren auf der Platte.
 - **Sporen**: Verhungernde Zellen werden zu hellen, fast weißen Punkten und erwachen bei neuer Nahrung.
 - **Biofilm**: Stillstehende Zellen bilden eine dunkle, gemusterte Matte mit +2,5 Abwehr.
 - **Toxine**: Eine giftgrüne Wolke um die Kolonie schwächt gegnerische Nachbarn.
@@ -59,15 +62,18 @@ Die Gegner sind echte Keime. Ihre Spieleigenschaften entsprechen ihren echten Ei
 | 1 | Hautkontakt | *Staphylococcus epidermidis* | hat keine Geißeln, bewegt sich nicht | Bewegungsart „Sitzen“ |
 | 2 | Das Rudel | *Myxococcus xanthus* | gleitet und kehrt regelmäßig die Richtung um, jagt im Rudel | Bewegungsart „Pendeln“, größere Muster |
 | 3 | Run and Tumble | *Escherichia coli* | schwimmt geradeaus, taumelt dann in eine Zufallsrichtung | Bewegungsart „Taumeln“ |
-| 4 | Der Spürhund | *Pseudomonas putida* | Chemotaxis zu Nährstoffen | Chemotaxis |
-| 5 | Schwärmer | *Proteus mirabilis* | schwärmt rhythmisch in langen Bahnen (Ringmuster) | größere Bewegungsmuster |
+| 4 | Die Kapsel | *Klebsiella pneumoniae* | dicke Schleimkapsel | Kapsel |
+| 5 | Lichtfänger | *Synechococcus elongatus* | Cyanobakterium, Photosynthese | Photosynthese, größere Bewegungsmuster |
 | 6 | Hungersnot | *Bacillus subtilis* | bildet Endosporen | Sporen |
-| 7 | Korkenzieher | *Helicobacter pylori* | korkenzieherförmig, schraubt sich durch Schleim | Bewegungsarten „Schlängeln“ und „Acht“ |
+| 7 | Der Räuber | *Bdellovibrio bacteriovorus* | Raubbakterium, frisst andere Bakterien | Räuber, Bewegungsarten „Schlängeln“ und „Acht“ (gezeigt vom Begleiter *Helicobacter pylori*) |
 | 8 | Schleimfestung | *Pseudomonas aeruginosa* | Paradebeispiel für Biofilme | Biofilm |
 | 9 | Giftküche | *Staphylococcus aureus* | bildet viele Toxine | Toxine |
 | 10 | Der Endgegner | *Clostridium botulinum* | Sporen und Botulinumtoxin | Titel „Meister der Agarplatte“ |
 
 **Begleitgegner** (ebenfalls echte Keime, mit passenden Eigenschaften):
+- *Pseudomonas putida*: riecht Nahrung (Chemotaxis 2)
+- *Proteus mirabilis*: schnell schwärmend
+- *Helicobacter pylori*: schlängelt sich korkenzieherartig
 - *Micrococcus luteus*: gelb, unbeweglich
 - *Lactobacillus acidophilus*: Milchsäure, hoher Angriff
 - *Serratia marcescens*: roter Farbstoff mit antimikrobieller Wirkung

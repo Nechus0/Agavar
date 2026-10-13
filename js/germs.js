@@ -26,6 +26,18 @@ export const GERMS = {
     name: 'Pseudomonas putida', shape: 'polar',
     fact: 'Kann Nährstoffe „riechen“ und schwimmt gezielt auf sie zu (Chemotaxis). Er baut sogar Bestandteile von Erdöl ab.',
   },
+  kpneumoniae: {
+    name: 'Klebsiella pneumoniae', shape: 'capsule',
+    fact: 'Umgibt sich mit einer dicken Schleimkapsel, an der Angreifer und sogar Abwehrzellen des Körpers abrutschen.',
+  },
+  synechococcus: {
+    name: 'Synechococcus elongatus', shape: 'cyano',
+    fact: 'Ein Cyanobakterium, das wie eine Pflanze Photosynthese betreibt. Cyanobakterien haben vor Milliarden Jahren den Sauerstoff in unsere Luft gebracht.',
+  },
+  bdellovibrio: {
+    name: 'Bdellovibrio bacteriovorus', shape: 'predator',
+    fact: 'Ein Raubbakterium: Es rammt andere Bakterien, bohrt sich hinein und frisst sie von innen auf.',
+  },
   pmirabilis: {
     name: 'Proteus mirabilis', shape: 'swarmer',
     fact: 'Schwärmt in rhythmischen Wellen über Agarplatten und hinterlässt dabei typische ringförmige Muster.',
@@ -102,6 +114,19 @@ export function germSvg(shape, color) {
     case 'spore':
       s += body(60, 40, 70, 28);
       s += `<ellipse cx="60" cy="40" rx="10" ry="8" fill="#f4ecd8" stroke="#0e1116" stroke-width="2"/>`;
+      break;
+    case 'capsule':
+      s += `<ellipse cx="60" cy="40" rx="44" ry="28" fill="${color}" fill-opacity=".22" stroke="${color}" stroke-width="2" stroke-dasharray="5 4"/>`;
+      s += body(60, 40, 56, 24);
+      break;
+    case 'cyano':
+      s += body(60, 40, 76, 26);
+      [44, 54, 64, 74].forEach((x) => (s += `<path d="M${x} 32 v16" stroke="#0e1116" stroke-width="2" opacity=".45"/>`));
+      break;
+    case 'predator':
+      s += body(76, 44, 54, 30);
+      s += flag('M24 26 q-8 -6 -14 2');
+      s += `<path d="M30 30 Q42 18 56 34" fill="none" stroke="#0e1116" stroke-width="15" stroke-linecap="round"/><path d="M30 30 Q42 18 56 34" fill="none" stroke="#ff5d5d" stroke-width="11" stroke-linecap="round"/>`;
       break;
     case 'drumstick':
       s += body(54, 40, 66, 22);

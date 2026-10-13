@@ -7,8 +7,12 @@ export const SPECIAL_ICONS = {
   none: wrap('<circle cx="12" cy="12" r="7" stroke-dasharray="3 3"/>'),
   // dicke Sporenhülle mit ruhendem Kern
   spores: wrap('<circle cx="12" cy="12" r="8.5" stroke-width="3"/><circle cx="12" cy="12" r="3.2" fill="currentColor" stroke="none"/><circle cx="7.6" cy="8" r="1" fill="currentColor" stroke="none"/><circle cx="16.6" cy="15.6" r="1" fill="currentColor" stroke="none"/>'),
-  // Zelle läuft auf einen Nahrungstropfen zu
-  chemo: wrap('<path d="M2.5 12h9"/><path d="M8 8l4 4-4 4"/><path d="M18.5 5.5c2.2 3.2 3.3 5 3.3 6.8a3.3 3.3 0 0 1-6.6 0c0-1.8 1.1-3.6 3.3-6.8z" fill="currentColor" stroke="none"/>'),
+  // Schleimkapsel um eine Zelle
+  capsule: wrap('<ellipse cx="12" cy="12" rx="9.5" ry="7.5" stroke-dasharray="2.5 2"/><rect x="6.5" y="9" width="11" height="6" rx="3" fill="currentColor" stroke="none"/>'),
+  // Sonne mit Blatt-Zelle
+  photo: wrap('<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/>'),
+  // Räuber: Zelle mit Biss
+  predator: wrap('<path d="M20 12a8 8 0 1 1-3-6.2L12 12l5 6.2A8 8 0 0 0 20 12z" fill="currentColor" stroke="none"/><circle cx="9.5" cy="8.5" r="1.3" fill="#0e1116" stroke="none"/>'),
   // dicht gepackte Zellschicht (Waben)
   biofilm: wrap('<path d="M8 3.5l3.5 2v4L8 11.5l-3.5-2v-4z"/><path d="M15.5 3.5l3.5 2v4l-3.5 2-3.5-2v-4z"/><path d="M11.8 10.5l3.5 2v4l-3.5 2-3.5-2v-4z"/><path d="M4.5 12.5L8 14.5v4l-3.5 2" /><path d="M19 12.5l-3.5 2"/>'),
   // Giftwolke mit Tropfen
@@ -16,10 +20,11 @@ export const SPECIAL_ICONS = {
 };
 
 export const SPECIAL_COLORS = {
-  none: '#8d98a7', spores: '#c77dff', chemo: '#5ee06a', biofilm: '#3fa9f5', toxin: '#ff9f43',
+  none: '#8d98a7', spores: '#c77dff', capsule: '#e8ecf1', photo: '#ffd23f', predator: '#ff5d5d', biofilm: '#3fa9f5', toxin: '#ff9f43',
 };
 
 export const TRAIT_ICONS = {
+  chemotaxis: wrap('<path d="M2.5 12h9"/><path d="M8 8l4 4-4 4"/><path d="M18.5 5.5c2.2 3.2 3.3 5 3.3 6.8a3.3 3.3 0 0 1-6.6 0c0-1.8 1.1-3.6 3.3-6.8z" fill="currentColor" stroke="none"/>'),
   speed: wrap('<path d="M13 2L4.5 13.5H11L10 22l8.5-11.5H12z"/>'),
   lifespan: wrap('<path d="M6 2.5h12M6 21.5h12"/><path d="M7.5 2.5c0 5 9 6 9 9.5s-9 4.5-9 9.5"/><path d="M16.5 2.5c0 5-9 6-9 9.5s9 4.5 9 9.5"/>'),
   efficiency: wrap('<path d="M5 19c0-8 5-14 15-15-1 10-7 15-15 15z"/><path d="M5 19l7-7"/>'),

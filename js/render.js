@@ -10,6 +10,7 @@ const AGAR_LO = [38, 30, 22];
 const AGAR_HI = [214, 178, 96];
 const AGAR = new Uint8Array(101 * 3);
 const TOXIN = [190, 255, 60]; // giftgrüne Wolke
+const BITE = [255, 40, 60]; // rote Fraßspur
 for (let v = 0; v <= 100; v++) {
   const t = Math.pow(v / 100, 0.8);
   for (let c = 0; c < 3; c++) AGAR[v * 3 + c] = Math.round(AGAR_LO[c] + (AGAR_HI[c] - AGAR_LO[c]) * t);
@@ -29,8 +30,10 @@ export class PlateRenderer {
   draw() {
     const { sim, img, colors } = this;
     const d = img.data;
-    const { owner, energy, nutrient, inPlate, spore, still, fog, N } = sim;
+    const { owner, energy, nutrient, inPlate, spore, still, fog, bite, shield, N } = sim;
     const biofilm = sim.players.map((p) => p.ph.biofilm);
+    const photo = sim.players.map((p) => p.ph.photo);
+    const tick = sim.tick;
     const size = owner.length;
     for (let i = 0, k = 0; i < size; i++, k += 4) {
       if (!inPlate[i]) { d[k + 3] = 0; continue; }
@@ -45,14 +48,19 @@ export class PlateRenderer {
           const f = ((i % N) + ((i / N) | 0)) & 1 ? 0.45 : 0.62;
           d[k] = col[0] * f; d[k + 1] = col[1] * f; d[k + 2] = col[2] * f;
         } else {
-          const f = 0.62 + 0.38 * Math.min(1, energy[i] / 70);
-          d[k] = col[0] * f; d[k + 1] = col[1] * f; d[k + 2] = col[2] * f;
+          let f = 0.62 + 0.38 * Math.min(1, energy[i] / 70);
+          // Photosynthese: Zellen schimmern
+          if (photo[o - 1] && ((i * 7 + (tick >> 2)) % 5 === 0)) f = 1.25;
+          d[k] = Math.min(255, col[0] * f); d[k + 1] = Math.min(255, col[1] * f); d[k + 2] = Math.min(255, col[2] * f);
+          // Kapsel: heller Schleimrand
+          if (shield[i]) { d[k] += (255 - d[k]) * 0.3; d[k + 1] += (255 - d[k + 1]) * 0.3; d[k + 2] += (255 - d[k + 2]) * 0.3; }
         }
         if (fog[i]) { const t = fog[i] / 20; d[k] += (TOXIN[0] - d[k]) * t; d[k + 1] += (TOXIN[1] - d[k + 1]) * t; d[k + 2] += (TOXIN[2] - d[k + 2]) * t; }
       } else {
         const v = Math.min(100, nutrient[i] | 0) * 3;
         let r = AGAR[v], g = AGAR[v + 1], b = AGAR[v + 2];
         if (fog[i]) { const t = fog[i] / 12; r += (TOXIN[0] - r) * t; g += (TOXIN[1] - g) * t; b += (TOXIN[2] - b) * t; }
+        if (bite[i]) { const t = bite[i] / 14; r += (BITE[0] - r) * t; g += (BITE[1] - g) * t; b += (BITE[2] - b) * t; }
         d[k] = r; d[k + 1] = g; d[k + 2] = b;
       }
       d[k + 3] = 255;

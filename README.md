@@ -20,12 +20,12 @@ Bakterienkampf auf der Agarplatte: Du entwirfst ein Bakterium, setzt es mit Gegn
 - **Editor**:
   - Bewegungsart als Karte wählen (Geradeaus, Kreisen, Ecken, Welle, Treppe; freischaltbar: Sitzen, Pendeln, Taumeln, Schlängeln, Acht), dazu Größe und Richtung
   - zwei Live-Vorschauen: eine einzelne Zelle und die ganze Kolonie auf einer kleinen Agarplatte
-  - Teilung, Stoffwechsel, Geschwindigkeit, Lebensdauer, Verwertung, Angriff, Abwehr
-  - eine Spezialfähigkeit: Chemotaxis, Sporen, Biofilm oder Toxine
+  - Teilung, Stoffwechsel, Geschwindigkeit, Lebensdauer, Verwertung, Chemotaxis, Angriff, Abwehr
+  - eine Spezialfähigkeit: Kapsel, Photosynthese, Räuber, Sporen, Biofilm oder Toxine
 - **Freies Spiel**: eigenes Bakterium mit frei einstellbarem Budget (6–40). Spezialfähigkeiten und besondere Schritte gibt es nur, wenn sie in einer Karriere freigespielt wurden. Dazu 1–5 Zufallsgegner, Plattengröße und Nährboden einstellbar.
 - **Simulation**:
   - Pixeldarstellung mit ablaufender Uhr (48 h Brutzeit), Tempo 1× / 2× / 5× / 10×
-  - Spezialfähigkeiten sind sichtbar: Giftwolken, helle Sporen, dunkle Biofilm-Matten
+  - Spezialfähigkeiten sind sichtbar: Giftwolken, helle Sporen, dunkle Biofilm-Matten, hell leuchtende Kapseln, schimmernde Photosynthese, rote Fraßspuren
 
 ## Technik
 

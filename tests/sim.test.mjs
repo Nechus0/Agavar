@@ -81,11 +81,12 @@ test('10 Level, jedes mit echtem besonderen Gegner', () => {
 
 test('Besondere Gegner zeigen die Fähigkeit, die man bei ihnen freischaltet', () => {
   for (let n = 1; n <= LEVELS.length; n++) {
-    const boss = levelOpponents(LEVELS[n - 1])[0];
+    const opps = levelOpponents(LEVELS[n - 1]);
+    const boss = opps[0];
     for (const r of rewardsOf(n)) {
+      // Spezialfähigkeiten zeigt der besondere Gegner, Bewegungsarten irgendein Gegner im Level
       if (r.type === 'special') assert.ok([boss.special, boss.bonusSpecial].includes(r.key), `Level ${n}: Boss hat ${r.key} nicht`);
-      if (r.type === 'step') assert.ok(boss.program.some((e) => parseStep(e).s === r.key), `Level ${n}: Boss nutzt ${r.key} nicht`);
-      if (r.type === 'repeat') assert.ok(boss.program.some((e) => parseStep(e).n > 1));
+      if (r.type === 'move') assert.ok(opps.some((o) => moveFromProgram(o.program)?.type === r.key), `Level ${n}: niemand bewegt sich als ${r.key}`);
     }
   }
 });
@@ -100,14 +101,14 @@ test('Karriere: Startpunkte, Punkte pro Sieg, nächstes Level', () => {
 
 test('Freischalten: am Anfang eingeschränkt, nach allen Leveln alles offen', () => {
   const start = getLimits([]);
-  assert.ok(!start.specials.has('chemo'));
+  assert.ok(!start.specials.has('capsule'));
   assert.ok(!start.steps.has('Z') && !start.steps.has('P'));
   assert.equal(start.programMax, 4);
   assert.equal(start.repeat, false);
   const all = getLimits([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
   assert.equal(all.programMax, 6);
   assert.ok(all.repeat);
-  for (const k of ['spores', 'chemo', 'biofilm', 'toxin']) assert.ok(all.specials.has(k));
+  for (const k of ['spores', 'capsule', 'photo', 'predator', 'biofilm', 'toxin']) assert.ok(all.specials.has(k));
   for (const k of ['P', 'B', 'Z', 'M']) assert.ok(all.steps.has(k));
   assert.equal(unlockLevelOf('special', 'toxin'), 9);
 });
@@ -154,4 +155,20 @@ test('Bewegungsarten: am Anfang nur die einfachen, Sitzen erst nach Level 1', ()
   assert.ok(compile({ type: 'welle', size: 2 }, getLimits([1, 2, 3, 4])).locked);
   assert.ok(compile({ type: 'welle', size: 2 }, getLimits([1, 2, 3, 4, 5])).program);
   assert.deepEqual(actionsOf({ type: 'kreis', size: 1, dir: 'L' }), ['F', 'L']);
+});
+
+test('Neue Spezialfähigkeiten: Kapsel schützt, Räuber frisst, Chemotaxis ist eine Eigenschaft', () => {
+  // alte Spielstände mit Chemotaxis als Spezialfähigkeit werden umgewandelt
+  const old = normalize({ special: 'chemo', speed: 1 });
+  assert.equal(old.special, 'none');
+  assert.equal(old.chemotaxis, 3);
+  const cap = { ...defaultGenome(), special: 'capsule', program: ['F', 'R'], efficiency: 4, lifespan: 4, speed: 2 };
+  const hunter = { ...defaultGenome(), special: 'predator', attack: 5, speed: 4, efficiency: 2 };
+  const sim = new Simulation(opts([hunter, cap], 9));
+  assert.ok(sim.shield.some((v, i) => v && sim.owner[i] === 2), 'Kapsel-Zellen haben Schutz');
+  sim.run(400);
+  assert.ok(sim.players[0].kills > 0);
+  assert.ok(sim.bite.some((v) => v > 0) || sim.players[0].kills > 0);
+  const photo = new Simulation(opts([{ ...defaultGenome(), special: 'photo' }], 3));
+  assert.ok(photo.players[0].ph.photo);
 });

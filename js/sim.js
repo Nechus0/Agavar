@@ -54,7 +54,10 @@ function phenotype(g) {
     attack: g.attack,
     defense: g.defense,
     spores: sp.has('spores'),
-    chemo: sp.has('chemo'),
+    chemoChance: [0, 0.03, 0.06, 0.09, 0.12][g.chemotaxis | 0],
+    capsule: sp.has('capsule'),
+    photo: sp.has('photo'),
+    predator: sp.has('predator'),
     biofilm: sp.has('biofilm'),
     toxin: sp.has('toxin'),
   };
@@ -112,6 +115,8 @@ export class Simulation {
     this.still = new Uint8Array(size);
     this.mirror = new Uint8Array(size); // Seitenwechsel aktiv?
     this.fog = new Uint8Array(size); // sichtbare Giftwolke (klingt ab)
+    this.bite = new Uint8Array(size); // sichtbare Fraßspur von Räubern (klingt ab)
+    this.shield = new Uint8Array(size); // intakte Kapsel
     this.spore = new Uint16Array(size); // >0: Spore, Wert = Alter als Spore
     this.stamp = new Uint32Array(size);
     this.nutrient = new Float32Array(size);
@@ -182,6 +187,7 @@ export class Simulation {
     // Tochterzellen übernehmen den Musterfortschritt der Mutter, damit Kolonien im Takt bleiben
     this.step[i] = parent >= 0 ? this.step[parent] : 0;
     this.mirror[i] = parent >= 0 ? this.mirror[parent] : 0;
+    this.shield[i] = p.ph.capsule ? 1 : 0;
     this.still[i] = 0;
     this.spore[i] = 0;
     this.stamp[i] = this.tick + 1;
@@ -203,6 +209,7 @@ export class Simulation {
     this.dir[to] = this.dir[from];
     this.step[to] = this.step[from];
     this.mirror[to] = this.mirror[from];
+    this.shield[to] = this.shield[from];
     this.still[to] = 0;
     this.spore[to] = 0;
     this.stamp[to] = this.tick + 1;
@@ -236,7 +243,8 @@ export class Simulation {
 
     // Giftwolken verblassen
     const fog = this.fog;
-    for (let i = 0; i < size; i++) if (fog[i]) fog[i]--;
+    const bite = this.bite;
+    for (let i = 0; i < size; i++) { if (fog[i]) fog[i]--; if (bite[i]) bite[i]--; }
 
     // Nahrung wächst nach.
     if (this.regen > 0) {
@@ -278,6 +286,7 @@ export class Simulation {
       const take = Math.min(nutrient[i], ph.uptake);
       nutrient[i] -= take;
       energy[i] += take * ph.efficiency;
+      if (ph.photo) energy[i] += 0.3; // Energie aus Licht
       if (energy[i] > MAX_ENERGY) energy[i] = MAX_ENERGY;
 
       if (this.age[i] > this.maxAge[i]) { this._kill(i); continue; }
@@ -316,7 +325,7 @@ export class Simulation {
           case 7: d = (d - 2 * mir + 8) & 7; break;
           case 8: this.mirror[i] ^= 1; break;
         }
-        if (moves && ph.chemo && rng() < 0.35) {
+        if (moves && ph.chemoChance && rng() < ph.chemoChance) {
           let best = -1, bestN = -1;
           for (const dd of [d, (d + 1) & 7, (d + 7) & 7, (d + 2) & 7, (d + 6) & 7]) {
             const j = this._neighbor(i, dd);
@@ -339,10 +348,14 @@ export class Simulation {
             // Kampf
             const atk = ph.attack + rng() * 3;
             const def = this._defense(j) + rng() * 3;
-            if (atk > def + 0.5) {
+            if (atk > def + 0.5 && this.shield[j]) {
+              this.shield[j] = 0; // Kapsel fängt den Angriff ab
+              energy[i] -= 3;
+            } else if (atk > def + 0.5) {
               this._kill(j);
               p.kills++;
               energy[i] -= 1.5;
+              if (ph.predator) { energy[i] = Math.min(MAX_ENERGY, energy[i] + 25); bite[j] = 12; }
               this._move(i, j);
               cur = j;
             } else {
