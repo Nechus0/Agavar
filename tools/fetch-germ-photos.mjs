@@ -2,22 +2,32 @@
 // author and licence, so the atlas can show (and credit) real microscope images.
 // Needs network access to en.wikipedia.org, commons.wikimedia.org and upload.wikimedia.org.
 // Usage: node tools/fetch-germ-photos.mjs   (writes img/germs/*.jpg and js/germ-photos.js)
-import { writeFileSync, mkdirSync } from 'node:fs';
+import { writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { GERMS } from '../js/germs.js';
+import { PHOTOS } from '../js/germ-photos.js';
 
 const UA = 'AgavaGame/1.0 (educational game; contact via GitHub Nechus0/Agavar)';
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+// Wikipedia limits fast clients: pause between requests and retry with growing waits on 429
 const get = async (url) => {
-  const r = await fetch(url, { headers: { 'User-Agent': UA } });
-  if (!r.ok) throw new Error(`${r.status} ${url}`);
-  return r;
+  for (let attempt = 0; attempt < 6; attempt++) {
+    await wait(1500);
+    const r = await fetch(url, { headers: { 'User-Agent': UA } });
+    if (r.status === 429 || r.status >= 500) { await wait(5000 * 2 ** attempt); continue; }
+    if (!r.ok) throw new Error(`${r.status} ${url}`);
+    return r;
+  }
+  throw new Error(`gave up after retries: ${url}`);
 };
 const strip = (html) => String(html || '').replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
 // only licences that allow use in a commercial app (with attribution)
 const OK = /^(public domain|pd|cc0|cc by(-sa)? \d|cc-by(-sa)?-\d)/i;
 
 mkdirSync('img/germs', { recursive: true });
-const photos = {};
+// photos that are already here are kept
+const photos = Object.fromEntries(Object.entries(PHOTOS).filter(([, p]) => existsSync(p.src)));
 for (const [key, germ] of Object.entries(GERMS)) {
+  if (photos[key]) { console.log(`= ${germ.name}: already there`); continue; }
   try {
     const title = encodeURIComponent(germ.name.replace(/ /g, '_'));
     const page = await (await get(`https://en.wikipedia.org/w/api.php?action=query&format=json&redirects=1&prop=pageimages&piprop=name&titles=${title}`)).json();
