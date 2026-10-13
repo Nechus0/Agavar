@@ -125,14 +125,31 @@ function go(id) {
   document.querySelectorAll('.screen').forEach((s) => (s.hidden = s.id !== id));
   current = id;
   window.scrollTo(0, 0);
-  const hub = ['home', 'atlas', 'awards', 'settings'].includes(id);
-  $('#bottom-nav').hidden = !hub;
-  document.body.classList.toggle('has-nav', hub);
+  // die Leiste unten ist immer erreichbar; Unterseiten gehören zu Start bzw. Einstellungen
+  const tab = { atlas: 'atlas', awards: 'awards', settings: 'settings', help: 'settings' }[id] || 'home';
+  $('#bottom-nav').hidden = false;
+  document.body.classList.add('has-nav');
   document.querySelectorAll('#bottom-nav button').forEach((b) => {
-    b.classList.toggle('on', b.dataset.go === id);
-    if (b.dataset.go === id) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
+    b.classList.toggle('on', b.dataset.go === tab);
+    if (b.dataset.go === tab) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
   });
+  refreshResumeBar();
   if (onEnter[id]) onEnter[id]();
+}
+
+// Wer eine laufende Runde über die Leiste verlässt, pausiert sie und kann jederzeit zurück.
+function refreshResumeBar() {
+  const live = typeof run !== 'undefined' && run.sim && !run.sim.done && current !== 'sim';
+  $('#resume-bar').hidden = !live;
+  document.body.classList.toggle('has-resume', !!live);
+}
+function resumeMatch() {
+  go('sim');
+  run.paused = false;
+  run.last = 0;
+  cancelAnimationFrame(run.raf);
+  run.raf = requestAnimationFrame(simFrame);
+  if (musicOn()) startMusic();
 }
 
 document.addEventListener('click', (e) => {
@@ -1043,9 +1060,11 @@ $('#pm-restart').addEventListener('click', () => { closePause(false); startMatch
 $('#pm-quit').addEventListener('click', () => {
   closePause(false);
   clearTimeout(run.endTimer);
+  run.sim = null;
   go(run.cfg.mode === 'level' ? 'level-detail' : 'setup');
 });
-onLeave.sim = () => { cancelAnimationFrame(run.raf); stopMusic(); };
+onLeave.sim = () => { cancelAnimationFrame(run.raf); run.paused = true; stopMusic(); };
+$('#resume-bar').addEventListener('click', resumeMatch);
 document.addEventListener('visibilitychange', () => {
   run.last = 0; demo.last = 0;
   if (document.hidden) openPause();
