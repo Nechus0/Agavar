@@ -16,10 +16,10 @@ export const PHOTOS = {
   },
   "mxanthus": {
     "src": "img/germs/mxanthus.jpg",
-    "author": "Trance Gemini on de.wikipedia.org",
-    "license": "CC BY-SA 3.0",
-    "page": "https://commons.wikimedia.org/wiki/File:M._xanthus_development.png",
-    "style": "other"
+    "author": "(Image: Michiel Vos)",
+    "license": "CC BY 2.5",
+    "page": "https://commons.wikimedia.org/wiki/File:Myxococcus_xanthus.png",
+    "style": "picked"
   },
   "ecoli": {
     "src": "img/germs/ecoli.jpg",
@@ -39,8 +39,8 @@ export const PHOTOS = {
     "src": "img/germs/pputida.jpg",
     "author": "Mroghair",
     "license": "CC BY-SA 4.0",
-    "page": "https://commons.wikimedia.org/wiki/File:Pseudomonas_putida_on_King%27s_B_agar_under_UV_light.jpg",
-    "style": "other"
+    "page": "https://commons.wikimedia.org/wiki/File:Pseudomonas_putida_DIC_image_400X.jpg",
+    "style": "picked"
   },
   "kpneumoniae": {
     "src": "img/germs/kpneumoniae.jpg",
@@ -61,14 +61,14 @@ export const PHOTOS = {
     "author": "Eikosi",
     "license": "CC BY-SA 4.0",
     "page": "https://commons.wikimedia.org/wiki/File:Slice_from_electron_cryotomogram_of_Bdellovibrio_bacteriovorus_cell.jpg",
-    "style": "other"
+    "style": "picked"
   },
   "pmirabilis": {
     "src": "img/germs/pmirabilis.jpg",
-    "author": "Unknown",
-    "license": "Public domain",
-    "page": "https://commons.wikimedia.org/wiki/File:Proteus_mirabilis_01.jpg",
-    "style": "other"
+    "author": "Dr. Sahay",
+    "license": "CC BY-SA 3.0",
+    "page": "https://commons.wikimedia.org/wiki/File:Proteus_mirabilis.jpg",
+    "style": "picked"
   },
   "smarcescens": {
     "src": "img/germs/smarcescens.jpg",
@@ -116,8 +116,8 @@ export const PHOTOS = {
     "src": "img/germs/cbotulinum.jpg",
     "author": "Content Providers: CDC",
     "license": "Public domain",
-    "page": "https://commons.wikimedia.org/wiki/File:Clostridium_botulinum_01.png",
-    "style": "other"
+    "page": "https://commons.wikimedia.org/wiki/File:Clostridium_botulinum.jpg",
+    "style": "picked"
   },
   "spyogenes": {
     "src": "img/germs/spyogenes.jpg",
@@ -128,17 +128,17 @@ export const PHOTOS = {
   },
   "corynebacterium": {
     "src": "img/germs/corynebacterium.jpg",
-    "author": "Unknown",
-    "license": "Public domain",
-    "page": "https://commons.wikimedia.org/wiki/File:Corynebacterium_ulcerans_01.jpg",
-    "style": "other"
+    "author": "Urska Repnik, Universität Kiel",
+    "license": "CC BY 4.0",
+    "page": "https://commons.wikimedia.org/wiki/File:Corynebacterium_glutamicum_(VAAM).png",
+    "style": "picked"
   },
   "ctetani": {
     "src": "img/germs/ctetani.jpg",
     "author": "Content Providers(s): CDC",
     "license": "Public domain",
-    "page": "https://commons.wikimedia.org/wiki/File:Clostridium_tetani_01.png",
-    "style": "other"
+    "page": "https://commons.wikimedia.org/wiki/File:Clostridium_tetani.jpg",
+    "style": "picked"
   },
   "borrelia": {
     "src": "img/germs/borrelia.jpg",
@@ -156,10 +156,10 @@ export const PHOTOS = {
   },
   "cperfringens": {
     "src": "img/germs/cperfringens.jpg",
-    "author": "Content Providers(s): CDC/Don Stalons",
-    "license": "Public domain",
-    "page": "https://commons.wikimedia.org/wiki/File:Clostridium_perfringens.jpg",
-    "style": "other"
+    "author": "Amadalvarez",
+    "license": "CC BY-SA 4.0",
+    "page": "https://commons.wikimedia.org/wiki/File:Clostridium_perfringens.MET.1097.jpg",
+    "style": "picked"
   },
   "cacnes": {
     "src": "img/germs/cacnes.jpg",
@@ -168,25 +168,32 @@ export const PHOTOS = {
     "page": "https://commons.wikimedia.org/wiki/File:Propionibacterium_acnes.jpg",
     "style": "other"
   },
-  "brevibacterium": {
-    "src": "img/germs/brevibacterium.jpg",
-    "author": "MarkusHagenlocher at German Wikipedia",
-    "license": "CC BY-SA 3.0",
-    "page": "https://commons.wikimedia.org/wiki/File:Romadur-K%C3%A4se.jpg",
-    "style": "other"
-  },
   "cdiphtheriae": {
     "src": "img/germs/cdiphtheriae.jpg",
     "author": "Photo Credit: Content Providers(s):",
     "license": "Public domain",
     "page": "https://commons.wikimedia.org/wiki/File:Corynebacterium_diphtheriae_Gram_stain.jpg",
-    "style": "other"
+    "style": "picked"
   },
-  "kytococcus": {
-    "src": "img/germs/kytococcus.jpg",
-    "author": "Meenakshi nandhini",
-    "license": "CC BY 4.0",
-    "page": "https://commons.wikimedia.org/wiki/File:Kytococcus_sedentarius.jpg",
-    "style": "other"
+  "vcholerae": {
+    "src": "img/germs/vcholerae.jpg",
+    "author": "Tom Kirn, Ron Taylor, Louisa Howard - Dartmouth Electron Microscope Facility",
+    "license": "Public domain",
+    "page": "https://commons.wikimedia.org/wiki/File:Vibrio_cholerae.jpg",
+    "style": "picked"
+  },
+  "shominis": {
+    "src": "img/germs/shominis.jpg",
+    "author": "Ajay Kumar Chaurasiya",
+    "license": "CC BY-SA 4.0",
+    "page": "https://commons.wikimedia.org/wiki/File:Staphylococcus_hominis_Gram_staining.jpg",
+    "style": "picked"
+  },
+  "sagalactiae": {
+    "src": "img/germs/sagalactiae.jpg",
+    "author": "Ajay Kumar Chaurasiya",
+    "license": "CC BY-SA 4.0",
+    "page": "https://commons.wikimedia.org/wiki/File:Streptococcus_agalactiae_Gram_staining_of_culture.jpg",
+    "style": "picked"
   }
 };
