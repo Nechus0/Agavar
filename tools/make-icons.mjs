@@ -2,7 +2,6 @@
 // Aufruf: node tools/make-icons.mjs
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { deflateSync } from 'node:zlib';
-import { makeRng } from '../js/rng.js';
 
 const crcTable = new Uint32Array(256).map((_, n) => {
   let c = n;
@@ -36,53 +35,68 @@ function png(size, pixel) {
   return Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk('IHDR', ihdr), chunk('IDAT', deflateSync(raw)), chunk('IEND', Buffer.alloc(0))]);
 }
 
-// App-Icon im Agava-Design-System („Lab at night“): fast schwarzer Grund, eine Petrischale mit
-// glänzendem Rand, warm leuchtendes Agar (Pixelraster) und drei Kolonien im 120°-Abstand in den
-// Kulturfarben Teal (+, Spieler oben), Orange (▲) und Rose (‹). Kanten werden mehrfach abgetastet.
-const BG = [15, 18, 16];          // --bg-base
-const RIM = [58, 68, 52];         // Rand der Schale
-const RIM_HI = [104, 116, 94];    // Glanzlicht auf dem Rand
-const AGAR_LO = [48, 30, 14];     // abgegrastes Agar
-const AGAR_HI = [192, 153, 60];   // --plate-full
-const COLS = [[56, 160, 180], [204, 128, 64], [192, 72, 120]]; // culture-5, culture-2, culture-8
+// App-Icon: modern und reduziert. Dunkelgrüner Verlauf, eine Petrischale mit feinem hellem Rand,
+// warm leuchtendes Agar und drei weiche, organische Kolonien – Teal (die eigene, größte),
+// Orange und Rose. Alles glatt gerechnet (Abstandsfunktionen) und 4×4-fach abgetastet.
+const mix = (a, b, t) => a.map((x, i) => x + (b[i] - x) * Math.max(0, Math.min(1, t)));
+const over = (base, col, alpha) => mix(base, col, alpha);
+const smooth = (e0, e1, x) => { const t = Math.max(0, Math.min(1, (x - e0) / (e1 - e0))); return t * t * (3 - 2 * t); };
 
-const P = 40;                     // Pixelraster der Agarfläche
-const R_RIM = 0.425, R_AGAR = 0.385, R_OUT = 0.46;
-const rng = makeRng(7);
-const cells = [];                 // Farbe je Rasterzelle (oder null)
-const food = [];
-const colony = [];
-const centres = [0, 1, 2].map((k) => { const a = -Math.PI / 2 + k * 2.0944; return [0.5 + 0.175 * Math.cos(a), 0.5 + 0.175 * Math.sin(a)]; });
-const shade = [];
-for (let gy = 0; gy < P; gy++) for (let gx = 0; gx < P; gx++) {
-  const u = (gx + 0.5) / P * (2 * R_AGAR) + 0.5 - R_AGAR, v = (gy + 0.5) / P * (2 * R_AGAR) + 0.5 - R_AGAR;
-  let best = -1, bd = 1e9;
-  centres.forEach(([cx, cy], k) => { const d = Math.hypot(u - cx, v - cy) * (1 + 0.28 * rng()); if (d < bd) { bd = d; best = k; } });
-  const r = Math.hypot(u - 0.5, v - 0.5) / R_AGAR;
-  // Kolonie mit ausgefranstem Rand und einzelnen vorgeschobenen Zellen
-  const inside = bd < 0.088 || (bd < 0.118 && rng() < 0.35);
-  colony.push(inside ? best : -1);
-  shade.push(0.8 + 0.2 * rng());
-  // Nahrung: in der Mitte am meisten, rund um die Kolonien abgegrast, leichtes Korn
-  const eaten = Math.max(0, 1 - Math.max(0, bd - 0.09) / 0.08);
-  food.push(Math.max(0, Math.min(1, (0.95 - 0.45 * r * r) * (1 - 0.75 * eaten) * (0.9 + 0.1 * rng()))));
-}
-const lerp = (a, b, t) => a.map((x, i) => x + (b[i] - x) * t);
+const BG_TOP = [24, 40, 30], BG_BOT = [8, 12, 10];
+const AGAR_IN = [250, 204, 98], AGAR_OUT = [168, 98, 26];
+const RIM = [214, 226, 200];
+// Kolonien: Mittelpunkt, Radius, Farbe hell/dunkel, Wellenform des Randes
+const COLONIES = [
+  { x: 0.43, y: 0.42, r: 0.135, hi: [120, 222, 238], lo: [30, 140, 170], waves: [[5, 0.06, 0.4], [9, 0.03, 1.3]] },
+  { x: 0.63, y: 0.60, r: 0.085, hi: [255, 176, 112], lo: [204, 104, 46], waves: [[4, 0.07, 2.1], [7, 0.04, 0.2]] },
+  { x: 0.40, y: 0.66, r: 0.060, hi: [244, 128, 170], lo: [176, 52, 104], waves: [[5, 0.08, 1.0]] },
+];
+const R_DISH = 0.395, RIM_W = 0.016;
+// einzelne vorgeschobene Zellen rund um die Kolonien (Ausbreitung)
+const SPECKS = [[0.30, 0.33, 0.011, 0], [0.57, 0.31, 0.009, 0], [0.585, 0.455, 0.008, 0], [0.74, 0.55, 0.010, 1], [0.70, 0.70, 0.008, 1], [0.31, 0.72, 0.009, 2], [0.47, 0.75, 0.007, 2]];
+
 function sample(u, v) {
+  // Hintergrund: senkrechter Verlauf mit leichtem Licht oben
+  let c = mix(BG_TOP, BG_BOT, v * 1.05);
   const dx = u - 0.5, dy = v - 0.5, r = Math.hypot(dx, dy);
-  if (r > R_OUT) return BG;
-  if (r > R_RIM) {
-    // Rand: Glanz oben links
-    const t = (r - R_RIM) / (R_OUT - R_RIM);
-    const light = Math.max(0, (-dx - dy) / r) * (1 - Math.abs(t - 0.45) * 2);
-    return lerp(RIM, RIM_HI, Math.max(0, light));
+  // warmer Schein der Schale auf dem Hintergrund
+  c = over(c, [120, 90, 30], 0.22 * (1 - smooth(R_DISH, R_DISH + 0.16, r)));
+  // weicher Schatten unter der Schale
+  c = over(c, [0, 0, 0], 0.45 * (1 - smooth(R_DISH, R_DISH + 0.08, Math.hypot(dx, dy - 0.02))));
+  if (r < R_DISH) {
+    // Agar: warmes Leuchten, zum Rand dunkler
+    let a = mix(AGAR_IN, AGAR_OUT, smooth(0.0, R_DISH, Math.hypot(u - 0.46, v - 0.44)));
+    for (const k of COLONIES) {
+      const ang = Math.atan2(v - k.y, u - k.x);
+      let rr = k.r;
+      for (const [f, amp, ph] of k.waves) rr *= 1 + amp * Math.sin(f * ang + ph);
+      const d = Math.hypot(u - k.x, v - k.y);
+      // abgegraster Hof und farbiger Schein um die Kolonie
+      a = over(a, [92, 52, 18], 0.5 * (1 - smooth(rr, rr + 0.055, d)));
+      a = over(a, k.hi, 0.25 * (1 - smooth(rr, rr + 0.03, d)));
+      if (d < rr + 0.004) {
+        const inner = mix(k.hi, k.lo, smooth(0, rr, Math.hypot(u - (k.x - rr * 0.3), v - (k.y - rr * 0.3))));
+        a = mix(a, inner, smooth(rr + 0.004, rr - 0.004, d));
+      }
+    }
+    for (const [sx, sy, sr, ki] of SPECKS) {
+      const d = Math.hypot(u - sx, v - sy);
+      a = mix(a, COLONIES[ki].hi, smooth(sr + 0.003, sr - 0.003, d));
+    }
+    // Innenschatten am Schalenrand (Tiefe)
+    a = over(a, [60, 30, 8], 0.45 * smooth(R_DISH - 0.05, R_DISH, r));
+    // Glanz oben links auf dem Agar
+    a = over(a, [255, 255, 255], 0.16 * (1 - smooth(0, 0.22, Math.hypot(u - 0.36, v - 0.30))));
+    c = mix(c, a, smooth(R_DISH, R_DISH - 0.004, r));
   }
-  if (r > R_AGAR) return [19, 24, 16]; // --bg-plate zwischen Rand und Agar
-  const gx = Math.min(P - 1, Math.floor((u - (0.5 - R_AGAR)) / (2 * R_AGAR) * P));
-  const gy = Math.min(P - 1, Math.floor((v - (0.5 - R_AGAR)) / (2 * R_AGAR) * P));
-  const i = gy * P + gx, k = colony[i];
-  if (k >= 0) return COLS[k].map((c) => c * shade[i]);
-  return lerp(AGAR_LO, AGAR_HI, Math.pow(food[i], 0.9));
+  // feiner heller Rand, oben links stärker
+  const ring = 1 - smooth(RIM_W * 0.5, RIM_W * 0.5 + 0.004, Math.abs(r - R_DISH - RIM_W * 0.3));
+  const light = 0.35 + 0.65 * Math.max(0, (-dx - dy) / (r || 1));
+  c = over(c, RIM, ring * light * 0.95);
+  // zweiter, dunkler Glasring außen
+  const ring2 = 1 - smooth(0.004, 0.009, Math.abs(r - R_DISH - RIM_W * 1.3));
+  c = over(c, [6, 10, 8], ring2 * 0.6);
+  return c;
 }
 
 mkdirSync('icons', { recursive: true });
@@ -94,7 +108,7 @@ for (const [name, size] of [['icon-192.png', 192], ['icon-512.png', 512], ['appl
       const c = sample((x + (a + 0.5) / SS) / size, (y + (b + 0.5) / SS) / size);
       acc[0] += c[0]; acc[1] += c[1]; acc[2] += c[2];
     }
-    return acc.map((v) => Math.round(v / (SS * SS)));
+    return acc.map((v) => Math.max(0, Math.min(255, Math.round(v / (SS * SS)))));
   }));
 }
 console.log('Icons geschrieben.');
