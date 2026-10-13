@@ -518,3 +518,25 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .e-legend span { display: inline-flex; align-items: center; gap: 5px; }
 .e-legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
 .e-facts { display: flex; flex-direction: column; gap: 3px; }
+
+/* ---------- Leisten, Konter-Hinweise, Ton ---------- */
+.meters { display: flex; flex-direction: column; gap: 5px; width: 100%; }
+.meters.compact { margin-top: 8px; gap: 3px; }
+.m-row { display: grid; grid-template-columns: 110px 1fr 40px; align-items: center; gap: 8px; }
+.meters.compact .m-row { grid-template-columns: 104px 1fr 22px; }
+.m-label { font-size: 12px; color: #c9d1db; white-space: nowrap; }
+.m-bars { display: flex; flex-direction: column; gap: 2px; }
+.m-bar { height: 8px; background: var(--card2); border-radius: 4px; overflow: hidden; }
+.meters.compact .m-bar { height: 6px; }
+.m-bar i { display: block; height: 100%; border-radius: 4px; transition: width .2s; }
+.m-bar.them i { background: #8d98a7; }
+.m-val { font-size: 12px; text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
+.m-legend { display: flex; gap: 12px; }
+.m-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.m-legend i { width: 10px; height: 6px; border-radius: 3px; display: inline-block; }
+.m-you { background: linear-gradient(90deg, #5ee06a, #ff6b6b, #3fa9f5); }
+.m-them { background: #8d98a7; }
+.counter { background: #1d2a1f; border-radius: 10px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px; color: #cfe8d2; }
+.opp .counter { background: none; padding: 0; color: #9fc4a4; }
+.sound-toggle { background: none; border: 0; font-size: 20px; cursor: pointer; justify-self: end; }
+.center-row { justify-content: center; }

@@ -17,6 +17,8 @@ import { analyze, ACHIEVEMENTS } from './insights.js';
 import { SPECIAL_ICONS, SPECIAL_COLORS, TRAIT_ICONS, LOCK_ICON, UNLOCK_ICON } from './icons.js';
 import { MOVES, MOVE_BY_KEY, actionsOf, compile, moveFromProgram, describeMove, pathSvg } from './movement.js';
 import * as store from './storage.js';
+import { meters, METER_INFO, counterTips } from './meters.js';
+import { play, setSoundEnabled } from './sound.js';
 
 const $ = (sel) => document.querySelector(sel);
 const BREW_HOURS = 48; // eine Runde = 48 Stunden Brutzeit
@@ -34,6 +36,34 @@ function el(tag, attrs = {}, ...children) {
   for (const c of children.flat()) if (c !== null && c !== undefined && c !== false) e.append(c);
   return e;
 }
+
+// Drei Leisten (Ausbreitung, Kampfkraft, Ausdauer); mit `other` als Vergleich „Du vs. Gegner“
+function meterBars(g, other = null, otherLabel = '') {
+  const a = meters(g);
+  const b = other ? meters(other) : null;
+  return el('div', { class: `meters ${b ? 'versus' : ''}` },
+    b ? el('div', { class: 'm-legend small muted' }, el('span', {}, el('i', { class: 'm-you' }), 'Du'), el('span', {}, el('i', { class: 'm-them' }), otherLabel)) : null,
+    METER_INFO.map((m) => el('div', { class: 'm-row', title: m.label },
+      el('span', { class: 'm-label' }, `${m.icon} ${m.label}`),
+      el('div', { class: 'm-bars' },
+        el('div', { class: 'm-bar' }, el('i', { style: `width:${a[m.key] * 10}%;background:${m.color}` })),
+        b ? el('div', { class: 'm-bar them' }, el('i', { style: `width:${b[m.key] * 10}%` })) : null),
+      el('b', { class: 'm-val' }, b ? `${Math.round(a[m.key])}:${Math.round(b[m.key])}` : String(Math.round(a[m.key]))))));
+}
+
+// Ton an/aus (Einstellung wird gespeichert)
+function refreshSoundButtons() {
+  const on = store.getSettings().sound !== false;
+  setSoundEnabled(on);
+  document.querySelectorAll('.sound-toggle').forEach((b) => { b.textContent = on ? '🔊' : '🔇'; b.setAttribute('aria-pressed', String(on)); });
+}
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.sound-toggle')) return;
+  store.updateSettings({ sound: store.getSettings().sound === false });
+  refreshSoundButtons();
+  toast(store.getSettings().sound ? '🔊 Ton an' : '🔇 Ton aus');
+  play('tap');
+});
 
 // ⓘ-Knopf: blendet die Erklärung einer Eigenschaft ein/aus
 const infoBtn = () => el('button', {
@@ -259,7 +289,8 @@ function opponentCard(o) {
     el('div', {},
       el('b', {}, o.name),
       el('div', { class: 'stats' }, moveChip(o), ...specialsOf(o).map(specialTag)),
-      traitRow(o)));
+      traitRow(o),
+      el('div', { class: 'counter small' }, '💡 ', counterTips(o, 1)[0])));
 }
 
 function openLevel(n) {
@@ -281,7 +312,8 @@ onEnter['level-detail'] = () => {
     el('div', { class: 'boss-head' }, germPic(boss.germ, boss.color, 'boss-pic'),
       el('div', {}, el('h3', { class: 'boss-name' }, boss.name),
         el('div', { class: 'stats' }, ...specialsOf(boss).map(specialTag), moveChip(boss)))),
-    traitRow(boss));
+    traitRow(boss),
+    el('div', { class: 'counter' }, el('b', {}, '💡 So schlägst du ihn'), ...counterTips(boss, 2).map((t) => el('div', { class: 'small' }, t))));
   $('#ld-others-card').hidden = !others.length;
   fill($('#ld-opponents'), ...others.map(opponentCard));
   const pl = lv.plate;
@@ -306,6 +338,7 @@ onEnter['level-detail'] = () => {
       el('button', { class: 'btn small', onclick: () => openEditor(b, careerCtx(b, 'level-detail')) }, '🔧 Ausbauen')),
     el('div', { class: 'stats' }, moveChip(b), b.special !== 'none' ? specialTag(b.special) : null),
     traitRow(b),
+    meterBars(normalize(b), boss, boss.name.split(' ')[0]),
     probs.length ? el('p', { class: 'small warn' }, '⚠ ', probs.join(' · ')) : null,
     pts - cost(b) > 0 ? el('p', { class: 'small free-pts' }, `＋ ${pts - cost(b)} ${pts - cost(b) === 1 ? 'Punkt' : 'Punkte'} frei`) : null);
   $('#ld-start').disabled = probs.length > 0;
@@ -450,6 +483,7 @@ function renderMove() {
   fill($('#ed-move-opts'), ...opts);
   fill($('#ed-move-desc'), el('b', {}, `${m.name}: `), m.desc);
   renderEnergy(energyProfile(normalize(ed)));
+  fill($('#ed-meters'), meterBars(normalize(ed)));
   animator.setProgram(ed.program, ed.color);
 }
 
@@ -475,6 +509,7 @@ function renderEditor() {
     }, label))),
     el('div', { class: 'free-effect small' }, effect[t.key]))));
   renderEnergy(ep);
+  fill($('#ed-meters'), meterBars(normalize(ed)));
 
   // Eigenschaften mit Punktekosten
   const budget = edCtx.budget;
@@ -687,27 +722,33 @@ function resetBanners() {
 function checkEvents() {
   const sim = run.sim, ev = run.ev;
   const names = run.genomes.map((g, i) => (i === 0 ? 'Deine Kultur' : g.name));
-  if (!ev.contact && sim.contactTick >= 0) { ev.contact = true; banner('⚔️ Erster Kontakt – der Kampf beginnt!'); }
+  if (!ev.contact && sim.contactTick >= 0) { ev.contact = true; banner('⚔️ Erster Kontakt – der Kampf beginnt!'); play('contact'); }
   sim.players.forEach((p, i) => {
     if (p.count === 0 && !ev.dead.has(i)) {
       ev.dead.add(i);
-      if (!sim.done || sim.players.length > 2) banner(i === 0 ? '☠️ Deine Kultur ist ausgestorben!' : `☠️ ${names[i]} ausgerottet!`, i === 0 ? 'bad' : 'good');
+      if (!sim.done || sim.players.length > 2) {
+        banner(i === 0 ? '☠️ Deine Kultur ist ausgestorben!' : `☠️ ${names[i]} ausgerottet!`, i === 0 ? 'bad' : 'good');
+        play('extinct');
+      }
     }
   });
   const alive = sim.players.filter((p) => p.count > 0).sort((a, b) => b.count - a.count);
   if (alive.length >= 2 && sim.tick > 150) {
     const lead = alive[0];
     if (ev.leader !== lead.id && lead.share - alive[1].share > 0.06 && sim.tick - ev.leaderTick > 150) {
-      if (ev.leader) banner(lead.id === 1 ? '🔄 Wendepunkt! Du übernimmst die Führung!' : `🔄 Wendepunkt! ${names[lead.id - 1]} übernimmt die Führung`, lead.id === 1 ? 'good' : '');
+      if (ev.leader) {
+        banner(lead.id === 1 ? '🔄 Wendepunkt! Du übernimmst die Führung!' : `🔄 Wendepunkt! ${names[lead.id - 1]} übernimmt die Führung`, lead.id === 1 ? 'good' : '');
+        play('lead');
+      }
       ev.leader = lead.id; ev.leaderTick = sim.tick;
     }
     // Knappes Rennen kurz vor Schluss: Zeitlupe
     // (3 h Brutzeit = 250 Simulationsschritte)
     if (!ev.slow && sim.tick >= MAX_TICKS - 250 && alive[0].share - alive[1].share < 0.12) {
-      ev.slow = true; banner('🎬 Knappes Rennen – Zeitlupe!');
+      ev.slow = true; banner('🎬 Knappes Rennen – Zeitlupe!'); play('alarm');
     }
   }
-  if (!ev.sixH && sim.tick >= MAX_TICKS - 500) { ev.sixH = true; banner('⏰ Noch 6 Stunden Brutzeit!'); }
+  if (!ev.sixH && sim.tick >= MAX_TICKS - 500) { ev.sixH = true; banner('⏰ Noch 6 Stunden Brutzeit!'); play('alarm'); }
 }
 
 function fixColors(player, opponents) {
@@ -888,6 +929,8 @@ function showResult() {
   $('#rs-new').hidden = lvMode;
   $('#rs-rematch').textContent = lvMode ? '↻ Nochmal' : '↻ Revanche';
   document.querySelector('#result details').open = false;
+  play(won ? 'win' : 'lose');
+  if (newStars) setTimeout(() => play('star'), 700);
   if (firstWin) showWinModal(cfg.level);
 }
 
@@ -900,6 +943,7 @@ function showWinModal(level) {
   $('#win-fact').textContent = germ.fact;
   fill($('#win-rewards'), ...rewardRows(level, true));
   $('#win-modal').hidden = false;
+  setTimeout(() => play('unlock'), 400);
 }
 
 // ---------- Atlas & Erfolge ----------
@@ -966,6 +1010,7 @@ $('#rs-upgrade').addEventListener('click', () => {
 // ---------- Start ----------
 // Atlas nachtragen: Keime aus bereits gewonnenen Leveln gelten als entdeckt
 store.discover(store.globalWon().filter((n) => LEVELS[n - 1]).flatMap((n) => levelOpponents(LEVELS[n - 1]).map((o) => o.germ)));
+refreshSoundButtons();
 go('home');
 
 if ('serviceWorker' in navigator && location.protocol === 'https:') {

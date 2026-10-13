@@ -12,6 +12,7 @@ const DEFAULT_SETTINGS = {
   distribution: 'gleichmaessig',
   amount: 'normal',
   regen: 'normal',
+  sound: true,
 };
 
 const cleanWon = (w) => (Array.isArray(w) ? [...new Set(w.filter(Number.isInteger))] : []);

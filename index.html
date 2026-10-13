@@ -30,7 +30,10 @@
         <button class="btn primary big" id="home-career">Karriere</button>
         <button class="btn big" data-go="setup">Freies Spiel</button>
         <button class="btn big" data-go="atlas">Atlas &amp; Erfolge</button>
-        <button class="btn ghost" data-go="help">Anleitung</button>
+        <div class="row gap center-row">
+          <button class="btn ghost" data-go="help">📖 Anleitung</button>
+          <button class="btn ghost sound-toggle" aria-label="Ton an/aus">🔊</button>
+        </div>
       </div>
     </section>
 
@@ -77,6 +80,7 @@
       <div class="budget sticky" id="ed-budget">
         <div class="budget-text"><span id="ed-budget-label">Punkte</span><b id="ed-cost">0 / 20</b></div>
         <div class="meter"><div id="ed-meter"></div></div>
+        <div id="ed-meters" class="meters compact"></div>
         <p class="small warn" id="ed-warn" hidden></p>
       </div>
       <div class="card">
@@ -120,7 +124,7 @@
 
     <!-- Simulation -->
     <section class="screen" id="sim" hidden>
-      <header class="bar"><button class="back" id="sim-quit">‹ Beenden</button><h2 id="sim-title">Simulation</h2><span></span></header>
+      <header class="bar"><button class="back" id="sim-quit">‹ Beenden</button><h2 id="sim-title">Simulation</h2><button class="sound-toggle" aria-label="Ton an/aus">🔊</button></header>
       <div class="clock-row">
         <svg class="clock" viewBox="0 0 40 40" aria-hidden="true">
           <circle cx="20" cy="20" r="16" fill="none" stroke="#2a3340" stroke-width="5"/>

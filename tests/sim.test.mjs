@@ -207,3 +207,20 @@ test('Energiebilanz: Warten spart Bewegungsenergie, sparsamer Stoffwechsel verbr
   assert.ok(frugal.intake / frugal.basal > greedy.intake / greedy.basal);
   assert.ok(Number.isFinite(moving.roundsToDivide) && moving.roundsWithoutFood > 0);
 });
+
+import { meters, counterTips } from '../js/meters.js';
+
+test('Leisten und Konter-Hinweise', () => {
+  const runner = meters({ ...defaultGenome(), speed: 4, efficiency: 4, division: 0, program: ['F'] });
+  const tank = meters({ ...defaultGenome(), attack: 5, defense: 5, special: 'capsule', program: ['P'] });
+  const camper = meters({ ...defaultGenome(), lifespan: 4, efficiency: 4, metabolism: 0, special: 'spores', program: ['P'] });
+  assert.ok(runner.spread > tank.spread);
+  assert.ok(tank.fight > runner.fight);
+  assert.ok(camper.survive > runner.survive);
+  for (const m of [runner, tank, camper]) for (const v of Object.values(m)) assert.ok(v >= 0 && v <= 10);
+  for (const lv of LEVELS) for (const o of levelOpponents(lv)) {
+    const tips = counterTips(o, 2);
+    assert.ok(tips.length >= 1 && tips.length <= 2 && tips.every((t) => t.length > 15));
+  }
+  assert.ok(counterTips({ ...defaultGenome(), special: 'toxin' })[0].includes('Gift'));
+});
