@@ -36,29 +36,65 @@ function png(size, pixel) {
   return Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk('IHDR', ihdr), chunk('IDAT', deflateSync(raw)), chunk('IEND', Buffer.alloc(0))]);
 }
 
-// 32x32-Pixelbild: runde Platte mit drei Kolonien
-const G = 32;
-const grid = [];
-const rng = makeRng(11);
-const colonies = [[10, 11, [63, 169, 245]], [21, 12, [255, 93, 93]], [15, 22, [94, 224, 106]]];
-for (let y = 0; y < G; y++) {
-  for (let x = 0; x < G; x++) {
-    const dx = x - 15.5, dy = y - 15.5, r = Math.hypot(dx, dy);
-    let c = [14, 17, 22];
-    if (r < 13.5) {
-      const shade = 0.75 + 0.25 * rng();
-      c = [214 * shade, 178 * shade, 96 * shade];
-      for (const [cx, cy, col] of colonies) {
-        const d = Math.hypot(x - cx, y - cy) + rng() * 1.6;
-        if (d < 5.2) c = col.map((v) => v * (0.75 + 0.25 * rng()));
-      }
-    } else if (r < 15) c = [58, 69, 84];
-    grid.push(c.map(Math.round));
+// App-Icon im Agava-Design-System („Lab at night“): fast schwarzer Grund, eine Petrischale mit
+// glänzendem Rand, warm leuchtendes Agar (Pixelraster) und drei Kolonien im 120°-Abstand in den
+// Kulturfarben Teal (+, Spieler oben), Orange (▲) und Rose (‹). Kanten werden mehrfach abgetastet.
+const BG = [15, 18, 16];          // --bg-base
+const RIM = [58, 68, 52];         // Rand der Schale
+const RIM_HI = [104, 116, 94];    // Glanzlicht auf dem Rand
+const AGAR_LO = [48, 30, 14];     // abgegrastes Agar
+const AGAR_HI = [192, 153, 60];   // --plate-full
+const COLS = [[56, 160, 180], [204, 128, 64], [192, 72, 120]]; // culture-5, culture-2, culture-8
+
+const P = 40;                     // Pixelraster der Agarfläche
+const R_RIM = 0.425, R_AGAR = 0.385, R_OUT = 0.46;
+const rng = makeRng(7);
+const cells = [];                 // Farbe je Rasterzelle (oder null)
+const food = [];
+const colony = [];
+const centres = [0, 1, 2].map((k) => { const a = -Math.PI / 2 + k * 2.0944; return [0.5 + 0.175 * Math.cos(a), 0.5 + 0.175 * Math.sin(a)]; });
+const shade = [];
+for (let gy = 0; gy < P; gy++) for (let gx = 0; gx < P; gx++) {
+  const u = (gx + 0.5) / P * (2 * R_AGAR) + 0.5 - R_AGAR, v = (gy + 0.5) / P * (2 * R_AGAR) + 0.5 - R_AGAR;
+  let best = -1, bd = 1e9;
+  centres.forEach(([cx, cy], k) => { const d = Math.hypot(u - cx, v - cy) * (1 + 0.28 * rng()); if (d < bd) { bd = d; best = k; } });
+  const r = Math.hypot(u - 0.5, v - 0.5) / R_AGAR;
+  // Kolonie mit ausgefranstem Rand und einzelnen vorgeschobenen Zellen
+  const inside = bd < 0.088 || (bd < 0.118 && rng() < 0.35);
+  colony.push(inside ? best : -1);
+  shade.push(0.8 + 0.2 * rng());
+  // Nahrung: in der Mitte am meisten, rund um die Kolonien abgegrast, leichtes Korn
+  const eaten = Math.max(0, 1 - Math.max(0, bd - 0.09) / 0.08);
+  food.push(Math.max(0, Math.min(1, (0.95 - 0.45 * r * r) * (1 - 0.75 * eaten) * (0.9 + 0.1 * rng()))));
+}
+const lerp = (a, b, t) => a.map((x, i) => x + (b[i] - x) * t);
+function sample(u, v) {
+  const dx = u - 0.5, dy = v - 0.5, r = Math.hypot(dx, dy);
+  if (r > R_OUT) return BG;
+  if (r > R_RIM) {
+    // Rand: Glanz oben links
+    const t = (r - R_RIM) / (R_OUT - R_RIM);
+    const light = Math.max(0, (-dx - dy) / r) * (1 - Math.abs(t - 0.45) * 2);
+    return lerp(RIM, RIM_HI, Math.max(0, light));
   }
+  if (r > R_AGAR) return [19, 24, 16]; // --bg-plate zwischen Rand und Agar
+  const gx = Math.min(P - 1, Math.floor((u - (0.5 - R_AGAR)) / (2 * R_AGAR) * P));
+  const gy = Math.min(P - 1, Math.floor((v - (0.5 - R_AGAR)) / (2 * R_AGAR) * P));
+  const i = gy * P + gx, k = colony[i];
+  if (k >= 0) return COLS[k].map((c) => c * shade[i]);
+  return lerp(AGAR_LO, AGAR_HI, Math.pow(food[i], 0.9));
 }
 
 mkdirSync('icons', { recursive: true });
 for (const [name, size] of [['icon-192.png', 192], ['icon-512.png', 512], ['apple-touch-icon.png', 180]]) {
-  writeFileSync(`icons/${name}`, png(size, (x, y) => grid[Math.floor((y * G) / size) * G + Math.floor((x * G) / size)]));
+  const SS = 4;
+  writeFileSync(`icons/${name}`, png(size, (x, y) => {
+    const acc = [0, 0, 0];
+    for (let a = 0; a < SS; a++) for (let b = 0; b < SS; b++) {
+      const c = sample((x + (a + 0.5) / SS) / size, (y + (b + 0.5) / SS) / size);
+      acc[0] += c[0]; acc[1] += c[1]; acc[2] += c[2];
+    }
+    return acc.map((v) => Math.round(v / (SS * SS)));
+  }));
 }
 console.log('Icons geschrieben.');
