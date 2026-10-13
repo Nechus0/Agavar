@@ -113,7 +113,7 @@ Alle Zellen werden in zufälliger Reihenfolge abgearbeitet:
   - Führungswechsel
   - ausgerotteter Kultur
   - „Noch 6 Stunden“
-  - knappem Rennen kurz vor Schluss: Dann wird automatisch auf Zeitlupe (1×) gebremst.
+  - knappem Rennen in den letzten 3 Stunden: Dann wird automatisch auf Zeitlupe (1×) gebremst.
 
 ## Spielende
 - Nur noch eine Kultur lebt, **oder**

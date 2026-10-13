@@ -660,7 +660,8 @@ function checkEvents() {
       ev.leader = lead.id; ev.leaderTick = sim.tick;
     }
     // Knappes Rennen kurz vor Schluss: Zeitlupe
-    if (!ev.slow && sim.tick >= MAX_TICKS - 500 && alive[0].share - alive[1].share < 0.12) {
+    // (3 h Brutzeit = 250 Simulationsschritte)
+    if (!ev.slow && sim.tick >= MAX_TICKS - 250 && alive[0].share - alive[1].share < 0.12) {
       ev.slow = true; banner('🎬 Knappes Rennen – Zeitlupe!');
     }
   }
