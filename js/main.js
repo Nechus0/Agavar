@@ -118,16 +118,21 @@ const LABELS = {
 
 // ---------- Navigation ----------
 let current = 'home';
+let settingsFrom = 'home';
 const onLeave = {};
 const onEnter = {};
 
 function go(id) {
+  const prev = current;
   if (onLeave[current]) onLeave[current]();
   document.querySelectorAll('.screen').forEach((s) => (s.hidden = s.id !== id));
   current = id;
   window.scrollTo(0, 0);
   // die Leiste unten ist immer erreichbar; Unterseiten gehören zu Start bzw. Einstellungen
-  const tab = { atlas: 'atlas', awards: 'awards', settings: 'settings', help: 'settings', editor: 'lab' }[id] || 'home';
+  const tab = { atlas: 'atlas', awards: 'awards', editor: 'lab' }[id] || 'home';
+  // Einstellungen: Zahnrad oben rechts auf den Hauptseiten
+  if (id === 'settings' && prev !== 'help' && prev !== 'settings') settingsFrom = prev;
+  $('#settings-btn').hidden = !['home', 'atlas', 'awards'].includes(id);
   $('#bottom-nav').hidden = false;
   document.body.classList.add('has-nav');
   document.querySelectorAll('#bottom-nav button').forEach((b) => {
@@ -1077,6 +1082,8 @@ document.addEventListener('visibilitychange', () => {
   run.last = 0; demo.last = 0;
   if (document.hidden) openPause();
 });
+
+$('#set-back').addEventListener('click', () => go(settingsFrom));
 
 $('#set-reset').addEventListener('click', async () => {
   if (!await confirmDialog('Reset all progress?', 'All bacteria, stars, atlas entries and achievements will be deleted. This cannot be undone.', 'Delete everything')) return;

@@ -462,7 +462,7 @@ td.win { color: var(--success); }
 /* Bottom navigation */
 .bottom-nav {
   position: fixed; left: 50%; transform: translateX(-50%); bottom: 0; z-index: 20;
-  width: 100%; max-width: 560px; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));
+  width: 100%; max-width: 560px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
   padding-bottom: env(safe-area-inset-bottom); background: rgba(15, 18, 16, .94);
   border-top: 1px solid var(--bg-surface-2); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
 }
@@ -543,3 +543,12 @@ body.has-resume .sticky-cta { bottom: calc(112px + env(safe-area-inset-bottom));
 
 /* Atlas photos in one style: monochrome micrograph look, tinted to the lab palette */
 .germ-card .pic img, .atlas-photo img { filter: grayscale(1) contrast(1.08) brightness(.95) sepia(.18) hue-rotate(40deg); }
+
+/* Settings: gear in the top-right corner of the main pages */
+.corner-btn {
+  position: absolute; z-index: 30; top: calc(env(safe-area-inset-top) + var(--space-3));
+  right: max(var(--space-4), calc((100vw - 560px) / 2 + var(--space-4)));
+  width: 44px; height: 44px; border-radius: 50%; border: 0; background: var(--bg-surface);
+  color: var(--text-secondary); display: flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.corner-btn:active { transform: scale(.94); }

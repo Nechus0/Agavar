@@ -179,7 +179,7 @@
 
     <!-- Settings -->
     <section class="screen" id="settings" hidden>
-      <header class="page-head"><h1>Settings</h1></header>
+      <header class="bar"><button class="back" id="set-back"><span class="ico" data-icon="back"></span>Back</button><h2>Settings</h2><span></span></header>
       <div class="card list-card">
         <button class="set-row sound-toggle" data-label="Sound effects" data-icon-name="sound"></button>
         <button class="set-row music-toggle" data-label="Music" data-icon-name="music"></button>
@@ -220,13 +220,13 @@
     </section>
   </main>
 
+  <button class="corner-btn" id="settings-btn" data-go="settings" aria-label="Settings" hidden><span class="ico md" data-icon="settings"></span></button>
   <button class="resume-bar" id="resume-bar" hidden><span class="ico" data-icon="pause"></span><span>Match paused</span><b>Resume</b><span class="ico" data-icon="play"></span></button>
   <nav class="bottom-nav" id="bottom-nav" aria-label="Main navigation">
     <button data-go="home" data-tab="home"><span class="ico" data-icon="home"></span>Home</button>
     <button id="nav-lab" data-tab="lab"><span class="ico" data-icon="flask"></span>Lab</button>
     <button data-go="atlas" data-tab="atlas"><span class="ico" data-icon="atlas"></span>Atlas</button>
     <button data-go="awards" data-tab="awards"><span class="ico" data-icon="awards"></span>Awards</button>
-    <button data-go="settings" data-tab="settings"><span class="ico" data-icon="settings"></span>Settings</button>
   </nav>
 
   <!-- Pause menu during a simulation -->
