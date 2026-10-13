@@ -4,156 +4,189 @@ export const PHOTOS = {
     "src": "img/germs/sepidermidis.jpg",
     "author": "Photo Credit: Janice Carr Content Providers(s): CDC/ Segrid McAllister",
     "license": "Public domain",
-    "page": "https://commons.wikimedia.org/wiki/File:Staphylococcus_epidermidis_01.png"
+    "page": "https://commons.wikimedia.org/wiki/File:Staphylococcus_epidermidis_lores.jpg",
+    "style": "sem"
+  },
+  "mluteus": {
+    "src": "img/germs/mluteus.jpg",
+    "author": "Photo Credit: Janice Carr Content Providers(s): CDC/ Janice Carr",
+    "license": "Public domain",
+    "page": "https://commons.wikimedia.org/wiki/File:Micrococcus_luteus_9760.jpeg",
+    "style": "sem"
   },
   "mxanthus": {
     "src": "img/germs/mxanthus.jpg",
     "author": "Trance Gemini on de.wikipedia.org",
     "license": "CC BY-SA 3.0",
-    "page": "https://commons.wikimedia.org/wiki/File:M._xanthus_development.png"
+    "page": "https://commons.wikimedia.org/wiki/File:M._xanthus_development.png",
+    "style": "other"
   },
   "ecoli": {
     "src": "img/germs/ecoli.jpg",
-    "author": "Photo by Eric Erbe, digital colorization by Christopher Pooley, both of USDA, ARS, EMU.",
+    "author": "Janice Haney Carr",
     "license": "Public domain",
-    "page": "https://commons.wikimedia.org/wiki/File:E_coli_at_10000x,_original.jpg"
+    "page": "https://commons.wikimedia.org/wiki/File:Escherichia_coli_electron_microscopy.jpg",
+    "style": "sem"
   },
   "lacidophilus": {
     "src": "img/germs/lacidophilus.jpg",
-    "author": "Dr Graham Beards",
-    "license": "CC BY-SA 4.0",
-    "page": "https://commons.wikimedia.org/wiki/File:Lactobacilli_(Gram_stain).jpg"
+    "author": "Mogana Das Murtey and Patchamuthu Ramasamy",
+    "license": "CC BY-SA 3.0",
+    "page": "https://commons.wikimedia.org/wiki/File:Lactobacillus_acidophilus_SEM.jpg",
+    "style": "sem"
   },
   "pputida": {
     "src": "img/germs/pputida.jpg",
     "author": "Mroghair",
     "license": "CC BY-SA 4.0",
-    "page": "https://commons.wikimedia.org/wiki/File:Pseudomonas_putida_on_King%27s_B_agar_under_UV_light.jpg"
+    "page": "https://commons.wikimedia.org/wiki/File:Pseudomonas_putida_on_King%27s_B_agar_under_UV_light.jpg",
+    "style": "other"
   },
   "kpneumoniae": {
     "src": "img/germs/kpneumoniae.jpg",
-    "author": "CDC",
-    "license": "Public domain",
-    "page": "https://commons.wikimedia.org/wiki/File:Klebsiella_pneumoniae_01.png"
+    "author": "NIAID",
+    "license": "CC BY 2.0",
+    "page": "https://commons.wikimedia.org/wiki/File:Klebsiella_pneumoniae_Bacterium_(13383411493).jpg",
+    "style": "sem"
   },
   "synechococcus": {
     "src": "img/germs/synechococcus.jpg",
     "author": "Raul Gonzalez and Cheryl Kerfeld",
     "license": "CC BY-SA 3.0",
-    "page": "https://commons.wikimedia.org/wiki/File:Synechococcus_elongatus_PCC_7942_electron_micrograph_showing_carboxysomes.jpeg"
+    "page": "https://commons.wikimedia.org/wiki/File:Synechococcus_elongatus_PCC_7942_electron_micrograph_showing_carboxysomes.jpeg",
+    "style": "sem"
   },
   "bdellovibrio": {
     "src": "img/germs/bdellovibrio.jpg",
     "author": "Eikosi",
     "license": "CC BY-SA 4.0",
-    "page": "https://commons.wikimedia.org/wiki/File:Slice_from_electron_cryotomogram_of_Bdellovibrio_bacteriovorus_cell.jpg"
+    "page": "https://commons.wikimedia.org/wiki/File:Slice_from_electron_cryotomogram_of_Bdellovibrio_bacteriovorus_cell.jpg",
+    "style": "other"
   },
   "pmirabilis": {
     "src": "img/germs/pmirabilis.jpg",
     "author": "Unknown",
     "license": "Public domain",
-    "page": "https://commons.wikimedia.org/wiki/File:Proteus_mirabilis_01.jpg"
+    "page": "https://commons.wikimedia.org/wiki/File:Proteus_mirabilis_01.jpg",
+    "style": "other"
   },
   "smarcescens": {
     "src": "img/germs/smarcescens.jpg",
     "author": "de:Benutzer:Brudersohn",
     "license": "CC BY-SA 3.0",
-    "page": "https://commons.wikimedia.org/wiki/File:Serratia_marcescens.jpg"
+    "page": "https://commons.wikimedia.org/wiki/File:Serratia_marcescens.jpg",
+    "style": "other"
   },
   "bsubtilis": {
     "src": "img/germs/bsubtilis.jpg",
-    "author": "Allonweiner at English Wikipedia",
+    "author": "Peter Highton",
+    "license": "CC0",
+    "page": "https://commons.wikimedia.org/wiki/File:Bacillus_subtilis_image.jpg",
+    "style": "sem"
+  },
+  "hpylori": {
+    "src": "img/germs/hpylori.jpg",
+    "author": "Hpylori.jpg: * Photo Credit: Janice Carr Content Providers(s): CDC/ Dr. Patricia Fields, Dr. Collette Fitzgerald derivative work: F. Lamiot (talk)",
     "license": "Public domain",
-    "page": "https://commons.wikimedia.org/wiki/File:Bacillus_subtilis.jpg"
+    "page": "https://commons.wikimedia.org/wiki/File:HelicobacterPylori2.jpg",
+    "style": "sem"
   },
   "paeruginosa": {
     "src": "img/germs/paeruginosa.jpg",
-    "author": "HansN.",
-    "license": "CC BY-SA 4.0",
-    "page": "https://commons.wikimedia.org/wiki/File:Pseudomonas_aeruginosa_on_blood_agar.jpg"
+    "author": "Photo Credit: Janice Haney Carr Content Providers(s): CDC/ Janice Haney Carr",
+    "license": "Public domain",
+    "page": "https://commons.wikimedia.org/wiki/File:Pseudomonas_aeruginosa_SEM.jpg",
+    "style": "sem"
   },
   "bcereus": {
     "src": "img/germs/bcereus.jpg",
-    "author": "Photo Credit: Content Providers(s): CDC/ Courtesy of Larry Stauffer, Oregon State Public Health Laboratory",
-    "license": "Public domain",
-    "page": "https://commons.wikimedia.org/wiki/File:Bacillus_cereus_01.png"
+    "author": "Mogana Das Murtey and Patchamuthu Ramasamy",
+    "license": "CC BY-SA 3.0",
+    "page": "https://commons.wikimedia.org/wiki/File:Bacillus_cereus_SEM-cr.jpg",
+    "style": "sem"
   },
   "saureus": {
     "src": "img/germs/saureus.jpg",
-    "author": "Content Providers(s): CDC/ Matthew J. Arduino, DRPH Photo Credit: Janice Haney Carr",
-    "license": "Public domain",
-    "page": "https://commons.wikimedia.org/wiki/File:Staphylococcus_aureus_VISA_2.jpg"
+    "author": "NIAID_Flickr",
+    "license": "CC BY 2.0",
+    "page": "https://commons.wikimedia.org/wiki/File:Scanning_electron_micrograph_of_Methicillin-resistant_Staphylococcus_aureus_(MRSA)_and_a_dead_Human_neutrophil_-_NIAID.jpg",
+    "style": "sem"
   },
   "cbotulinum": {
     "src": "img/germs/cbotulinum.jpg",
     "author": "Content Providers: CDC",
     "license": "Public domain",
-    "page": "https://commons.wikimedia.org/wiki/File:Clostridium_botulinum_01.png"
+    "page": "https://commons.wikimedia.org/wiki/File:Clostridium_botulinum_01.png",
+    "style": "other"
   },
   "spyogenes": {
     "src": "img/germs/spyogenes.jpg",
     "author": "NIAID",
     "license": "CC BY 2.0",
-    "page": "https://commons.wikimedia.org/wiki/File:Streptococcus_Pyogenes_(Group_A_Strep)_(52602981880).jpg"
+    "page": "https://commons.wikimedia.org/wiki/File:Streptococcus_Pyogenes_(Group_A_Strep)_(52602892639).jpg",
+    "style": "sem"
   },
   "corynebacterium": {
     "src": "img/germs/corynebacterium.jpg",
     "author": "Unknown",
     "license": "Public domain",
-    "page": "https://commons.wikimedia.org/wiki/File:Corynebacterium_ulcerans_01.jpg"
+    "page": "https://commons.wikimedia.org/wiki/File:Corynebacterium_ulcerans_01.jpg",
+    "style": "other"
   },
   "ctetani": {
     "src": "img/germs/ctetani.jpg",
     "author": "Content Providers(s): CDC",
     "license": "Public domain",
-    "page": "https://commons.wikimedia.org/wiki/File:Clostridium_tetani_01.png"
+    "page": "https://commons.wikimedia.org/wiki/File:Clostridium_tetani_01.png",
+    "style": "other"
   },
   "borrelia": {
     "src": "img/germs/borrelia.jpg",
-    "author": "Photo Credit: Content Providers(s): CDC",
+    "author": "CDC/ Claudia Molins",
     "license": "Public domain",
-    "page": "https://commons.wikimedia.org/wiki/File:Borrelia_burgdorferi_(CDC-PHIL_-6631)_lores.jpg"
+    "page": "https://commons.wikimedia.org/wiki/File:Lyme_disease_parasite_Borrelia_burgdorferi.jpg",
+    "style": "sem"
   },
   "abaumannii": {
     "src": "img/germs/abaumannii.jpg",
-    "author": "Vader1941",
-    "license": "CC BY-SA 4.0",
-    "page": "https://commons.wikimedia.org/wiki/File:A.baumannii_visualized_using_Scanning_electron_microscopy.png"
+    "author": "Unknown",
+    "license": "Public domain",
+    "page": "https://commons.wikimedia.org/wiki/File:Acinetobacter_baumannii.JPG",
+    "style": "sem"
   },
   "cperfringens": {
     "src": "img/germs/cperfringens.jpg",
     "author": "Content Providers(s): CDC/Don Stalons",
     "license": "Public domain",
-    "page": "https://commons.wikimedia.org/wiki/File:Clostridium_perfringens.jpg"
+    "page": "https://commons.wikimedia.org/wiki/File:Clostridium_perfringens.jpg",
+    "style": "other"
   },
   "cacnes": {
     "src": "img/germs/cacnes.jpg",
     "author": "CDC/Bobby Strong",
     "license": "Public domain",
-    "page": "https://commons.wikimedia.org/wiki/File:Propionibacterium_acnes.jpg"
+    "page": "https://commons.wikimedia.org/wiki/File:Propionibacterium_acnes.jpg",
+    "style": "other"
   },
   "brevibacterium": {
     "src": "img/germs/brevibacterium.jpg",
     "author": "MarkusHagenlocher at German Wikipedia",
     "license": "CC BY-SA 3.0",
-    "page": "https://commons.wikimedia.org/wiki/File:Romadur-K%C3%A4se.jpg"
+    "page": "https://commons.wikimedia.org/wiki/File:Romadur-K%C3%A4se.jpg",
+    "style": "other"
   },
   "cdiphtheriae": {
     "src": "img/germs/cdiphtheriae.jpg",
     "author": "Photo Credit: Content Providers(s):",
     "license": "Public domain",
-    "page": "https://commons.wikimedia.org/wiki/File:Corynebacterium_diphtheriae_Gram_stain.jpg"
+    "page": "https://commons.wikimedia.org/wiki/File:Corynebacterium_diphtheriae_Gram_stain.jpg",
+    "style": "other"
   },
   "kytococcus": {
     "src": "img/germs/kytococcus.jpg",
     "author": "Meenakshi nandhini",
     "license": "CC BY 4.0",
-    "page": "https://commons.wikimedia.org/wiki/File:Kytococcus_sedentarius.jpg"
-  },
-  "sagalactiae": {
-    "src": "img/germs/sagalactiae.jpg",
-    "author": "CDC",
-    "license": "CC BY 2.5",
-    "page": "https://commons.wikimedia.org/wiki/File:Streptococcus_agalactiae.tif"
+    "page": "https://commons.wikimedia.org/wiki/File:Kytococcus_sedentarius.jpg",
+    "style": "other"
   }
 };
