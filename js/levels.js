@@ -66,8 +66,8 @@ export const LEVELS = [
     name: 'Schleimfestung',
     desc: 'Pseudomonas aeruginosa verschanzt sich in seinem Biofilm. Wer ihn knacken will, braucht Kraft.',
     plate: { size: 'gross', distribution: 'flecken', amount: 'normal', regen: 'normal' },
-    boss: g('paeruginosa', '#2ee6d6', ['F', 'P3'], [2, 3, 4, 4, 5, 3, 1], 'biofilm'),
-    opponents: [g('pmirabilis', '#ff9f43', ['F4', 'R'], [4, 2, 3, 4, 4, 1, 3])],
+    boss: g('paeruginosa', '#2ee6d6', ['F', 'P3'], [3, 3, 4, 4, 5, 3, 1], 'biofilm'),
+    opponents: [g('pmirabilis', '#ff9f43', ['F4', 'R'], [4, 2, 4, 5, 4, 1, 3])],
   },
   {
     name: 'Giftküche',
@@ -83,10 +83,10 @@ export const LEVELS = [
     name: 'Der Endgegner',
     desc: 'Clostridium botulinum: Sporen UND das stärkste Gift der Natur. Dazu zwei erfahrene Begleiter.',
     plate: { size: 'gross', distribution: 'gleichmaessig', amount: 'normal', regen: 'normal' },
-    boss: g('cbotulinum', '#ff5d5d', ['F2', 'Z'], [3, 3, 4, 5, 5, 1, 2], 'spores', { bonusSpecial: 'toxin' }),
+    boss: g('cbotulinum', '#ff5d5d', ['F2', 'Z'], [3, 2, 4, 4, 5, 1, 2], 'spores', { bonusSpecial: 'toxin' }),
     opponents: [
-      g('saureus', '#ffd23f', ['F', 'P2', 'R'], [3, 2, 4, 4, 4, 2, 2], 'toxin'),
-      g('ecoli', '#3fa9f5', ['F3', 'Z'], [4, 2, 4, 4, 4, 1, 2], 'none', { chemotaxis: 3 }),
+      g('saureus', '#ffd23f', ['F', 'P2', 'R'], [3, 2, 3, 4, 4, 2, 2], 'toxin'),
+      g('ecoli', '#3fa9f5', ['F3', 'Z'], [3, 2, 4, 4, 4, 1, 2], 'none', { chemotaxis: 2 }),
     ],
   },
 ];
