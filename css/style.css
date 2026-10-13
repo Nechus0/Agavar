@@ -540,3 +540,6 @@ body.has-resume .sticky-cta { bottom: calc(112px + env(safe-area-inset-bottom));
 /* all eight colours in one row */
 #ed-colors { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 6px; overflow: visible; margin: 0; padding: 0; }
 #ed-colors .swatch { width: auto; height: 44px; }
+
+/* Atlas photos in one style: monochrome micrograph look, tinted to the lab palette */
+.germ-card .pic img, .atlas-photo img { filter: grayscale(1) contrast(1.08) brightness(.95) sepia(.18) hue-rotate(40deg); }

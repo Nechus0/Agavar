@@ -2,7 +2,7 @@
 // author and licence, so the atlas can show (and credit) real microscope images.
 // Needs network access to en.wikipedia.org, commons.wikimedia.org and upload.wikimedia.org.
 // Usage: node tools/fetch-germ-photos.mjs   (writes img/germs/*.jpg and js/germ-photos.js)
-import { writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import { writeFileSync, mkdirSync, existsSync, rmSync } from 'node:fs';
 import { GERMS } from '../js/germs.js';
 import { PHOTOS } from '../js/germ-photos.js';
 
@@ -24,26 +24,58 @@ const strip = (html) => String(html || '').replace(/<[^>]*>/g, '').replace(/\s+/
 const OK = /^(public domain|pd|cc0|cc by(-sa)? \d|cc-by(-sa)?-\d)/i;
 
 mkdirSync('img/germs', { recursive: true });
-// photos that are already here are kept
-const photos = Object.fromEntries(Object.entries(PHOTOS).filter(([, p]) => existsSync(p.src)));
+// photos that are already here are kept (FORCE=1 fetches everything again)
+const force = process.env.FORCE === '1';
+if (force) { rmSync('img/germs', { recursive: true, force: true }); mkdirSync('img/germs', { recursive: true }); }
+const photos = force ? {} : Object.fromEntries(Object.entries(PHOTOS).filter(([, p]) => existsSync(p.src)));
+
+// Commons file info (url, licence, author) or null
+async function fileInfo(file) {
+  const info = await (await get(`https://commons.wikimedia.org/w/api.php?action=query&format=json&prop=imageinfo&iiprop=url|extmetadata|mime&iiurlwidth=480&titles=${encodeURIComponent(file)}`)).json();
+  const ii = Object.values(info.query.pages)[0]?.imageinfo?.[0];
+  if (!ii || !/image\/(jpeg|png)/.test(ii.mime || '')) return null;
+  const meta = ii.extmetadata || {};
+  const license = strip(meta.LicenseShortName?.value);
+  if (!OK.test(license)) return null;
+  return { ii, license, author: strip(meta.Artist?.value) || 'Unknown', desc: strip(meta.ImageDescription?.value) };
+}
+
+// One look for the whole atlas: prefer scanning electron micrographs (grey, 3-D cells).
+// A file only counts if its title names the germ and says it is an electron micrograph.
+const SEM = /\b(sem|scanning electron|electron micrograph|electron microscop|micrograph)/i;
+async function semPhoto(germ) {
+  const [genus, species] = germ.name.split(' ');
+  const must = (species || genus).toLowerCase();
+  for (const q of [`${germ.name} scanning electron micrograph`, `${germ.name} SEM`, `${germ.name} electron micrograph`]) {
+    const res = await (await get(`https://commons.wikimedia.org/w/api.php?action=query&format=json&list=search&srnamespace=6&srlimit=10&srsearch=${encodeURIComponent(q)}`)).json();
+    for (const hit of res.query?.search || []) {
+      const t = hit.title.toLowerCase();
+      if (!t.includes(must) || !t.includes(genus.toLowerCase().slice(0, 5))) continue;
+      const fi = await fileInfo(hit.title);
+      if (fi && (SEM.test(hit.title) || SEM.test(fi.desc))) return fi;
+    }
+  }
+  return null;
+}
+async function pagePhoto(germ) {
+  const title = encodeURIComponent(germ.name.replace(/ /g, '_'));
+  const page = await (await get(`https://en.wikipedia.org/w/api.php?action=query&format=json&redirects=1&prop=pageimages&piprop=name&titles=${title}`)).json();
+  const file = Object.values(page.query.pages)[0]?.pageimage;
+  return file ? fileInfo(`File:${file}`) : null;
+}
+
 for (const [key, germ] of Object.entries(GERMS)) {
   if (photos[key]) { console.log(`= ${germ.name}: already there`); continue; }
   try {
-    const title = encodeURIComponent(germ.name.replace(/ /g, '_'));
-    const page = await (await get(`https://en.wikipedia.org/w/api.php?action=query&format=json&redirects=1&prop=pageimages&piprop=name&titles=${title}`)).json();
-    const file = Object.values(page.query.pages)[0]?.pageimage;
-    if (!file) { console.log(`– ${germ.name}: no page image`); continue; }
-    const info = await (await get(`https://commons.wikimedia.org/w/api.php?action=query&format=json&prop=imageinfo&iiprop=url|extmetadata&iiurlwidth=480&titles=File:${encodeURIComponent(file)}`)).json();
-    const ii = Object.values(info.query.pages)[0]?.imageinfo?.[0];
-    if (!ii) { console.log(`– ${germ.name}: not on Commons`); continue; }
-    const meta = ii.extmetadata || {};
-    const license = strip(meta.LicenseShortName?.value);
-    if (!OK.test(license)) { console.log(`– ${germ.name}: licence "${license}" skipped`); continue; }
-    const img = Buffer.from(await (await get(ii.thumburl || ii.url)).arrayBuffer());
+    let style = 'sem';
+    let fi = await semPhoto(germ);
+    if (!fi) { style = 'other'; fi = await pagePhoto(germ); }
+    if (!fi) { console.log(`– ${germ.name}: no usable photo`); continue; }
+    const img = Buffer.from(await (await get(fi.ii.thumburl || fi.ii.url)).arrayBuffer());
     const out = `img/germs/${key}.jpg`;
     writeFileSync(out, img);
-    photos[key] = { src: out, author: strip(meta.Artist?.value) || 'Unknown', license, page: ii.descriptionurl };
-    console.log(`✓ ${germ.name}: ${license}`);
+    photos[key] = { src: out, author: fi.author, license: fi.license, page: fi.ii.descriptionurl, style };
+    console.log(`✓ ${germ.name}: ${style} · ${fi.license}`);
   } catch (e) {
     console.log(`✗ ${germ.name}: ${e.message}`);
   }
