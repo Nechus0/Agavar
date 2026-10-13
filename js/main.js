@@ -58,7 +58,7 @@ function meterBars(g, other = null, otherLabel = '') {
 function refreshSoundButtons() {
   const on = store.getSettings().sound !== false;
   setSoundEnabled(on);
-  document.querySelectorAll('.sound-toggle').forEach((b) => { b.textContent = on ? '🔊' : '🔇'; b.setAttribute('aria-pressed', String(on)); });
+  document.querySelectorAll('.sound-toggle').forEach((b) => { setToggle(b, on ? '🔊' : '🔇', on); });
 }
 document.addEventListener('click', (e) => {
   if (!e.target.closest('.sound-toggle')) return;
@@ -68,17 +68,25 @@ document.addEventListener('click', (e) => {
   play('tap');
 });
 
+// toggle buttons: plain icon, or a settings row with label and On/Off
+function setToggle(b, ico, on) {
+  b.setAttribute('aria-pressed', String(on));
+  b.classList.toggle('off', !on);
+  if (!b.dataset.label) { b.textContent = ico; return; }
+  fill(b, el('span', { class: 'set-label' }, `${ico} ${b.dataset.label}`), el('span', { class: `set-value ${on ? '' : 'muted'}` }, on ? 'On' : 'Off'));
+}
+
 // Music on/off (only plays during a simulation)
 const musicOn = () => store.getSettings().music !== false;
 function refreshMusicButtons() {
-  document.querySelectorAll('.music-toggle').forEach((b) => { b.classList.toggle('off', !musicOn()); b.setAttribute('aria-pressed', String(musicOn())); });
+  document.querySelectorAll('.music-toggle').forEach((b) => setToggle(b, '🎵', musicOn()));
 }
 document.addEventListener('click', (e) => {
   if (!e.target.closest('.music-toggle')) return;
   store.updateSettings({ music: !musicOn() });
   refreshMusicButtons();
   toast(musicOn() ? '🎵 Music on' : '🎵 Music off');
-  if (current === 'sim' && musicOn() && !run.paused) startMusic(); else stopMusic();
+  if (current === 'sim' && musicOn() && !run.paused && !run.sim.done) startMusic(); else stopMusic();
 });
 
 // Inhalt ersetzen, leere Einträge (null/false) überspringen
@@ -120,6 +128,11 @@ function go(id) {
   document.querySelectorAll('.screen').forEach((s) => (s.hidden = s.id !== id));
   current = id;
   window.scrollTo(0, 0);
+  // bottom bar only on the hub screens
+  const hub = ['home', 'atlas', 'awards', 'settings'].includes(id);
+  $('#bottom-nav').hidden = !hub;
+  document.body.classList.toggle('has-nav', hub);
+  document.querySelectorAll('#bottom-nav button').forEach((b) => b.classList.toggle('on', b.dataset.go === id));
   if (onEnter[id]) onEnter[id]();
 }
 
@@ -159,7 +172,7 @@ function startDemo() {
   const rng = makeRng(randomSeed());
   const genomes = [0, 1, 2].map((k) => ({ ...randomGenome(rng, 20), color: PALETTE[(k * 3 + rng.int(2)) % PALETTE.length] }));
   demo.sim = new Simulation({ genomes, size: 'klein', distribution: rng.pick(DISTRIBUTIONS), amount: 'normal', regen: 'normal', seed: randomSeed() });
-  demo.r = new PlateRenderer($('#hero-plate'), demo.sim);
+  demo.r = new PlateRenderer($('#hero-plate'), demo.sim, WORLDS[0].theme);
   demo.r.draw();
 }
 
@@ -177,13 +190,43 @@ function demoFrame(t) {
 }
 
 onEnter.home = () => {
-  $('#home-hint').hidden = store.getBacteria().length > 0;
+  renderContinue();
+  const unlocked = store.globalWon().includes(3);
+  $('#home-free').classList.toggle('locked', !unlocked);
+  $('#home-free').textContent = unlocked ? '🎲 Free play' : '🔒 Free play · after level 3';
   if (!demo.sim) startDemo();
   demo.last = 0;
   cancelAnimationFrame(demo.raf);
   demo.raf = requestAnimationFrame(demoFrame);
 };
 onLeave.home = () => cancelAnimationFrame(demo.raf);
+
+// "Continue": one tap to the next level of the bacterium you played last
+function renderContinue() {
+  const list = store.getBacteria();
+  if (!list.length) {
+    fill($('#home-continue'), el('button', { class: 'continue-card', onclick: () => openEditor(null, careerNewCtx('home')) },
+      el('span', { class: 'cc-play' }, '＋'),
+      el('span', { class: 'cc-text' }, el('b', {}, 'Create your bacterium'), el('small', {}, 'Design it, then start your career on the skin'))));
+    return;
+  }
+  const b = list.find((x) => x.id === store.getSettings().lastCareer) || list[0];
+  const n = nextLevel(b.career.won, LEVELS.length);
+  const done = n > LEVELS.length;
+  fill($('#home-continue'), el('button', {
+    class: 'continue-card',
+    onclick: () => { careerId = b.id; if (done) go('career'); else openLevel(n); },
+  },
+  el('span', { class: 'cc-play' }, done ? '🏆' : '▶'),
+  el('span', { class: 'cc-text' },
+    el('b', {}, done ? 'All levels done!' : 'Continue'),
+    el('small', {}, done ? `${b.name} beat every level so far` : `${worldOfLevel(n).icon} Level ${n} · ${LEVELS[n - 1].name}`),
+    el('small', { class: 'cc-who' }, el('i', { class: 'dot', style: `background:${b.color}` }), b.name))));
+}
+$('#home-free').addEventListener('click', () => {
+  if (store.globalWon().includes(3)) go('setup');
+  else toast('🔒 Free play unlocks when you win level 3.');
+});
 
 $('#home-career').addEventListener('click', () => {
   if (!store.getBacteria().length) openEditor(null, careerNewCtx('home'));
@@ -227,6 +270,7 @@ const curCareer = () => store.getBacterium(careerId);
 
 function openCareer(id) {
   careerId = id;
+  store.updateSettings({ lastCareer: id });
   go('career');
 }
 
@@ -348,12 +392,16 @@ onEnter['level-detail'] = () => {
     meterBars(normalize(b), boss, boss.name.split(' ')[0]),
     probs.length ? el('p', { class: 'small warn' }, '⚠ ', probs.join(' · ')) : null);
   $('#ld-start').disabled = probs.length > 0;
+  const coach = $('#ld-coach');
+  coach.hidden = n !== 1 || won.includes(1);
+  coach.textContent = 'Tap Start and watch – your bacterium plays on its own. Use 5× or 10× to fast-forward. Win to unlock new abilities.';
 };
 
 $('#ld-start').addEventListener('click', () => {
   const b = curCareer();
   if (!b) return;
   const lv = LEVELS[openLevelNo - 1];
+  store.updateSettings({ lastCareer: b.id });
   startMatch({ mode: 'level', level: openLevelNo, careerId: b.id, player: b, opponents: levelOpponents(lv), ...lv.plate, seed: randomSeed() });
 });
 
@@ -375,6 +423,10 @@ function openEditor(b, ctx) {
   if (!ed.move) { ed.move = { type: 'gerade', size: 0, dir: 'R' }; ed.program = ['F']; }
   $('#ed-title').textContent = ctx.mode === 'free' ? 'Free play' : b ? 'Upgrade' : 'New bacterium';
   colony.sim = null;
+  // first bacterium: show the four steps once
+  const coach = $('#ed-coach');
+  coach.hidden = !!b || ctx.mode !== 'career';
+  coach.textContent = 'Your first bacterium: ① name & colour · ② movement · ③ spend points under Traits · ④ Save';
   showTab('move');
   go('editor');
   renderEditor();
@@ -775,7 +827,6 @@ function startMatch(cfg) {
   run.ev = { contact: false, dead: new Set(), leader: 0, leaderTick: -999, slow: false, sixH: false };
   resetBanners();
   clearTimeout(run.endTimer);
-  $('#sim-pause').textContent = '⏸';
   $('#sim-title').textContent = cfg.mode === 'level' ? `${worldOfLevel(cfg.level).icon} Level ${cfg.level}` : 'Free play';
   fill($('#sim-shares'), ...run.genomes.map((g) => el('div', { style: `background:${g.color}` })));
   fill($('#sim-legend'), ...run.genomes.map((g, i) => el('div', { class: 'legend-row' },
@@ -847,21 +898,39 @@ $('#sim-speed').addEventListener('click', (e) => {
   const b = e.target.closest('button[data-speed]');
   if (b) setSpeed(Number(b.dataset.speed));
 });
-$('#sim-pause').addEventListener('click', () => {
-  run.paused = !run.paused;
-  $('#sim-pause').textContent = run.paused ? '▶' : '⏸';
-  if (run.paused) stopMusic(); else if (musicOn()) startMusic();
-});
-$('#sim-quit').addEventListener('click', async () => {
-  const wasPaused = run.paused;
+// Pause menu: resume, restart, sound settings, quit
+function openPause() {
+  if (current !== 'sim' || run.sim.done) return;
   run.paused = true;
-  if (run.sim.done || await confirmDialog('Quit simulation?', 'The current game will be cancelled.', 'Quit')) {
-    clearTimeout(run.endTimer);
-    go(run.cfg.mode === 'level' ? 'level-detail' : 'setup');
-  } else run.paused = wasPaused;
+  stopMusic();
+  $('#pause-modal').hidden = false;
+  document.body.classList.add('modal-open');
+}
+function closePause(resume = true) {
+  $('#pause-modal').hidden = true;
+  document.body.classList.remove('modal-open');
+  if (resume) { run.paused = false; run.last = 0; if (musicOn()) startMusic(); }
+}
+$('#sim-pause').addEventListener('click', openPause);
+$('#pm-resume').addEventListener('click', () => closePause(true));
+$('#pm-restart').addEventListener('click', () => { closePause(false); startMatch({ ...run.cfg, seed: randomSeed() }); });
+$('#pm-quit').addEventListener('click', () => {
+  closePause(false);
+  clearTimeout(run.endTimer);
+  go(run.cfg.mode === 'level' ? 'level-detail' : 'setup');
 });
 onLeave.sim = () => { cancelAnimationFrame(run.raf); stopMusic(); };
-document.addEventListener('visibilitychange', () => { run.last = 0; demo.last = 0; });
+// leaving the app (call, home button …) pauses the game automatically
+document.addEventListener('visibilitychange', () => {
+  run.last = 0; demo.last = 0;
+  if (document.hidden) openPause();
+});
+
+$('#set-reset').addEventListener('click', async () => {
+  if (!await confirmDialog('Reset all progress?', 'All bacteria, stars, atlas entries and achievements will be deleted. This cannot be undone.', 'Delete everything')) return;
+  localStorage.removeItem('agava.v2');
+  location.reload();
+});
 
 // ---------- Ergebnis ----------
 function showResult() {
@@ -1046,3 +1115,4 @@ go('home');
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
   navigator.serviceWorker.register('sw.js').catch(() => {});
 }
+onEnter.awards = () => onEnter.atlas();
