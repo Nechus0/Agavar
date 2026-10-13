@@ -3,76 +3,104 @@
 
 export const GERMS = {
   sepidermidis: {
-    name: 'Staphylococcus epidermidis', shape: 'cluster',
+    name: 'Staphylococcus epidermidis', shape: 'cluster', home: 'Healthy skin everywhere',
     fact: 'Lives on the skin of every human. It has no flagella and cannot move on its own – it simply grows where it is.',
   },
   mluteus: {
-    name: 'Micrococcus luteus', shape: 'tetrad',
+    name: 'Micrococcus luteus', shape: 'tetrad', home: 'Skin, dust and air',
     fact: 'Forms bright yellow colonies and usually sits in groups of four. It cannot move.',
   },
   mxanthus: {
-    name: 'Myxococcus xanthus', shape: 'myxo',
+    name: 'Myxococcus xanthus', shape: 'myxo', home: 'Soil',
     fact: 'Glides across surfaces in swarms, regularly reverses direction and hunts other bacteria as a pack.',
   },
   ecoli: {
-    name: 'Escherichia coli', shape: 'peritrich',
+    name: 'Escherichia coli', shape: 'peritrich', home: 'Gut – and unwashed hands',
     fact: 'Swims straight for a while with its flagella, then “tumbles” into a random new direction – this is called run-and-tumble.',
   },
   lacidophilus: {
-    name: 'Lactobacillus acidophilus', shape: 'chain',
+    name: 'Lactobacillus acidophilus', shape: 'chain', home: 'Yoghurt and the gut',
     fact: 'A lactic acid bacterium from yoghurt and the gut. The lactic acid it makes holds back many other bacteria.',
   },
   pputida: {
-    name: 'Pseudomonas putida', shape: 'polar',
+    name: 'Pseudomonas putida', shape: 'polar', home: 'Soil and water',
     fact: 'Can “smell” nutrients and swims straight towards them (chemotaxis). It can even break down parts of crude oil.',
   },
   kpneumoniae: {
-    name: 'Klebsiella pneumoniae', shape: 'capsule',
+    name: 'Klebsiella pneumoniae', shape: 'capsule', home: 'Gut, hospitals, lungs',
     fact: "Wraps itself in a thick slime capsule that attackers – and even the body's immune cells – slide off.",
   },
   synechococcus: {
-    name: 'Synechococcus elongatus', shape: 'cyano',
+    name: 'Synechococcus elongatus', shape: 'cyano', home: 'Lakes, ponds and oceans',
     fact: 'A cyanobacterium that does photosynthesis like a plant. Billions of years ago, cyanobacteria put the oxygen into our air.',
   },
   bdellovibrio: {
-    name: 'Bdellovibrio bacteriovorus', shape: 'predator',
+    name: 'Bdellovibrio bacteriovorus', shape: 'predator', home: 'Soil and water',
     fact: 'A predatory bacterium: it rams other bacteria, drills inside and eats them from within.',
   },
   pmirabilis: {
-    name: 'Proteus mirabilis', shape: 'swarmer',
+    name: 'Proteus mirabilis', shape: 'swarmer', home: 'Gut, wounds, urinary tract',
     fact: 'Swarms across agar plates in rhythmic waves and leaves typical ring patterns behind.',
   },
   smarcescens: {
-    name: 'Serratia marcescens', shape: 'rod',
+    name: 'Serratia marcescens', shape: 'rod', home: 'Water, soil, bathrooms and wounds',
     fact: 'Makes a bright red pigment, prodigiosin, which can harm other microbes.',
   },
   bsubtilis: {
-    name: 'Bacillus subtilis', shape: 'spore',
+    name: 'Bacillus subtilis', shape: 'spore', home: 'Soil',
     fact: 'When food runs out, it forms extremely tough spores that survive heat, drought and many years.',
   },
   vcholerae: {
-    name: 'Vibrio cholerae', shape: 'comma',
+    name: 'Vibrio cholerae', shape: 'comma', home: 'Salty coastal water',
     fact: 'Comma-shaped and, with a single flagellum, one of the fastest swimmers among bacteria.',
   },
   hpylori: {
-    name: 'Helicobacter pylori', shape: 'helix',
+    name: 'Helicobacter pylori', shape: 'helix', home: 'The stomach',
     fact: 'Corkscrew-shaped – it screws its way through the mucus of the stomach wall. About half of all people carry it.',
   },
   paeruginosa: {
-    name: 'Pseudomonas aeruginosa', shape: 'polar',
+    name: 'Pseudomonas aeruginosa', shape: 'polar', home: 'Water, burns and hospitals',
     fact: 'A biofilm master: inside its slime layer it can be up to a thousand times more resistant to antibiotics.',
   },
   bcereus: {
-    name: 'Bacillus cereus', shape: 'spore',
+    name: 'Bacillus cereus', shape: 'spore', home: 'Soil and old rice',
     fact: 'Forms spores that even survive cooking – that is why it can cause food poisoning in reheated rice.',
   },
   saureus: {
-    name: 'Staphylococcus aureus', shape: 'cluster',
+    name: 'Staphylococcus aureus', shape: 'cluster', home: 'Nose and skin – and infected wounds',
     fact: 'Makes many toxins that attack other cells. About one in three people carries it unnoticed in their nose.',
   },
   cbotulinum: {
-    name: 'Clostridium botulinum', shape: 'drumstick',
+    name: 'Clostridium botulinum', shape: 'drumstick', home: 'Soil and badly canned food',
     fact: 'Forms spores and botulinum toxin – one of the strongest poisons known.',
+  },
+  acinetobacter: {
+    name: 'Acinetobacter johnsonii', shape: 'rod', home: 'Healthy skin',
+    fact: 'Has no flagella, but pulls itself along with tiny hooks called pili – a jerky movement known as twitching.',
+  },
+  spyogenes: {
+    name: 'Streptococcus pyogenes', shape: 'chain', home: 'Throat and skin',
+    fact: 'Grows in chains and wears a slime capsule. It causes sore throats and the skin infection impetigo.',
+  },
+  corynebacterium: {
+    name: 'Corynebacterium', shape: 'rod', home: 'Armpits and other warm, damp skin',
+    fact: 'Fresh sweat has no smell – Corynebacterium breaks it down into the molecules that make armpits smell.',
+  },
+  ctetani: {
+    name: 'Clostridium tetani', shape: 'drumstick', home: 'Soil, dust – and deep cuts',
+    fact: 'Its spores wait in soil and rust for years. In a deep, airless wound they wake up and make the toxin that causes tetanus.',
+  },
+  borrelia: {
+    name: 'Borrelia burgdorferi', shape: 'helix', home: 'Ticks – and the skin after a tick bite',
+    fact: 'A corkscrew-shaped spirochete carried by ticks. After a bite it spreads through the skin as a growing red ring.',
+  },
+  abaumannii: {
+    name: 'Acinetobacter baumannii', shape: 'capsule', home: 'Wounds and hospitals',
+    fact: 'A tough relative of the harmless skin Acinetobacter. It survives on dry surfaces for months and resists many antibiotics.',
+  },
+  cperfringens: {
+    name: 'Clostridium perfringens', shape: 'spore', home: 'Soil, gut – and deep wounds',
+    fact: 'One of the fastest-growing bacteria: it can double in about 10 minutes. In deep wounds its toxins cause gas gangrene.',
   },
 };
 

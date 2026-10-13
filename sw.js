@@ -1,10 +1,10 @@
 // Service Worker: macht Agava offline spielbar.
 // Strategie: erst Netzwerk (immer aktuell), bei fehlender Verbindung aus dem Cache.
-const CACHE = 'agava-v12';
+const CACHE = 'agava-v14';
 const ASSETS = [
   './', 'index.html', 'css/style.css', 'manifest.webmanifest',
   'js/main.js', 'js/sim.js', 'js/genome.js', 'js/levels.js', 'js/storage.js',
-  'js/render.js', 'js/rng.js', 'js/names.js', 'js/icons.js', 'js/progression.js', 'js/germs.js', 'js/movement.js', 'js/insights.js', 'js/meters.js', 'js/sound.js', 'js/music.js',
+  'js/render.js', 'js/rng.js', 'js/names.js', 'js/icons.js', 'js/progression.js', 'js/germs.js', 'js/movement.js', 'js/insights.js', 'js/meters.js', 'js/sound.js', 'js/music.js', 'js/worlds.js', 'js/germ-photos.js',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png',
 ];
 

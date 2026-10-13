@@ -16,12 +16,15 @@ export const UNLOCKS = [
   { after: 2, steps: ['B'], programMax: 5 },
   { after: 3, steps: ['Z'] },
   { after: 4, specials: ['capsule'] },
-  { after: 5, specials: ['photo'], repeat: true, programMax: 6 },
+  { after: 5, repeat: true, programMax: 6 },
   { after: 6, specials: ['spores'] },
-  { after: 7, specials: ['predator'], steps: ['M'] },
+  { after: 7, steps: ['M'] },
   { after: 8, specials: ['biofilm'] },
   { after: 9, specials: ['toxin'] },
-  { after: 10, title: 'Master of the Agar Plate' },
+  { after: 10, title: 'Wound Healer' },
+  // later worlds (see docs/WORLDS.md): Photosynthesis in Water, Predator in Soil
+  { after: 45, specials: ['photo'] },
+  { after: 65, specials: ['predator'] },
 ];
 
 export function getLimits(won) {

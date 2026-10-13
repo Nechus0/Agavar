@@ -19,6 +19,8 @@ import { MOVES, MOVE_BY_KEY, actionsOf, compile, moveFromProgram, describeMove, 
 import * as store from './storage.js';
 import { meters, METER_INFO, counterTips } from './meters.js';
 import { play, setSoundEnabled } from './sound.js';
+import { PHOTOS } from './germ-photos.js';
+import { WORLDS, EXPANSIONS, LEVELS_PER_WORLD, worldOfLevel } from './worlds.js';
 import { startMusic, stopMusic } from './music.js';
 
 const $ = (sel) => document.querySelector(sel);
@@ -103,7 +105,7 @@ const specialTag = (key) => el('span', { class: 'sp-tag', style: `--c:${SPECIAL_
 
 const LABELS = {
   size: { klein: 'Small', mittel: 'Medium', gross: 'Large' },
-  distribution: { gleichmaessig: 'Even', flecken: 'Patches', ring: 'Ring', zentrum: 'Center', rauschen: 'Noise' },
+  distribution: { gleichmaessig: 'Even', flecken: 'Patches', ring: 'Ring', zentrum: 'Center', rauschen: 'Noise', poren: 'Pores', schnitt: 'Cut' },
   amount: { wenig: 'Little', normal: 'Normal', viel: 'Lots' },
   regen: { aus: 'Off', langsam: 'Slow', normal: 'Normal', schnell: 'Fast' },
 };
@@ -245,6 +247,19 @@ onEnter.career = () => {
       free > 0 ? `🔧 Upgrade · ${free} ${free === 1 ? 'point' : 'points'} free` : '🔧 Upgrade'));
 
   const nxt = nextLevel(won, LEVELS.length);
+  const w = WORLDS[0];
+  fill($('#cr-world'),
+    el('div', { class: 'world-head', style: `--accent-w:${w.theme.accent}` },
+      el('span', { class: 'world-ico' }, w.icon),
+      el('div', {}, el('small', {}, `World ${w.n}`), el('b', {}, w.name), el('span', { class: 'small muted' }, w.tagline)),
+      el('span', { class: 'world-count' }, `${won.length}/${LEVELS_PER_WORLD}`)));
+  fill($('#cr-next-worlds'),
+    el('h3', {}, 'Coming next'),
+    el('div', { class: 'world-strip' }, WORLDS.slice(1).map((x) => el('button', {
+      class: 'world-chip', style: `--accent-w:${x.theme.accent}`,
+      onclick: () => toast(`${x.icon} ${x.name}: ${x.tagline}. Coming soon!`),
+    }, el('span', {}, x.icon), el('small', {}, x.name)))),
+    el('p', { class: 'small muted' }, 'Later: ', EXPANSIONS.map((x) => `${x.icon} ${x.name}`).join(' · ')));
   fill($('#cr-levels'), ...LEVELS.map((lv, i) => {
     const n = i + 1;
     const isWon = won.includes(n);
@@ -260,7 +275,8 @@ onEnter.career = () => {
     el('span', { class: 'lt-name' }, lv.name),
     isWon ? el('span', { class: 'lt-stars' }, starsText(b.career.stars[n] || 0))
       : el('span', { class: 'lt-rewards' }, rewardsOf(n).map((r) => rewardIcon(r))));
-  }));
+  }),
+  el('div', { class: 'level-tile soon' }, el('span', { class: 'lt-num' }, `${LEVELS.length + 1}–${LEVELS_PER_WORLD}`), el('span', { class: 'lt-soon' }, '🚧'), el('span', { class: 'lt-name' }, 'More skin levels coming soon')));
 };
 
 $('#cr-delete').addEventListener('click', async () => {
@@ -305,7 +321,7 @@ onEnter['level-detail'] = () => {
   const lv = LEVELS[n - 1];
   const [boss, ...others] = levelOpponents(lv);
   const won = b.career.won;
-  $('#ld-title').textContent = `Level ${n}`;
+  $('#ld-title').textContent = `${worldOfLevel(n).icon} Level ${n}`;
   fill($('#ld-desc'), el('b', {}, lv.name), ' – ', lv.desc);
   const pl = lv.plate;
   fill($('#ld-foes'),
@@ -750,7 +766,9 @@ function startMatch(cfg) {
     genomes: run.genomes, size: cfg.size, distribution: cfg.distribution,
     amount: cfg.amount, regen: cfg.regen, seed: cfg.seed,
   });
-  run.r = new PlateRenderer($('#plate'), run.sim);
+  const theme = cfg.mode === 'level' ? worldOfLevel(cfg.level).theme : null;
+  run.r = new PlateRenderer($('#plate'), run.sim, theme);
+  $('#plate').style.setProperty('--rim', theme ? theme.rim : '');
   run.paused = false;
   run.acc = 0;
   run.last = 0;
@@ -758,7 +776,7 @@ function startMatch(cfg) {
   resetBanners();
   clearTimeout(run.endTimer);
   $('#sim-pause').textContent = '⏸';
-  $('#sim-title').textContent = cfg.mode === 'level' ? `Level ${cfg.level}` : 'Free play';
+  $('#sim-title').textContent = cfg.mode === 'level' ? `${worldOfLevel(cfg.level).icon} Level ${cfg.level}` : 'Free play';
   fill($('#sim-shares'), ...run.genomes.map((g) => el('div', { style: `background:${g.color}` })));
   fill($('#sim-legend'), ...run.genomes.map((g, i) => el('div', { class: 'legend-row' },
     el('span', { class: 'dot', style: `background:${g.color}` }),
@@ -951,15 +969,27 @@ onEnter.atlas = () => {
   const found = new Set(store.getAtlas());
   const list = atlasGerms();
   $('#atlas-count').textContent = `${list.filter((g) => found.has(g.germ)).length} of ${list.length} germs discovered`;
-  fill($('#atlas-list'), ...list.map((g) => {
+  const card = (g) => {
     const known = found.has(g.germ);
     const germ = GERMS[g.germ];
     return el('div', { class: `atlas-card ${known ? '' : 'unknown'}` },
       germPic(g.germ, known ? g.color : '#3a4554', 'atlas-pic'),
       el('div', { class: 'atlas-text' },
         el('b', {}, known ? germ.name : '???'),
+        known ? el('p', { class: 'small atlas-home' }, '📍 ', germ.home) : null,
+        known && PHOTOS[g.germ] ? el('figure', { class: 'atlas-photo' },
+          el('img', { src: PHOTOS[g.germ].src, alt: germ.name, loading: 'lazy' }),
+          el('figcaption', {}, `Photo: ${PHOTOS[g.germ].author} · ${PHOTOS[g.germ].license} · Wikimedia Commons`)) : null,
         known ? el('p', { class: 'small' }, germ.fact) : el('p', { class: 'small muted' }, `Beat level ${g.level} to discover this germ.`),
         known && g.ability.length ? el('p', { class: 'small atlas-ability' }, 'Unlocks: ', g.ability.map((r) => r.text).join(', ')) : null));
+  };
+  fill($('#atlas-list'), ...WORLDS.map((w) => {
+    const germs = list.filter((g) => worldOfLevel(g.level).n === w.n);
+    const head = el('div', { class: 'world-head small-head', style: `--accent-w:${w.theme.accent}` },
+      el('span', { class: 'world-ico' }, w.icon),
+      el('div', {}, el('small', {}, `World ${w.n}`), el('b', {}, w.name), el('span', { class: 'small muted' }, w.playable ? w.habitat : 'Coming soon')),
+      w.playable ? el('span', { class: 'world-count' }, `${germs.filter((g) => found.has(g.germ)).length}/${germs.length}`) : el('span', { class: 'world-count' }, '🔒'));
+    return el('section', { class: `atlas-world ${w.playable ? '' : 'locked'}` }, head, ...germs.map(card));
   }));
   const got = ACHIEVEMENTS.filter((a) => store.hasAchievement(a.key)).length;
   $('#ach-count').textContent = `${got} of ${ACHIEVEMENTS.length} achievements`;

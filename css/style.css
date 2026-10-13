@@ -657,3 +657,28 @@ body.modal-open { overflow: hidden; }
 .lt-name { font-size: 12px; font-weight: 700; text-align: center; line-height: 1.2; }
 .lt-stars { color: var(--accent); font-size: 13px; letter-spacing: 1px; }
 .lt-rewards { display: flex; gap: 4px; min-height: 16px; }
+
+/* Worlds */
+#plate { box-shadow: 0 0 0 6px var(--rim, #232b36), 0 0 0 7px #3a4554, 0 18px 40px rgba(0,0,0,.5); }
+.world-head { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: var(--radius); border: 1px solid var(--accent-w); background: linear-gradient(120deg, color-mix(in srgb, var(--accent-w) 22%, var(--card)), var(--card) 70%); }
+.world-head > div { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; flex: 1; }
+.world-head small { color: var(--accent-w); font-weight: 800; text-transform: uppercase; letter-spacing: .06em; font-size: 11px; }
+.world-head b { font-size: 18px; }
+.world-ico { font-size: 30px; line-height: 1; }
+.world-count { font-weight: 800; color: var(--accent-w); font-size: 14px; }
+.small-head { padding: 10px 12px; }
+.small-head b { font-size: 16px; }
+.world-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.world-chip { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 2px; border-radius: 12px; border: 1px dashed color-mix(in srgb, var(--accent-w) 60%, transparent); background: var(--card2); color: var(--muted); font: inherit; cursor: pointer; }
+.world-chip span { font-size: 22px; filter: grayscale(.6); opacity: .8; }
+.world-chip small { font-size: 11px; font-weight: 600; }
+.atlas-world { display: flex; flex-direction: column; gap: 8px; }
+.atlas-world + .atlas-world { margin-top: 10px; }
+.atlas-world.locked .world-head { opacity: .55; border-style: dashed; }
+.atlas-home { color: var(--accent); margin: 2px 0; }
+.level-tile.soon { grid-column: span 2; border-style: dashed; opacity: .6; cursor: default; justify-content: center; }
+.lt-soon { font-size: 28px; margin-top: 6px; }
+.world-strip { grid-template-columns: repeat(4, 1fr); }
+.atlas-photo { margin: 6px 0; }
+.atlas-photo img { width: 100%; max-height: 180px; object-fit: cover; border-radius: 10px; display: block; }
+.atlas-photo figcaption { font-size: 10px; color: var(--muted); margin-top: 3px; }

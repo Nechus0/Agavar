@@ -6,7 +6,7 @@ import { parseStep } from './genome.js';
 export const PLATE_SIZES = { klein: 100, mittel: 140, gross: 180 };
 export const NUTRIENT_AMOUNTS = { wenig: 45, normal: 70, viel: 100 };
 export const NUTRIENT_REGEN = { aus: 0, langsam: 0.06, normal: 0.15, schnell: 0.3 };
-export const DISTRIBUTIONS = ['gleichmaessig', 'flecken', 'ring', 'zentrum', 'rauschen'];
+export const DISTRIBUTIONS = ['gleichmaessig', 'flecken', 'ring', 'zentrum', 'rauschen', 'poren', 'schnitt'];
 
 export const MAX_TICKS = 4000;
 const MAX_ENERGY = 100;
@@ -163,6 +163,15 @@ export class Simulation {
         blobs.push([Math.cos(a) * d, Math.sin(a) * d, 0.12 + rng() * 0.16]);
       }
     }
+    // skin: many small rich spots (pores, sweat glands) on a thinner base
+    if (dist === 'poren') {
+      for (let k = 0; k < 34; k++) {
+        const a = rng() * Math.PI * 2, d = Math.sqrt(rng()) * 0.95;
+        blobs.push([Math.cos(a) * d, Math.sin(a) * d, 0.05 + rng() * 0.04]);
+      }
+    }
+    // skin: a cut – a rich stripe of blood and plasma across the plate
+    const cutAngle = dist === 'schnitt' ? rng() * Math.PI : 0;
     let cells = 0;
     for (let y = 0; y < N; y++) {
       for (let x = 0; x < N; x++) {
@@ -172,10 +181,13 @@ export class Simulation {
         this.inPlate[i] = 1;
         cells++;
         let f;
-        if (dist === 'flecken') {
-          f = 0.12;
+        if (dist === 'flecken' || dist === 'poren') {
+          f = dist === 'poren' ? 0.42 : 0.12;
           for (const [bx, by, br] of blobs) f += Math.exp(-(((nx - bx) ** 2 + (ny - by) ** 2) / (br * br)));
           f = Math.min(1, f);
+        } else if (dist === 'schnitt') {
+          const off = nx * Math.sin(cutAngle) - ny * Math.cos(cutAngle);
+          f = 0.3 + 0.7 * Math.exp(-((off / 0.2) ** 2));
         } else {
           f = nutrientField(dist, nx, ny, rng);
         }

@@ -99,7 +99,7 @@ test('Karriere: Startpunkte, Punkte pro Sieg, nächstes Level', () => {
   assert.equal(nextLevel([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 10), 11);
 });
 
-test('Freischalten: am Anfang eingeschränkt, nach allen Leveln alles offen', () => {
+test('Freischalten: am Anfang eingeschränkt, nach Welt 1 die Haut-Fähigkeiten offen', () => {
   const start = getLimits([]);
   assert.ok(!start.specials.has('capsule'));
   assert.ok(!start.steps.has('Z') && !start.steps.has('P'));
@@ -108,7 +108,9 @@ test('Freischalten: am Anfang eingeschränkt, nach allen Leveln alles offen', ()
   const all = getLimits([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
   assert.equal(all.programMax, 6);
   assert.ok(all.repeat);
-  for (const k of ['spores', 'capsule', 'photo', 'predator', 'biofilm', 'toxin']) assert.ok(all.specials.has(k));
+  for (const k of ['spores', 'capsule', 'biofilm', 'toxin']) assert.ok(all.specials.has(k));
+  // Photosynthese und Räuber gibt es erst in späteren Welten (Teich, Boden)
+  assert.ok(!all.specials.has('photo') && !all.specials.has('predator'));
   for (const k of ['P', 'B', 'Z', 'M']) assert.ok(all.steps.has(k));
   assert.equal(unlockLevelOf('special', 'toxin'), 9);
 });

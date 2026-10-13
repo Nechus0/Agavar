@@ -8,17 +8,23 @@ export function hexToRgb(hex) {
 // Farbverlauf für den Nährboden: leergefressen (dunkel) bis satt (helles Agar-Gelb).
 const AGAR_LO = [38, 30, 22];
 const AGAR_HI = [214, 178, 96];
-const AGAR = new Uint8Array(101 * 3);
 const TOXIN = [190, 255, 60]; // giftgrüne Wolke
 const BITE = [255, 40, 60]; // rote Fraßspur
-for (let v = 0; v <= 100; v++) {
-  const t = Math.pow(v / 100, 0.8);
-  for (let c = 0; c < 3; c++) AGAR[v * 3 + c] = Math.round(AGAR_LO[c] + (AGAR_HI[c] - AGAR_LO[c]) * t);
+// food colour table for a world theme ({ lo, hi } as RGB); default is classic agar
+function foodPalette(theme) {
+  const lo = theme?.lo || AGAR_LO, hi = theme?.hi || AGAR_HI;
+  const pal = new Uint8Array(101 * 3);
+  for (let v = 0; v <= 100; v++) {
+    const t = Math.pow(v / 100, 0.8);
+    for (let c = 0; c < 3; c++) pal[v * 3 + c] = Math.round(lo[c] + (hi[c] - lo[c]) * t);
+  }
+  return pal;
 }
 
 export class PlateRenderer {
-  constructor(canvas, sim) {
+  constructor(canvas, sim, theme = null) {
     this.canvas = canvas;
+    this.food = foodPalette(theme);
     this.sim = sim;
     canvas.width = sim.N;
     canvas.height = sim.N;
@@ -28,7 +34,7 @@ export class PlateRenderer {
   }
 
   draw() {
-    const { sim, img, colors } = this;
+    const { sim, img, colors, food } = this;
     const d = img.data;
     const { owner, energy, nutrient, inPlate, spore, still, fog, bite, shield, N } = sim;
     const biofilm = sim.players.map((p) => p.ph.biofilm);
@@ -58,7 +64,7 @@ export class PlateRenderer {
         if (fog[i]) { const t = fog[i] / 20; d[k] += (TOXIN[0] - d[k]) * t; d[k + 1] += (TOXIN[1] - d[k + 1]) * t; d[k + 2] += (TOXIN[2] - d[k + 2]) * t; }
       } else {
         const v = Math.min(100, nutrient[i] | 0) * 3;
-        let r = AGAR[v], g = AGAR[v + 1], b = AGAR[v + 2];
+        let r = food[v], g = food[v + 1], b = food[v + 2];
         if (fog[i]) { const t = fog[i] / 12; r += (TOXIN[0] - r) * t; g += (TOXIN[1] - g) * t; b += (TOXIN[2] - b) * t; }
         if (bite[i]) { const t = bite[i] / 14; r += (BITE[0] - r) * t; g += (BITE[1] - g) * t; b += (BITE[2] - b) * t; }
         d[k] = r; d[k + 1] = g; d[k + 2] = b;

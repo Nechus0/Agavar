@@ -49,7 +49,9 @@
     <section class="screen" id="career" hidden>
       <header class="bar"><button class="back" data-go="careers">‹ Career</button><h2 id="cr-title">Bacterium</h2><span></span></header>
       <div class="card" id="cr-card"></div>
+      <div id="cr-world"></div>
       <div id="cr-levels" class="level-grid"></div>
+      <div class="card" id="cr-next-worlds"></div>
       <button class="btn ghost danger" id="cr-delete">Delete bacterium</button>
     </section>
 
@@ -137,7 +139,6 @@
         <button class="btn ctrl" id="sim-pause">⏸</button>
         <div class="seg" id="sim-speed">
           <button data-speed="1" class="on">1×</button>
-          <button data-speed="2">2×</button>
           <button data-speed="5">5×</button>
           <button data-speed="10">10×</button>
         </div>
@@ -181,6 +182,7 @@
       <header class="bar"><button class="back" data-go="home">‹ Back</button><h2>Atlas &amp; achievements</h2><span></span></header>
       <div class="card">
         <h3>Bacteria atlas</h3>
+        <p class="small muted">Every germ you beat goes here – sorted by the world it lives in.</p>
         <p class="small muted" id="atlas-count"></p>
         <div id="atlas-list" class="atlas-list"></div>
       </div>
@@ -198,7 +200,9 @@
         <h3>What is it about?</h3>
         <p>You design a bacterium and put it on an agar plate with opponents. After that everything runs on its own – you can only watch (and fast-forward). Whoever is left at the end wins.</p>
         <h3>Career</h3>
-        <p>Each of your bacteria has its own career. It starts with only 6 upgrade points and the simplest movements. Every level has a special opponent – a real germ with a typical ability. Beat it and your bacterium gets 2 new upgrade points and may use that ability from now on (e.g. spores from Bacillus subtilis or toxins from Staphylococcus aureus). You can redistribute your points at any time.</p>
+        <p>Each of your bacteria has its own career. It starts with only 6 upgrade points and the simplest movements. Every level has a special opponent – a real germ with a typical ability. Beat it and your bacterium gets 2 new upgrade points and may use that ability from now on (e.g. spores from Clostridium tetani or toxins from Staphylococcus aureus). You can redistribute your points at any time.</p>
+        <h3>Worlds</h3>
+        <p>The career leads through ten worlds, each a real habitat with its own germs and its own look. You start on the <b>skin</b>: from harmless skin germs to an infected wound. Mouth, gut, kitchen, pond, soil, ocean, hospital, hot springs and finally the bloodstream will follow.</p>
         <h3>Stars, atlas and achievements</h3>
         <p>Every level has three stars: for winning, for a fast win (under 12 h) and for covering 25 % of the plate at some point. All three give a bonus point. Every germ you beat goes into your atlas with a picture and a fact, and special feats earn achievements.</p>
         <h3>Free play</h3>
@@ -206,7 +210,7 @@
         <h3>What happens on the plate?</h3>
         <p>Every coloured pixel is a bacterial cell. Cells eat the medium below them (bright yellow = lots of food, dark = eaten up), move according to their pattern, divide when they have enough energy, and die of hunger or old age. When a cell runs into an enemy, they fight: <b>attack</b> against <b>defense</b> plus a little luck.</p>
         <h3>Spotting special abilities</h3>
-        <p><b>Capsule</b>: cells look brighter while their slime layer is intact – they survive one deadly attack. <b>Photosynthesis</b>: cells shimmer and gain energy from light. <b>Predator</b>: red bite marks show where enemies were eaten. <b>Spores</b> are pale, almost white dots. <b>Biofilm</b> is a dark, patterned mat. <b>Toxins</b> show as a toxic green cloud around the colony.</p><p><b>Chemotaxis</b> is not a special ability but a trait (level 0–4): the higher it is, the more often cells head straight for food.</p>
+        <p><b>Capsule</b>: cells look brighter while their slime layer is intact – they survive one deadly attack. <b>Spores</b> are pale, almost white dots. <b>Biofilm</b> is a dark, patterned mat. <b>Toxins</b> show as a toxic green cloud around the colony.</p><p><b>Chemotaxis</b> is not a special ability but a trait (level 0–4): the higher it is, the more often cells head straight for food.</p>
         <h3>Movement</h3>
         <p>Every cell follows the same pattern. When a cell divides, its daughter starts right next to it and continues the pattern – that is how a colony grows. The editor shows one cell and its offspring on the left and the whole colony on a plate on the right. More movements and bigger patterns are unlocked in your career.</p>
         <h3>End of the game</h3>
