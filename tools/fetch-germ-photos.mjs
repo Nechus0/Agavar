@@ -25,7 +25,22 @@ const OK = /^(public domain|pd|cc0|cc by(-sa)? \d|cc-by(-sa)?-\d)/i;
 
 mkdirSync('img/germs', { recursive: true });
 // Hand-picked Commons files for germs whose automatic pick does not fit (e.g. a cheese photo).
+// null = no fitting microscope image on Commons -> the atlas keeps the drawing.
 const OVERRIDES = {
+  mxanthus: 'File:Myxococcus xanthus.png',
+  pputida: 'File:Pseudomonas putida DIC image 400X.jpg',
+  bdellovibrio: 'File:Slice from electron cryotomogram of Bdellovibrio bacteriovorus cell.jpg',
+  pmirabilis: 'File:Proteus mirabilis.jpg',
+  vcholerae: 'File:Vibrio cholerae.jpg',
+  cbotulinum: 'File:Clostridium botulinum.jpg',
+  corynebacterium: 'File:Corynebacterium glutamicum (VAAM).png',
+  ctetani: 'File:Clostridium tetani.jpg',
+  cperfringens: 'File:Clostridium perfringens.MET.1097.jpg',
+  cdiphtheriae: 'File:Corynebacterium diphtheriae Gram stain.jpg',
+  shominis: 'File:Staphylococcus hominis Gram staining.jpg',
+  sagalactiae: 'File:Streptococcus agalactiae Gram staining of culture.jpg',
+  brevibacterium: null, // only cheese photos
+  kytococcus: null, // only an agar plate
 };
 
 // photos that are already here are kept (FORCE=1 fetches everything again, ONLY=a,b just these germs)
@@ -72,8 +87,9 @@ async function pagePhoto(germ) {
 for (const [key, germ] of Object.entries(GERMS)) {
   if (only.length && !only.includes(key)) continue;
   if (photos[key] && !only.includes(key)) { console.log(`= ${germ.name}: already there`); continue; }
+  if (key in OVERRIDES && OVERRIDES[key] === null) { delete photos[key]; rmSync(`img/germs/${key}.jpg`, { force: true }); console.log(`– ${germ.name}: drawing (no fitting photo)`); continue; }
   try {
-    let style = 'sem';
+    let style = OVERRIDES[key] ? 'picked' : 'sem';
     let fi = OVERRIDES[key] ? await fileInfo(OVERRIDES[key]) : await semPhoto(germ);
     if (!fi) { style = 'other'; fi = await pagePhoto(germ); }
     if (!fi) { console.log(`– ${germ.name}: no usable photo`); continue; }
