@@ -4,7 +4,7 @@ import {
   MIN_BUDGET, MAX_BUDGET, defaultGenome, cost, normalize, randomGenome, specialsOf,
 } from './genome.js';
 import { Simulation, DISTRIBUTIONS, MAX_TICKS, energyProfile, ROUNDS_PER_HOUR } from './sim.js';
-import { PlateRenderer, drawHistory, PathAnimator } from './render.js';
+import { PlateRenderer, drawHistory, GrowthAnimator } from './render.js';
 import { makeRng, randomSeed } from './rng.js';
 import { randomName } from './names.js';
 import { LEVELS, levelOpponents } from './levels.js';
@@ -42,7 +42,7 @@ function meterBars(g, other = null, otherLabel = '') {
   const a = meters(g);
   const b = other ? meters(other) : null;
   return el('div', { class: `meters ${b ? 'versus' : ''}` },
-    b ? el('div', { class: 'm-legend small muted' }, el('span', {}, el('i', { class: 'm-you' }), 'Du'), el('span', {}, el('i', { class: 'm-them' }), otherLabel)) : null,
+    b ? el('div', { class: 'm-legend small muted' }, el('span', {}, el('i', { class: 'm-you' }), 'You'), el('span', {}, el('i', { class: 'm-them' }), otherLabel)) : null,
     METER_INFO.map((m) => el('div', { class: 'm-row', title: m.label },
       el('span', { class: 'm-label' }, `${m.icon} ${m.label}`),
       el('div', { class: 'm-bars' },
@@ -61,15 +61,9 @@ document.addEventListener('click', (e) => {
   if (!e.target.closest('.sound-toggle')) return;
   store.updateSettings({ sound: store.getSettings().sound === false });
   refreshSoundButtons();
-  toast(store.getSettings().sound ? '🔊 Ton an' : '🔇 Ton aus');
+  toast(store.getSettings().sound ? '🔊 Sound on' : '🔇 Sound off');
   play('tap');
 });
-
-// ⓘ-Knopf: blendet die Erklärung einer Eigenschaft ein/aus
-const infoBtn = () => el('button', {
-  class: 'info-btn', 'aria-label': 'Erklärung',
-  onclick: (e) => { const h = e.target.closest('.trait').querySelector('.hint'); h.hidden = !h.hidden; },
-}, 'ⓘ');
 
 // Inhalt ersetzen, leere Einträge (null/false) überspringen
 function fill(node, ...kids) {
@@ -94,10 +88,10 @@ const specialBadge = (key, cls = '') => icon(SPECIAL_ICONS[key], cls, SPECIAL_CO
 const specialTag = (key) => el('span', { class: 'sp-tag', style: `--c:${SPECIAL_COLORS[key]}` }, specialBadge(key, 'sm'), SPECIALS[key].name);
 
 const LABELS = {
-  size: { klein: 'Klein', mittel: 'Mittel', gross: 'Groß' },
-  distribution: { gleichmaessig: 'Gleichmäßig', flecken: 'Flecken', ring: 'Ring', zentrum: 'Zentrum', rauschen: 'Rauschen' },
-  amount: { wenig: 'Wenig', normal: 'Normal', viel: 'Viel' },
-  regen: { aus: 'Aus', langsam: 'Langsam', normal: 'Normal', schnell: 'Schnell' },
+  size: { klein: 'Small', mittel: 'Medium', gross: 'Large' },
+  distribution: { gleichmaessig: 'Even', flecken: 'Patches', ring: 'Ring', zentrum: 'Center', rauschen: 'Noise' },
+  amount: { wenig: 'Little', normal: 'Normal', viel: 'Lots' },
+  regen: { aus: 'Off', langsam: 'Slow', normal: 'Normal', schnell: 'Fast' },
 };
 
 // ---------- Navigation ----------
@@ -127,20 +121,20 @@ function toast(msg) {
   toast._t = setTimeout(() => (t.hidden = true), 2600);
 }
 
-function confirmDialog(title, text, yes = 'Ja') {
+function confirmDialog(title, text, yes = 'Yes') {
   return new Promise((resolve) => {
     $('#modal-title').textContent = title;
     $('#modal-text').textContent = text;
     const done = (v) => { $('#modal').hidden = true; document.body.classList.remove('modal-open'); resolve(v); };
     fill($('#modal-buttons'), 
-      el('button', { class: 'btn', onclick: () => done(false) }, 'Abbrechen'),
+      el('button', { class: 'btn', onclick: () => done(false) }, 'Cancel'),
       el('button', { class: 'btn primary', onclick: () => done(true) }, yes));
     $('#modal').hidden = false;
     document.body.classList.add('modal-open');
   });
 }
 
-const lockedToast = (level) => toast(`🔒 Wird freigeschaltet, wenn du Level ${level} gewinnst.`);
+const lockedToast = (level) => toast(`🔒 Unlocks when you win level ${level}.`);
 
 // ---------- Startbildschirm mit Demo-Platte ----------
 const demo = { sim: null, r: null, raf: 0, last: 0, acc: 0 };
@@ -185,15 +179,15 @@ const ptsOf = (b) => careerPoints(b.career.won, b.career.stars);
 const starsText = (mask) => '★'.repeat(starCount(mask)) + '☆'.repeat(3 - starCount(mask));
 const careerCtx = (b, returnTo = 'career') => ({
   mode: 'career', id: b.id, budget: ptsOf(b), limits: getLimits(b.career.won),
-  label: 'Ausbaupunkte', returnTo,
+  label: 'Upgrade points', returnTo,
 });
 const careerNewCtx = (returnTo = 'careers') => ({
-  mode: 'career', id: null, budget: START_POINTS, limits: getLimits([]), label: 'Ausbaupunkte', returnTo,
+  mode: 'career', id: null, budget: START_POINTS, limits: getLimits([]), label: 'Upgrade points', returnTo,
 });
 
 function levelBadge(b) {
   const n = nextLevel(b.career.won, LEVELS.length);
-  return n > LEVELS.length ? '🏆 Meister' : `Level ${n} von ${LEVELS.length}`;
+  return n > LEVELS.length ? '🏆 Master' : `Level ${n} of ${LEVELS.length}`;
 }
 
 onEnter.careers = () => {
@@ -206,8 +200,8 @@ onEnter.careers = () => {
         el('span', { class: 'dot', style: `background:${b.color}` }),
         el('b', {}, b.name),
         el('span', { class: 'cost' }, levelBadge(b))),
-      free > 0 ? el('div', { class: 'small free-pts' }, `${free} ${free === 1 ? 'Punkt' : 'Punkte'} frei!`) : null);
-  }) : [el('div', { class: 'empty' }, 'Noch kein Bakterium. Erstelle dein erstes!')]));
+      free > 0 ? el('div', { class: 'small free-pts' }, `${free} ${free === 1 ? 'point' : 'points'} free!`) : null);
+  }) : [el('div', { class: 'empty' }, 'No bacterium yet. Create your first one!')]));
 };
 $('#career-new').addEventListener('click', () => openEditor(null, careerNewCtx('careers')));
 
@@ -234,7 +228,7 @@ onEnter.career = () => {
     meterBars(normalize(b)),
     probs.length ? el('p', { class: 'small warn' }, probs.join(' · ')) : null,
     el('button', { class: `btn ${free > 0 ? 'primary' : ''}`, onclick: () => openEditor(b, careerCtx(b)) },
-      free > 0 ? `🔧 Ausbauen · ${free} ${free === 1 ? 'Punkt' : 'Punkte'} frei` : '🔧 Ausbauen'));
+      free > 0 ? `🔧 Upgrade · ${free} ${free === 1 ? 'point' : 'points'} free` : '🔧 Upgrade'));
 
   const nxt = nextLevel(won, LEVELS.length);
   fill($('#cr-levels'), ...LEVELS.map((lv, i) => {
@@ -258,7 +252,7 @@ onEnter.career = () => {
 
 $('#cr-delete').addEventListener('click', async () => {
   const b = curCareer();
-  if (b && await confirmDialog('Bakterium löschen?', `„${b.name}“ und seine Karriere werden endgültig gelöscht.`, 'Löschen')) {
+  if (b && await confirmDialog('Delete bacterium?', `“${b.name}” and its career will be deleted for good.`, 'Delete')) {
     store.deleteBacterium(b.id);
     go('careers');
   }
@@ -270,7 +264,7 @@ function rewardIcon(r) {
   return icon(UNLOCK_ICON, 'sm reward-step');
 }
 const rewardRows = (level, withPoints) => [
-  withPoints ? el('div', { class: 'reward' }, el('span', { class: 'plus' }, `+${POINTS_PER_WIN}`), 'Ausbaupunkte für dein Bakterium') : null,
+  withPoints ? el('div', { class: 'reward' }, el('span', { class: 'plus' }, `+${POINTS_PER_WIN}`), 'upgrade points for your bacterium') : null,
   ...rewardsOf(level).map((r) => el('div', { class: 'reward' }, rewardIcon(r), r.text)),
 ].filter(Boolean);
 
@@ -311,7 +305,7 @@ onEnter['level-detail'] = () => {
   fill($('#ld-goals'),
     el('div', { class: 'goal-stars' }, STAR_GOALS.map((g) => el('div', { class: `goal ${mask & g.bit ? 'done' : ''}`, title: g.text },
       el('span', { class: 'star' }, mask & g.bit ? '★' : '☆'), el('small', {}, `${g.icon} ${g.short}`)))),
-    won.includes(n) ? null : el('div', { class: 'reward-line small' }, 'Sieg bringt ',
+    won.includes(n) ? null : el('div', { class: 'reward-line small' }, 'A win gives ',
       el('span', { class: 'plus' }, `+${POINTS_PER_WIN}`),
       ...rewardsOf(n).map((r) => el('span', { class: 'rw' }, rewardIcon(r), r.short || r.text))));
 
@@ -320,8 +314,8 @@ onEnter['level-detail'] = () => {
   const probs = problems(b, getLimits(won), pts);
   fill($('#ld-me'),
     el('div', { class: 'title row gap' }, el('span', { class: 'dot', style: `background:${b.color}` }), el('b', {}, b.name),
-      el('span', { class: `cost ${free > 0 ? 'free-pts' : ''}` }, free > 0 ? `${free} Pkt frei` : `${pts} Pkt`),
-      el('button', { class: 'btn small', onclick: () => openEditor(b, careerCtx(b, 'level-detail')) }, '🔧 Ausbauen')),
+      el('span', { class: `cost ${free > 0 ? 'free-pts' : ''}` }, free > 0 ? `${free} pts free` : `${pts} pts`),
+      el('button', { class: 'btn small', onclick: () => openEditor(b, careerCtx(b, 'level-detail')) }, '🔧 Upgrade')),
     meterBars(normalize(b), boss, boss.name.split(' ')[0]),
     probs.length ? el('p', { class: 'small warn' }, '⚠ ', probs.join(' · ')) : null);
   $('#ld-start').disabled = probs.length > 0;
@@ -337,7 +331,7 @@ $('#ld-start').addEventListener('click', () => {
 // ---------- Editor ----------
 let ed = null;
 let edCtx = null;
-const animator = new PathAnimator($('#ed-preview'), null);
+const animator = new GrowthAnimator($('#ed-preview'));
 
 function openEditor(b, ctx) {
   edCtx = ctx;
@@ -350,7 +344,7 @@ function openEditor(b, ctx) {
   // Bewegungsart aus dem Muster ableiten (ältere Spielstände kennen sie noch nicht)
   ed.move = moveFromProgram(ed.program) || ed.move || null;
   if (!ed.move) { ed.move = { type: 'gerade', size: 0, dir: 'R' }; ed.program = ['F']; }
-  $('#ed-title').textContent = ctx.mode === 'free' ? 'Freies Spiel' : b ? 'Ausbauen' : 'Neues Bakterium';
+  $('#ed-title').textContent = ctx.mode === 'free' ? 'Free play' : b ? 'Upgrade' : 'New bacterium';
   colony.sim = null;
   go('editor');
   renderEditor();
@@ -366,7 +360,7 @@ const colony = {
   sim: null, r: null, raf: 0, hold: 0, timer: 0, changed: false,
   build() {
     clearTimeout(this.timer);
-    const g = normalize({ ...ed, name: ed.name || 'Bakterium' });
+    const g = normalize({ ...ed, name: ed.name || 'Bacterium' });
     this.sim = new Simulation({ genomes: [g], size: 'klein', distribution: 'gleichmaessig', amount: 'normal', regen: 'normal', seed: 4242 });
     this.r = new PlateRenderer($('#ed-colony'), this.sim);
     this.hold = 0;
@@ -383,7 +377,7 @@ const colony = {
     this.changed = true;
     clearTimeout(this.timer);
     this.timer = setTimeout(() => this.build(), 150);
-    $('#ed-colony-label').textContent = 'Die Kolonie · neu gestartet';
+    $('#ed-colony-label').textContent = 'The colony · restarted';
   },
   start() {
     cancelAnimationFrame(this.raf);
@@ -395,7 +389,7 @@ const colony = {
       if (sim.tick < 420 && !sim.done) {
         sim.step1(); sim.step1();
         this.r.draw();
-        if (!this.changed) $('#ed-colony-label').textContent = `Die Kolonie · ${Math.round((BREW_HOURS * sim.tick) / MAX_TICKS)} h`;
+        if (!this.changed) $('#ed-colony-label').textContent = `The colony · ${Math.round((BREW_HOURS * sim.tick) / MAX_TICKS)} h`;
       } else if (++this.hold > 90) {
         this.build(); // Schleife: von vorn beginnen
       }
@@ -441,7 +435,7 @@ function renderMove() {
   lockedMoves.length ? el('button', {
     class: 'move-card locked',
     onclick: () => toast(`🔒 ${lockedMoves.map((c) => `${c.m.name} (Level ${lockReason(c.res)})`).join(', ')}`),
-  }, el('span', { class: 'move-more' }, `🔒 +${lockedMoves.length}`), el('span', { class: 'move-name' }, 'später')) : null);
+  }, el('span', { class: 'move-more' }, `🔒 +${lockedMoves.length}`), el('span', { class: 'move-name' }, 'later')) : null);
 
   // Größe und Richtung der gewählten Art
   const m = MOVE_BY_KEY[cur.type];
@@ -478,8 +472,7 @@ function renderEditor() {
   // Kostenlose Abwägungen
   const ep = energyProfile(normalize(ed));
   fill($('#ed-free'), ...FREE.map((t) => el('div', { class: 'trait' },
-    el('div', { class: 'trait-head' }, el('span', { class: 'trait-name' }, icon(TRAIT_ICONS[t.key], 'ti'), el('b', {}, t.label), infoBtn())),
-    el('div', { class: 'hint', hidden: true }, t.hint),
+    el('div', { class: 'trait-head' }, el('span', { class: 'trait-name' }, icon(TRAIT_ICONS[t.key], 'ti'), el('b', {}, t.label))),
     el('div', { class: 'seg free-seg' }, t.options.map((label, k) => el('button', {
       class: ed[t.key] === k ? 'on' : '', onclick: () => { ed[t.key] = k; renderEditor(); },
     }, label))))));
@@ -494,19 +487,18 @@ function renderEditor() {
     for (let k = 0; k < t.max; k++) pips.push(el('i', { class: k < ed[t.key] ? 'on' : '' }));
     return el('div', { class: 'trait' },
       el('div', { class: 'trait-head' },
-        el('span', { class: 'trait-name' }, icon(TRAIT_ICONS[t.key], 'ti'), el('b', {}, t.label), infoBtn()),
+        el('span', { class: 'trait-name' }, icon(TRAIT_ICONS[t.key], 'ti'), el('b', {}, t.label)),
         el('div', { class: 'stepper' },
-          el('button', { onclick: () => { if (ed[t.key] > 0) { ed[t.key]--; renderEditor(); } }, 'aria-label': 'weniger' }, '−'),
+          el('button', { onclick: () => { if (ed[t.key] > 0) { ed[t.key]--; renderEditor(); } }, 'aria-label': 'less' }, '−'),
           el('div', { class: 'pips' }, pips),
           el('button', {
             onclick: () => {
               if (ed[t.key] >= t.max) return;
-              if (cost(ed) + 1 > budget) return toast('Keine Punkte mehr frei. Besiege Gegner, um mehr zu bekommen.');
+              if (cost(ed) + 1 > budget) return toast('No points left. Beat opponents to earn more.');
               ed[t.key]++; renderEditor();
             },
-            'aria-label': 'mehr',
-          }, '+'))),
-      el('div', { class: 'hint', hidden: true }, t.hint));
+            'aria-label': 'more',
+          }, '+'))));
   }));
 
   // Spezialfähigkeit als Kacheln mit Symbol (gesperrte nur als kurzer Hinweis)
@@ -515,7 +507,7 @@ function renderEditor() {
     class: `special ${ed.special === k ? 'on' : ''}`,
     onclick: () => {
       const extra = SPECIALS[k].cost - SPECIALS[ed.special].cost;
-      if (cost(ed) + extra > budget) return toast(`${SPECIALS[k].name} kostet ${SPECIALS[k].cost} Punkte – nimm dafür woanders Punkte weg.`);
+      if (cost(ed) + extra > budget) return toast(`${SPECIALS[k].name} costs ${SPECIALS[k].cost} points – take points away elsewhere first.`);
       ed.special = k; renderEditor();
     },
   },
@@ -524,20 +516,22 @@ function renderEditor() {
   lockedSp.length ? el('button', {
     class: 'special locked',
     onclick: () => toast(`🔒 ${lockedSp.map((k) => `${SPECIALS[k].name} (Level ${unlockLevelOf('special', k)})`).join(', ')}`),
-  }, el('span', { class: 'move-more' }, `🔒 +${lockedSp.length}`), el('span', { class: 'special-name' }, 'später')) : null);
+  }, el('span', { class: 'move-more' }, `🔒 +${lockedSp.length}`), el('span', { class: 'special-name' }, 'later')) : null);
   $('#ed-special-hint').hidden = ed.special === 'none';
   fill($('#ed-special-hint'), el('b', {}, `${SPECIALS[ed.special].name}: `), SPECIALS[ed.special].hint);
 
   // Budget
   $('#ed-cost').textContent = `${c} / ${budget}`;
-  $('#ed-budget-label').textContent = edCtx.mode === 'free' ? 'Punkte (freies Spiel)' : 'Ausbaupunkte';
+  $('#ed-left').textContent = c <= budget ? `${budget - c} ${budget - c === 1 ? 'point' : 'points'} left` : `${c - budget} too many`;
+  if (animator.div !== ed.division) { animator.div = ed.division; animator.setDivision(ed.division); }
+  $('#ed-budget-label').textContent = edCtx.mode === 'free' ? 'Points (free play)' : 'Upgrade points';
   $('#ed-meter').style.width = `${Math.min(100, (c / budget) * 100)}%`;
   const over = c > budget;
   $('#ed-budget').classList.toggle('over', over);
   const warn = $('#ed-warn');
   warn.hidden = !over && c >= budget;
-  if (over) warn.textContent = `${c - budget} Punkte zu viel – nimm Punkte weg.`;
-  else if (c < budget) warn.textContent = `Noch ${budget - c} ${budget - c === 1 ? 'Punkt' : 'Punkte'} zu verteilen.`;
+  if (over) warn.textContent = `${c - budget} points too many – take some away.`;
+  else if (c < budget) warn.textContent = `${budget - c} ${budget - c === 1 ? 'point' : 'points'} left to spend.`;
   warn.classList.toggle('ok', !over);
   colony.restart();
 }
@@ -545,16 +539,16 @@ function renderEditor() {
 $('#ed-name').addEventListener('input', (e) => { ed.name = e.target.value; });
 $('#ed-cancel').addEventListener('click', () => go(edCtx.returnTo));
 $('#ed-save').addEventListener('click', () => {
-  if (!ed.name.trim()) { $('#ed-name').focus(); return toast('Bitte gib deinem Bakterium einen Namen.'); }
+  if (!ed.name.trim()) { $('#ed-name').focus(); return toast('Please give your bacterium a name.'); }
   const probs = problems(ed, edCtx.limits, edCtx.budget);
   if (probs.length) return toast(probs.join(' · '));
   if (edCtx.mode === 'free') {
     store.saveFree(ed);
-    toast('Gespeichert.');
+    toast('Saved.');
     return go('setup');
   }
   const saved = store.saveBacterium(ed);
-  toast(`„${saved.name}“ gespeichert.`);
+  toast(`“${saved.name}” saved.`);
   careerId = saved.id;
   go(edCtx.returnTo === 'home' || edCtx.returnTo === 'careers' ? 'career' : edCtx.returnTo);
 });
@@ -564,15 +558,15 @@ const perHour = (x) => Math.round(x * ROUNDS_PER_HOUR);
 function fmtDuration(rounds) {
   if (!Number.isFinite(rounds)) return 'unbegrenzt';
   const min = (rounds * 60) / ROUNDS_PER_HOUR;
-  return min < 60 ? `${Math.max(1, Math.round(min))} min` : `${(min / 60).toFixed(1).replace('.', ',')} h`;
+  return min < 60 ? `${Math.max(1, Math.round(min))} min` : `${(min / 60).toFixed(1)} h`;
 }
 function renderEnergy(ep) {
   const net = perHour(ep.intake - ep.cost);
   fill($('#ed-energy'),
-    el('span', { class: 'echip', title: 'Energie pro Stunde bei voller Nahrung (Aufnahme minus Verbrauch inkl. Bewegung)' },
+    el('span', { class: 'echip', title: 'Energy per hour with plenty of food (intake minus use, incl. movement)' },
       '⚡ ', el('b', { class: net >= 0 ? 'good' : 'bad' }, `${net >= 0 ? '+' : ''}${net}`), ' /h'),
-    el('span', { class: 'echip', title: 'Bei voller Nahrung teilt sich eine Zelle etwa so oft' }, '➗ alle ', el('b', {}, fmtDuration(ep.roundsToDivide))),
-    el('span', { class: 'echip', title: 'So lange hält eine Zelle ohne Nahrung durch' }, '🍽 ', el('b', {}, fmtDuration(Math.min(ep.roundsWithoutFood, ep.maxAge))), ' ohne Futter'));
+    el('span', { class: 'echip', title: 'With plenty of food a cell divides about this often' }, '➗ every ', el('b', {}, fmtDuration(ep.roundsToDivide))),
+    el('span', { class: 'echip', title: 'How long a cell survives without food' }, '🍽 ', el('b', {}, fmtDuration(Math.min(ep.roundsWithoutFood, ep.maxAge))), ' without food'));
 }
 
 // ---------- Freies Spiel ----------
@@ -603,28 +597,28 @@ onEnter.setup = () => {
   const g = store.getFree();
   const me = $('#su-me');
   if (!g) {
-    fill(me, el('h3', {}, 'Dein Bakterium'),
-      el('p', { class: 'small muted' }, 'Für das freie Spiel hast du ein eigenes Bakterium. Du kannst sofort alle Punkte verteilen.'),
-      el('button', { class: 'btn primary', onclick: () => openEditor(null, freeCtx()) }, 'Bakterium erstellen'));
+    fill(me, el('h3', {}, 'Your bacterium'),
+      el('p', { class: 'small muted' }, 'Free play has its own bacterium. You can spend all points right away.'),
+      el('button', { class: 'btn primary', onclick: () => openEditor(null, freeCtx()) }, 'Create bacterium'));
     $('#su-start').disabled = true;
   } else {
     const probs = problems(g, freeLimits(), s.budget);
-    fill(me, el('h3', {}, 'Dein Bakterium'),
+    fill(me, el('h3', {}, 'Your bacterium'),
       el('div', { class: 'title row gap' }, el('span', { class: 'dot', style: `background:${g.color}` }), el('b', {}, g.name), el('span', { class: 'cost' }, `${cost(g)} / ${s.budget} Pkt`)),
       meterBars(normalize(g)),
       probs.length ? el('p', { class: 'small warn' }, probs.join(' · ')) : null,
-      el('button', { class: 'btn small', onclick: () => openEditor(g, freeCtx()) }, 'Bearbeiten'));
+      el('button', { class: 'btn small', onclick: () => openEditor(g, freeCtx()) }, 'Edit'));
     $('#su-start').disabled = probs.length > 0;
   }
   fill($('#su-options'), 
-    el('h3', {}, 'Einstellungen'),
-    stepperOption('Anzahl Gegner', 'opponents', 1, 5, 1),
-    stepperOption('Punktebudget (für dich und die Gegner)', 'budget', MIN_BUDGET, MAX_BUDGET, 1, (v) => `${v} Pkt`),
-    segOption('Plattengröße', 'size', ['klein', 'mittel', 'gross'], LABELS.size),
-    segOption('Nährboden-Verteilung', 'distribution', DISTRIBUTIONS, LABELS.distribution),
-    segOption('Nährstoffmenge', 'amount', ['wenig', 'normal', 'viel'], LABELS.amount),
-    segOption('Nachwachsen', 'regen', ['aus', 'langsam', 'normal', 'schnell'], LABELS.regen),
-    el('p', { class: 'small muted' }, 'Spezialfähigkeiten und besondere Schritte schaltest du in der Karriere frei – für dich und die Zufallsgegner.'),
+    el('h3', {}, 'Settings'),
+    stepperOption('Opponents', 'opponents', 1, 5, 1),
+    stepperOption('Point budget (for you and the opponents)', 'budget', MIN_BUDGET, MAX_BUDGET, 1, (v) => `${v} pts`),
+    segOption('Plate size', 'size', ['klein', 'mittel', 'gross'], LABELS.size),
+    segOption('Food layout', 'distribution', DISTRIBUTIONS, LABELS.distribution),
+    segOption('Food amount', 'amount', ['wenig', 'normal', 'viel'], LABELS.amount),
+    segOption('Regrowth', 'regen', ['aus', 'langsam', 'normal', 'schnell'], LABELS.regen),
+    el('p', { class: 'small muted' }, 'Special abilities and special movements are unlocked in your career – for you and the random opponents.'),
   );
 };
 
@@ -675,13 +669,13 @@ function resetBanners() {
 
 function checkEvents() {
   const sim = run.sim, ev = run.ev;
-  const names = run.genomes.map((g, i) => (i === 0 ? 'Deine Kultur' : g.name));
-  if (!ev.contact && sim.contactTick >= 0) { ev.contact = true; banner('⚔️ Erster Kontakt – der Kampf beginnt!'); play('contact'); }
+  const names = run.genomes.map((g, i) => (i === 0 ? 'Your culture' : g.name));
+  if (!ev.contact && sim.contactTick >= 0) { ev.contact = true; banner('⚔️ First contact – the fight begins!'); play('contact'); }
   sim.players.forEach((p, i) => {
     if (p.count === 0 && !ev.dead.has(i)) {
       ev.dead.add(i);
       if (!sim.done || sim.players.length > 2) {
-        banner(i === 0 ? '☠️ Deine Kultur ist ausgestorben!' : `☠️ ${names[i]} ausgerottet!`, i === 0 ? 'bad' : 'good');
+        banner(i === 0 ? '☠️ Your culture died out!' : `☠️ ${names[i]} wiped out!`, i === 0 ? 'bad' : 'good');
         play('extinct');
       }
     }
@@ -691,7 +685,7 @@ function checkEvents() {
     const lead = alive[0];
     if (ev.leader !== lead.id && lead.share - alive[1].share > 0.06 && sim.tick - ev.leaderTick > 150) {
       if (ev.leader) {
-        banner(lead.id === 1 ? '🔄 Wendepunkt! Du übernimmst die Führung!' : `🔄 Wendepunkt! ${names[lead.id - 1]} übernimmt die Führung`, lead.id === 1 ? 'good' : '');
+        banner(lead.id === 1 ? '🔄 Turning point! You take the lead!' : `🔄 Turning point! ${names[lead.id - 1]} takes the lead`, lead.id === 1 ? 'good' : '');
         play('lead');
       }
       ev.leader = lead.id; ev.leaderTick = sim.tick;
@@ -699,10 +693,10 @@ function checkEvents() {
     // Knappes Rennen kurz vor Schluss: Zeitlupe
     // (3 h Brutzeit = 250 Simulationsschritte)
     if (!ev.slow && sim.tick >= MAX_TICKS - 250 && alive[0].share - alive[1].share < 0.12) {
-      ev.slow = true; banner('🎬 Knappes Rennen – Zeitlupe!'); play('alarm');
+      ev.slow = true; banner('🎬 Close race – slow motion!'); play('alarm');
     }
   }
-  if (!ev.sixH && sim.tick >= MAX_TICKS - 500) { ev.sixH = true; banner('⏰ Noch 6 Stunden Brutzeit!'); play('alarm'); }
+  if (!ev.sixH && sim.tick >= MAX_TICKS - 500) { ev.sixH = true; banner('⏰ 6 hours of incubation left!'); play('alarm'); }
 }
 
 function fixColors(player, opponents) {
@@ -732,11 +726,11 @@ function startMatch(cfg) {
   resetBanners();
   clearTimeout(run.endTimer);
   $('#sim-pause').textContent = '⏸';
-  $('#sim-title').textContent = cfg.mode === 'level' ? `Level ${cfg.level}` : 'Freies Spiel';
+  $('#sim-title').textContent = cfg.mode === 'level' ? `Level ${cfg.level}` : 'Free play';
   fill($('#sim-shares'), ...run.genomes.map((g) => el('div', { style: `background:${g.color}` })));
   fill($('#sim-legend'), ...run.genomes.map((g, i) => el('div', { class: 'legend-row' },
     el('span', { class: 'dot', style: `background:${g.color}` }),
-    el('span', { class: 'legend-name' }, i === 0 ? el('b', {}, `${g.name} (du)`) : g.boss ? el('span', {}, '★ ', g.name) : g.name),
+    el('span', { class: 'legend-name' }, i === 0 ? el('b', {}, `${g.name} (you)`) : g.boss ? el('span', {}, '★ ', g.name) : g.name),
     ...specialsOf(g).map((k) => specialBadge(k, 'sm')),
     el('span', { class: 'n' }, '0'))));
   setSpeed(run.speed);
@@ -764,7 +758,7 @@ function updateSimUi() {
   const rows = $('#sim-legend').children;
   sim.players.forEach((p, i) => {
     bars[i].style.width = `${(p.count / total) * 100}%`;
-    rows[i].querySelector('.n').textContent = p.count.toLocaleString('de-DE');
+    rows[i].querySelector('.n').textContent = p.count.toLocaleString('en-US');
     rows[i].classList.toggle('dead', p.count === 0);
   });
   // ablaufende Uhr
@@ -807,7 +801,7 @@ $('#sim-pause').addEventListener('click', () => {
 $('#sim-quit').addEventListener('click', async () => {
   const wasPaused = run.paused;
   run.paused = true;
-  if (run.sim.done || await confirmDialog('Simulation beenden?', 'Das laufende Spiel wird abgebrochen.', 'Beenden')) {
+  if (run.sim.done || await confirmDialog('Quit simulation?', 'The current game will be cancelled.', 'Quit')) {
     clearTimeout(run.endTimer);
     go(run.cfg.mode === 'level' ? 'level-detail' : 'setup');
   } else run.paused = wasPaused;
@@ -821,11 +815,11 @@ function showResult() {
   const { sim, cfg } = run;
   const won = sim.winner === 1;
   const title = $('#rs-title');
-  title.textContent = won ? 'Gewonnen!' : sim.winner === 0 ? 'Unentschieden' : 'Verloren';
+  title.textContent = won ? 'Victory!' : sim.winner === 0 ? 'Draw' : 'Defeat';
   title.className = won ? 'win' : sim.winner === 0 ? '' : 'lose';
   const winnerName = sim.winner ? run.genomes[sim.winner - 1].name : null;
   const hours = Math.round((BREW_HOURS * sim.tick) / MAX_TICKS);
-  $('#rs-reason').textContent = `${sim.endReason}${winnerName && !won ? ` Sieger: ${winnerName}.` : ''} (nach ${hours} h Brutzeit)`;
+  $('#rs-reason').textContent = `${sim.endReason}${winnerName && !won ? ` Winner: ${winnerName}.` : ''} (after ${hours} h of incubation)`;
 
   const firstWin = cfg.mode === 'level' && won && store.markWon(cfg.careerId, cfg.level);
   const mask = cfg.mode === 'level' ? starMask(sim) : 0;
@@ -845,16 +839,16 @@ function showResult() {
 
   const rows = sim.players.map((p, i) => {
     const g = run.genomes[i];
-    const status = sim.winner === p.id ? '🏆' : p.count === 0 ? `✝ ${Math.round((BREW_HOURS * p.extinctAt) / MAX_TICKS)} h` : 'lebt';
+    const status = sim.winner === p.id ? '🏆' : p.count === 0 ? `✝ ${Math.round((BREW_HOURS * p.extinctAt) / MAX_TICKS)} h` : 'alive';
     return el('tr', {},
       el('td', {}, el('span', { class: 'dot', style: `background:${g.color};vertical-align:-2px;margin-right:6px` }), i === 0 ? el('b', {}, g.name) : g.name),
-      el('td', { class: 'num' }, p.count.toLocaleString('de-DE')),
-      el('td', { class: 'num' }, p.peak.toLocaleString('de-DE')),
-      el('td', { class: 'num' }, p.kills.toLocaleString('de-DE')),
+      el('td', { class: 'num' }, p.count.toLocaleString('en-US')),
+      el('td', { class: 'num' }, p.peak.toLocaleString('en-US')),
+      el('td', { class: 'num' }, p.kills.toLocaleString('en-US')),
       el('td', { class: 'num' }, status));
   });
   fill($('#rs-table'), el('table', {},
-    el('thead', {}, el('tr', {}, el('th', {}, 'Kultur'), el('th', { class: 'num' }, 'Ende'), el('th', { class: 'num' }, 'Max.'), el('th', { class: 'num' }, 'Kills'), el('th', { class: 'num' }, 'Status'))),
+    el('thead', {}, el('tr', {}, el('th', {}, 'Culture'), el('th', { class: 'num' }, 'End'), el('th', { class: 'num' }, 'Max.'), el('th', { class: 'num' }, 'Kills'), el('th', { class: 'num' }, 'Status'))),
     el('tbody', {}, rows)));
 
   // Sterne
@@ -865,23 +859,23 @@ function showResult() {
     fill(sb, ...STAR_GOALS.map((g) => el('div', { class: 'star-col', title: g.text },
       el('span', { class: `big-star ${mask & g.bit ? 'got' : all & g.bit ? 'old' : ''} ${newStars & g.bit ? 'new' : ''}` }, mask & g.bit || all & g.bit ? '★' : '☆'),
       el('small', {}, `${g.icon} ${g.short}`))));
-    if (newStars && (all & 7) === 7) toast('Alle drei Sterne! +1 Ausbaupunkt');
+    if (newStars && (all & 7) === 7) toast('All three stars! +1 upgrade point');
   }
   // Analyse
-  fill($('#rs-analysis'), el('h3', {}, won ? 'Auswertung' : 'Woran lag es?'), ...analyze(sim, run.genomes, mask).map((a) =>
+  fill($('#rs-analysis'), el('h3', {}, won ? 'Summary' : 'What went wrong?'), ...analyze(sim, run.genomes, mask).map((a) =>
     el('div', { class: `insight ${a.kind}` }, el('span', { class: 'insight-ico' }, a.kind === 'tip' ? '💡' : a.kind === 'good' ? '👍' : '📊'), a.text)));
   // neue Erfolge & Atlas
   const ach = $('#rs-achievements');
   ach.hidden = !newAch.length && !newGerms.length;
-  fill(ach, el('h3', {}, 'Neu freigeschaltet'),
+  fill(ach, el('h3', {}, 'Newly unlocked'),
     ...newAch.map((a) => el('div', { class: 'ach-row got' }, el('span', { class: 'ach-ico' }, a.icon), el('div', {}, el('b', {}, a.name), el('div', { class: 'small muted' }, a.desc)))),
-    newGerms.length ? el('div', { class: 'ach-row got' }, el('span', { class: 'ach-ico' }, '📖'), el('div', {}, el('b', {}, 'Neu im Atlas'), el('div', { class: 'small muted' }, newGerms.map((k) => GERMS[k].name).join(', ')))) : null);
+    newGerms.length ? el('div', { class: 'ach-row got' }, el('span', { class: 'ach-ico' }, '📖'), el('div', {}, el('b', {}, 'New in the atlas'), el('div', { class: 'small muted' }, newGerms.map((k) => GERMS[k].name).join(', ')))) : null);
 
   const lvMode = cfg.mode === 'level';
   $('#rs-next').hidden = !(lvMode && won && cfg.level < LEVELS.length);
   $('#rs-upgrade').hidden = !lvMode;
   $('#rs-new').hidden = lvMode;
-  $('#rs-rematch').textContent = lvMode ? '↻ Nochmal' : '↻ Revanche';
+  $('#rs-rematch').textContent = lvMode ? '↻ Again' : '↻ Rematch';
   document.querySelector('#result details').open = false;
   play(won ? 'win' : 'lose');
   if (newStars) setTimeout(() => play('star'), 700);
@@ -891,7 +885,7 @@ function showResult() {
 function showWinModal(level) {
   const lv = LEVELS[level - 1];
   const germ = GERMS[lv.boss.germ];
-  fill($('#win-sub'), 'Du hast ', el('b', {}, germ.name), ` besiegt und Level ${level} geschafft!`);
+  fill($('#win-sub'), 'You beat ', el('b', {}, germ.name), ` and cleared level ${level}!`);
   const pic = $('#win-germ');
   pic.innerHTML = germSvg(germ.shape, lv.boss.color);
   $('#win-fact').textContent = germ.fact;
@@ -913,7 +907,7 @@ function atlasGerms() {
 onEnter.atlas = () => {
   const found = new Set(store.getAtlas());
   const list = atlasGerms();
-  $('#atlas-count').textContent = `${list.filter((g) => found.has(g.germ)).length} von ${list.length} Keimen entdeckt`;
+  $('#atlas-count').textContent = `${list.filter((g) => found.has(g.germ)).length} of ${list.length} germs discovered`;
   fill($('#atlas-list'), ...list.map((g) => {
     const known = found.has(g.germ);
     const germ = GERMS[g.germ];
@@ -921,11 +915,11 @@ onEnter.atlas = () => {
       germPic(g.germ, known ? g.color : '#3a4554', 'atlas-pic'),
       el('div', { class: 'atlas-text' },
         el('b', {}, known ? germ.name : '???'),
-        known ? el('p', { class: 'small' }, germ.fact) : el('p', { class: 'small muted' }, `Besiege Level ${g.level}, um diesen Keim zu entdecken.`),
-        known && g.ability.length ? el('p', { class: 'small atlas-ability' }, 'Schaltet frei: ', g.ability.map((r) => r.text).join(', ')) : null));
+        known ? el('p', { class: 'small' }, germ.fact) : el('p', { class: 'small muted' }, `Beat level ${g.level} to discover this germ.`),
+        known && g.ability.length ? el('p', { class: 'small atlas-ability' }, 'Unlocks: ', g.ability.map((r) => r.text).join(', ')) : null));
   }));
   const got = ACHIEVEMENTS.filter((a) => store.hasAchievement(a.key)).length;
-  $('#ach-count').textContent = `${got} von ${ACHIEVEMENTS.length} Erfolgen`;
+  $('#ach-count').textContent = `${got} of ${ACHIEVEMENTS.length} achievements`;
   fill($('#ach-list'), ...ACHIEVEMENTS.map((a) => {
     const has = store.hasAchievement(a.key);
     return el('div', { class: `ach-row ${has ? 'got' : ''}` }, el('span', { class: 'ach-ico' }, has ? a.icon : '🔒'), el('div', {}, el('b', {}, a.name), el('div', { class: 'small muted' }, a.desc)));

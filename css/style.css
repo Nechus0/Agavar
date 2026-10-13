@@ -598,3 +598,14 @@ body.modal-open { overflow: hidden; }
 .clock-row { padding: 6px 12px; gap: 10px; }
 .clock { width: 30px; height: 30px; }
 .clock-text .small { display: none; }
+
+/* Editor top: name, colour and points in one box */
+.ed-top { display: flex; flex-direction: column; gap: 10px; }
+.ed-top #ed-name { margin: 0; }
+.ed-top .budget-text { margin: 4px 0 0; }
+.ed-top.over { border-color: var(--bad); }
+.ed-top.over .budget-text b { color: var(--bad); }
+.ed-top.over .meter > div { background: var(--bad); }
+.row-between { display: flex; justify-content: space-between; align-items: baseline; }
+.trait-name { gap: 8px; }
+.pips { width: 66px; justify-content: center; }

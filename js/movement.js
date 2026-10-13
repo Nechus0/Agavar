@@ -7,34 +7,34 @@ const rep = (s, n) => Array(n).fill(s);
 const MIRROR = { R: 'L', L: 'R', D: 'S', S: 'D' };
 
 export const MOVES = [
-  { key: 'gerade', name: 'Geradeaus', desc: 'Zieht in gerader Linie über die Platte. Die Kolonie wandert wie ein Komet und erreicht schnell neue Nahrung.',
+  { key: 'gerade', name: 'Straight', desc: 'Moves in a straight line across the plate. The colony travels like a comet and reaches new food fast.',
     actions: () => ['F'] },
-  { key: 'kreis', name: 'Kreisen', sizes: ['eng', 'mittel', 'weit', 'sehr weit'], turn: true,
-    desc: 'Läuft im Kreis und bleibt in der Nähe. Die Kolonie wächst kompakt und verteidigt ihr Gebiet.',
+  { key: 'kreis', name: 'Circle', sizes: ['small', 'medium', 'large'], turn: true,
+    desc: 'Runs in circles and stays close. The colony grows compact and defends its ground.',
     actions: (s) => [...rep('F', s), 'R'] },
-  { key: 'ecken', name: 'Ecken', sizes: ['klein', 'mittel', 'groß', 'riesig'], turn: true,
-    desc: 'Läuft Quadrate. Ähnlich wie Kreisen, aber mit geraden Strecken – große Quadrate erkunden mehr Fläche.',
+  { key: 'ecken', name: 'Square', sizes: ['small', 'medium', 'large'], turn: true,
+    desc: 'Runs in squares. Like circling, but with straight edges – big squares explore more ground.',
     actions: (s) => [...rep('F', s + 1), 'D'] },
-  { key: 'welle', name: 'Welle', sizes: ['flach', 'mittel', 'hoch'],
-    desc: 'Schwingt hin und her und kommt dabei langsam voran. Die Kolonie breitet sich als breiter Streifen aus.',
+  { key: 'welle', name: 'Wave', sizes: ['small', 'medium', 'large'],
+    desc: 'Swings back and forth while slowly moving on. The colony spreads as a wide band.',
     actions: (s) => ['R', ...rep('F', s), 'L', 'L', ...rep('F', s), 'R'] },
-  { key: 'treppe', name: 'Treppe', sizes: ['kurz', 'mittel', 'lang'], turn: true,
-    desc: 'Abwechselnd ein Stück vor und zur Seite – die Kolonie wandert schräg über die Platte.',
+  { key: 'treppe', name: 'Stairs', sizes: ['small', 'medium', 'large'], turn: true,
+    desc: 'Alternates forward and sideways – the colony moves diagonally across the plate.',
     actions: (s) => [...rep('F', s), 'D', ...rep('F', s), 'S'] },
-  { key: 'sitzen', name: 'Sitzen', sizes: ['nur sitzen', 'selten bewegen', 'oft bewegen'],
-    desc: 'Bewegt sich kaum und wächst vor allem durch Teilung. Spart Energie und hält dicht zusammen.',
+  { key: 'sitzen', name: 'Sit', sizes: ['still', 'rarely move', 'often move'],
+    desc: 'Barely moves and grows mainly by dividing. Saves energy and stays packed together.',
     actions: (s) => [['P'], ['F', 'P', 'P', 'P'], ['F', 'P']][s] },
-  { key: 'pendeln', name: 'Pendeln', sizes: ['kurz', 'mittel', 'lang', 'sehr lang'],
-    desc: 'Läuft ein Stück vor und kehrt dann um – wie Myxococcus. Die Kolonie bildet einen langen Streifen.',
+  { key: 'pendeln', name: 'Shuttle', sizes: ['short', 'medium', 'long'], params: [1, 2, 3],
+    desc: 'Runs forward, then turns back – like Myxococcus. The colony forms a long stripe.',
     actions: (s) => [...rep('F', s + 1), 'B'] },
-  { key: 'taumeln', name: 'Taumeln', sizes: ['kurz', 'mittel', 'lang', 'sehr lang'],
-    desc: 'Schwimmt ein Stück geradeaus und taumelt dann in eine zufällige Richtung – wie E. coli. Die Kolonie verteilt sich in alle Richtungen.',
+  { key: 'taumeln', name: 'Tumble', sizes: ['short', 'medium', 'long'], params: [1, 2, 3],
+    desc: 'Swims straight for a bit, then tumbles into a random direction – like E. coli. The colony spreads in all directions.',
     actions: (s) => [...rep('F', s + 1), 'Z'] },
-  { key: 'schlange', name: 'Schlängeln', sizes: ['eng', 'mittel', 'weit'], turn: true,
-    desc: 'Schlängelt sich in S-Kurven voran – wie ein Korkenzieher. Die Kolonie zieht als breites Band.',
+  { key: 'schlange', name: 'Snake', sizes: ['small', 'medium', 'large'], turn: true,
+    desc: 'Wriggles forward in S-curves – like a corkscrew. The colony moves as a wide band.',
     actions: (s) => [...rep('R', s + 2), 'M'] },
-  { key: 'acht', name: 'Acht', turn: true,
-    desc: 'Läuft abwechselnd einen Kreis rechts und links herum – eine liegende Acht. Sehr ortstreu.',
+  { key: 'acht', name: 'Eight', turn: true,
+    desc: 'Alternates a circle to the right and to the left – a figure eight. Stays very local.',
     actions: () => [...rep('R', 8), 'M'] },
 ];
 export const MOVE_BY_KEY = Object.fromEntries(MOVES.map((m) => [m.key, m]));
@@ -45,7 +45,7 @@ export const STEP_MOVES = { P: ['sitzen'], B: ['pendeln'], Z: ['taumeln'], M: ['
 export function actionsOf(move) {
   const m = MOVE_BY_KEY[move.type] || MOVES[0];
   const size = m.sizes ? Math.min(m.sizes.length - 1, Math.max(0, move.size | 0)) : 0;
-  const acts = m.actions(size);
+  const acts = m.actions(m.params ? m.params[size] : size);
   return move.dir === 'L' && m.turn ? acts.map((s) => MIRROR[s] || s) : acts;
 }
 
@@ -90,12 +90,12 @@ export function moveFromProgram(program) {
 }
 
 export function describeMove(move) {
-  if (!move) return 'eigenes Muster';
+  if (!move) return 'custom pattern';
   const m = MOVE_BY_KEY[move.type];
-  if (!m) return 'eigenes Muster';
+  if (!m) return 'custom pattern';
   const parts = [m.name];
   if (m.sizes) parts.push(m.sizes[move.size | 0]);
-  if (m.turn) parts.push(move.dir === 'L' ? 'links herum' : 'rechts herum');
+  if (m.turn) parts.push(move.dir === 'L' ? 'counter-clockwise' : 'clockwise');
   return parts.join(' · ');
 }
 

@@ -237,3 +237,125 @@ export class PathAnimator {
     ctx.restore();
   }
 }
+
+// Growth preview: one cell follows its pattern and divides every few steps.
+// Daughters inherit the direction and the pattern position, so you can see how
+// a pattern turns into a growing colony. Cells cannot share a square (like on the plate).
+export class GrowthAnimator {
+  constructor(canvas) {
+    this.canvas = canvas;
+    this.color = '#e9c46a';
+    this.raf = 0;
+    this.flat = [{ st: 'P' }];
+    this.divEvery = 5;
+    this.W = 25; this.H = 25; // grid squares
+  }
+
+  setProgram(program, color) {
+    this.color = color || this.color;
+    const flat = [];
+    program.forEach((e) => {
+      const m = /^([A-Z])([1-9])?$/.exec(e);
+      if (m) for (let r = 0; r < Number(m[2] || 1); r++) flat.push({ st: m[1] });
+    });
+    this.flat = flat.length ? flat : [{ st: 'P' }];
+    this.reset();
+  }
+
+  // division setting 0 (very early) … 4 (very late) -> steps between divisions
+  setDivision(div) { this.divEvery = 3 + (div | 0); this.reset(); }
+
+  reset() {
+    this.seed = 11;
+    this.cells = [{ x: 0, y: 0, d: 0, k: 0, mir: 1, born: 0 }];
+    this.trail = new Map();
+    this.tick = 0;
+    this.hold = 0;
+    this.t0 = performance.now();
+  }
+
+  _rnd() { this.seed = (this.seed * 1103515245 + 12345) & 0x7fffffff; return this.seed / 0x7fffffff; }
+
+  _step() {
+    const occ = new Set(this.cells.map((c) => `${c.x},${c.y}`));
+    const inside = (x, y) => Math.abs(x) <= (this.W >> 1) && Math.abs(y) <= (this.H >> 1);
+    this.tick++;
+    for (const c of this.cells) {
+      const { st } = this.flat[c.k % this.flat.length];
+      c.k++;
+      if (st === 'Z') c.d = Math.floor(this._rnd() * 8);
+      else if (st === 'B') c.d = (c.d + 4) & 7;
+      else if (st in TURN) c.d = (c.d + TURN[st] * c.mir + 8) & 7;
+      if (st === 'M') c.mir = -c.mir;
+      if (st === 'P') continue;
+      const nx = c.x + PDX[c.d], ny = c.y + PDY[c.d];
+      if (inside(nx, ny) && !occ.has(`${nx},${ny}`)) {
+        occ.delete(`${c.x},${c.y}`);
+        this.trail.set(`${c.x},${c.y}`, this.tick);
+        c.x = nx; c.y = ny;
+        occ.add(`${nx},${ny}`);
+      }
+    }
+    // division: daughter goes to a free neighbouring square
+    if (this.tick % this.divEvery === 0 && this.cells.length < 40) {
+      for (const c of this.cells.slice()) {
+        for (let t = 0; t < 8; t++) {
+          const d = (c.d + 4 + [0, 1, -1, 2, -2, 3, -3, 4][t] + 8) & 7;
+          const nx = c.x + PDX[d], ny = c.y + PDY[d];
+          if (inside(nx, ny) && !occ.has(`${nx},${ny}`)) {
+            this.cells.push({ x: nx, y: ny, d: c.d, k: c.k, mir: c.mir, born: this.tick });
+            occ.add(`${nx},${ny}`);
+            break;
+          }
+        }
+        if (this.cells.length >= 40) break;
+      }
+    }
+  }
+
+  start() {
+    cancelAnimationFrame(this.raf);
+    const STEP = 260;
+    const loop = (t) => {
+      this.raf = requestAnimationFrame(loop);
+      while (t - this.t0 >= STEP) {
+        this.t0 += STEP;
+        if (this.cells.length >= 40 || this.tick > 60) { if (++this.hold > 6) this.reset(); }
+        else this._step();
+      }
+      this._draw();
+    };
+    this.raf = requestAnimationFrame(loop);
+  }
+
+  stop() { cancelAnimationFrame(this.raf); }
+
+  _draw() {
+    const dpr = window.devicePixelRatio || 1;
+    const w = this.canvas.clientWidth || 300, h = this.canvas.clientHeight || 200;
+    if (this.canvas.width !== Math.round(w * dpr)) { this.canvas.width = Math.round(w * dpr); this.canvas.height = Math.round(h * dpr); }
+    const ctx = this.canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    const sc = Math.min(w / this.W, h / this.H);
+    const X = (gx) => w / 2 + (gx - 0.5) * sc, Y = (gy) => h / 2 + (gy - 0.5) * sc;
+    ctx.fillStyle = 'rgba(255,255,255,0.08)';
+    for (let gy = -(this.H >> 1); gy <= this.H >> 1; gy++) for (let gx = -(this.W >> 1); gx <= this.W >> 1; gx++) ctx.fillRect(X(gx) + sc / 2 - 1, Y(gy) + sc / 2 - 1, 2, 2);
+    ctx.fillStyle = this.color;
+    for (const [key, t] of this.trail) {
+      const [gx, gy] = key.split(',').map(Number);
+      ctx.globalAlpha = Math.max(0.06, 0.3 - (this.tick - t) * 0.02);
+      ctx.fillRect(X(gx) + 1, Y(gy) + 1, sc - 2, sc - 2);
+    }
+    for (const c of this.cells) {
+      const fresh = this.tick - c.born <= 1 && c.born > 0;
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = fresh ? '#ffffff' : this.color;
+      ctx.fillRect(X(c.x) + 1, Y(c.y) + 1, sc - 2, sc - 2);
+    }
+    ctx.globalAlpha = 1;
+    // origin marker
+    ctx.strokeStyle = 'rgba(255,255,255,0.45)'; ctx.lineWidth = 1;
+    ctx.strokeRect(X(0) - 1, Y(0) - 1, sc + 2, sc + 2);
+  }
+}

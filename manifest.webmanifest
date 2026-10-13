@@ -1,8 +1,8 @@
 {
   "name": "Agava",
   "short_name": "Agava",
-  "description": "Bakterienkampf auf der Agarplatte",
-  "lang": "de",
+  "description": "Bacteria battle on the agar plate",
+  "lang": "en",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

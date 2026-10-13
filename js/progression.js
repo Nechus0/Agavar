@@ -4,7 +4,7 @@
 import { SPECIALS, COSTED, cost, parseStep, MAX_PROGRAM } from './genome.js';
 import { STEP_MOVES, MOVE_BY_KEY } from './movement.js';
 
-const moveNames = (step) => (STEP_MOVES[step] || []).map((k) => `„${MOVE_BY_KEY[k].name}“`).join(' und ');
+const moveNames = (step) => (STEP_MOVES[step] || []).map((k) => `“${MOVE_BY_KEY[k].name}”`).join(' and ');
 
 export const START_POINTS = 6;
 export const POINTS_PER_WIN = 2;
@@ -21,7 +21,7 @@ export const UNLOCKS = [
   { after: 7, specials: ['predator'], steps: ['M'] },
   { after: 8, specials: ['biofilm'] },
   { after: 9, specials: ['toxin'] },
-  { after: 10, title: 'Meister der Agarplatte' },
+  { after: 10, title: 'Master of the Agar Plate' },
 ];
 
 export function getLimits(won) {
@@ -43,9 +43,9 @@ export const careerPoints = (won, stars = {}) =>
 
 // Sterne eines Levels: 1 = Sieg, 2 = Sieg in unter 12 h, 4 = zeitweise 25 % der Platte besiedelt
 export const STAR_GOALS = [
-  { bit: 1, icon: '🏆', short: 'Sieg', text: 'Level gewinnen' },
-  { bit: 2, icon: '⏱', short: 'unter 12 h', text: 'In unter 12 h Brutzeit gewinnen' },
-  { bit: 4, icon: '🧫', short: '25 % Platte', text: 'Zeitweise 25 % der Platte besiedeln (und gewinnen)' },
+  { bit: 1, icon: '🏆', short: 'Win', text: 'Win the level' },
+  { bit: 2, icon: '⏱', short: 'under 12 h', text: 'Win in under 12 h of incubation' },
+  { bit: 4, icon: '🧫', short: '25 % plate', text: 'Cover 25 % of the plate at some point (and win)' },
 ];
 export const FAST_TICKS = 1000; // 12 h von 48 h
 export const BIG_PLATE = 0.25;
@@ -78,10 +78,10 @@ export function unlockLevelOf(kind, key) {
 export function rewardsOf(level) {
   const out = [];
   for (const u of UNLOCKS.filter((x) => x.after === level)) {
-    for (const s of u.steps || []) out.push({ type: 'move', key: STEP_MOVES[s][0], text: `Bewegungsart ${moveNames(s)}`, short: moveNames(s).replace(/[„“]/g, '') });
-    for (const s of u.specials || []) out.push({ type: 'special', key: s, text: `Spezialfähigkeit „${SPECIALS[s].name}“`, short: SPECIALS[s].name });
-    if (u.repeat || u.programMax) out.push({ type: 'bigger', text: 'Größere Bewegungsmuster (weitere Größenstufen)', short: 'größere Muster' });
-    if (u.title) out.push({ type: 'title', text: `Titel „${u.title}“`, short: u.title });
+    for (const s of u.steps || []) out.push({ type: 'move', key: STEP_MOVES[s][0], text: `Movement ${moveNames(s)}`, short: moveNames(s).replace(/[“”]/g, '') });
+    for (const s of u.specials || []) out.push({ type: 'special', key: s, text: `Special ability “${SPECIALS[s].name}”`, short: SPECIALS[s].name });
+    if (u.repeat || u.programMax) out.push({ type: 'bigger', text: 'Bigger movement patterns (more sizes)', short: 'bigger patterns' });
+    if (u.title) out.push({ type: 'title', text: `Title “${u.title}”`, short: u.title });
   }
   return out;
 }
@@ -90,12 +90,12 @@ export function rewardsOf(level) {
 export function problems(g, lim, budget) {
   const p = [];
   const c = cost(g);
-  if (c > budget) p.push(`${c} statt max. ${budget} Punkte`);
-  for (const t of COSTED) if (g[t.key] > t.max) p.push(`${t.label} zu hoch`);
-  if (!lim.specials.has(g.special)) p.push(`${SPECIALS[g.special].name} noch gesperrt`);
+  if (c > budget) p.push(`${c} instead of max. ${budget} points`);
+  for (const t of COSTED) if (g[t.key] > t.max) p.push(`${t.label} too high`);
+  if (!lim.specials.has(g.special)) p.push(`${SPECIALS[g.special].name} still locked`);
   const steps = g.program.map(parseStep).filter(Boolean);
   const locked = [...new Set(steps.filter((x) => !lim.steps.has(x.s)).map((x) => x.s))];
-  if (locked.length) p.push(`Bewegungsart ${locked.map(moveNames).join(', ')} noch gesperrt`);
-  else if ((!lim.repeat && steps.some((x) => x.n > 1)) || g.program.length > lim.programMax) p.push('Bewegungsmuster noch zu groß');
+  if (locked.length) p.push(`Movement ${locked.map(moveNames).join(', ')} still locked`);
+  else if ((!lim.repeat && steps.some((x) => x.n > 1)) || g.program.length > lim.programMax) p.push('Movement pattern still too big');
   return p;
 }

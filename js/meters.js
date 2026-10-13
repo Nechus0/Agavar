@@ -31,9 +31,9 @@ export function meters(g) {
 }
 
 export const METER_INFO = [
-  { key: 'spread', icon: '🌱', label: 'Ausbreitung', color: '#5ee06a' },
-  { key: 'fight', icon: '⚔️', label: 'Kampfkraft', color: '#ff6b6b' },
-  { key: 'survive', icon: '🛡', label: 'Ausdauer', color: '#3fa9f5' },
+  { key: 'spread', icon: '🌱', label: 'Spread', color: '#5ee06a' },
+  { key: 'fight', icon: '⚔️', label: 'Combat', color: '#ff6b6b' },
+  { key: 'survive', icon: '🛡', label: 'Endurance', color: '#3fa9f5' },
 ];
 
 // Konter-Hinweise zu einem Gegner (wichtigste zuerst, höchstens `max`)
@@ -41,18 +41,18 @@ export function counterTips(o, max = 2) {
   const tips = [];
   const sp = new Set([o.special, o.bonusSpecial]);
   const move = moveFromProgram(o.program);
-  if (sp.has('toxin')) tips.push('☣ Gift wirkt auf Nachbarn – halte Abstand mit einer wandernden Bewegung oder teile dich früh, damit Verluste nachwachsen.');
-  if (sp.has('predator')) tips.push('🦷 Räuber leben von Kills – hohe Abwehr oder eine Kapsel lassen ihn ins Leere laufen.');
-  if (sp.has('capsule')) tips.push('🛡 Jeder Angriff muss zweimal treffen – setze auf hohen Angriff oder Toxine (Gift umgeht die Kapsel).');
-  if (sp.has('biofilm')) tips.push('🟦 Biofilm ist zäh, aber ortsfest – nicht frontal angreifen, sondern die Nahrung schneller abgrasen.');
-  if (sp.has('spores')) tips.push('⚪ Sporen überstehen Hunger – aushungern reicht nicht, du musst ihn im Kampf besiegen.');
-  if (sp.has('photo')) tips.push('☀ Lebt vom Licht und braucht kaum Nahrung – angreifen statt aushungern.');
-  if (o.speed >= 4) tips.push('⚡ Sehr schnell – er frisst dir die Nahrung weg. Selbst Tempo 3 oder mehr, oder kompakt bleiben mit guter Verwertung.');
-  if (o.attack >= 4) tips.push('✴ Starker Angriff – mit Abwehr auf gleicher Höhe hältst du stand.');
-  if (move && move.type === 'sitzen') tips.push('🪑 Bewegt sich kaum – breite dich schnell aus und besetze die Platte, bevor er wächst.');
-  if (move && (move.type === 'gerade' || move.type === 'pendeln')) tips.push('➡ Läuft in Bahnen – eine kompakte Kolonie (Kreisen) fängt ihn an der Front ab.');
-  if ((o.chemotaxis || 0) >= 2) tips.push('💧 Riecht Nahrung – er findet freie Stellen schnell. Besetze sie zuerst.');
-  if (o.defense <= 1 && o.attack <= 1) tips.push('🎯 Kaum Kampfwerte – schon etwas Angriff reicht, um ihn zu verdrängen.');
-  if (!tips.length) tips.push('⚖ Ausgewogen – ein Allrounder mit Tempo, Verwertung und etwas Angriff ist eine gute Wahl.');
+  if (sp.has('toxin')) tips.push('☣ Poison hits neighbours – keep your distance with a roaming movement, or divide early so losses grow back.');
+  if (sp.has('predator')) tips.push('🦷 Predators live off kills – high defense or a capsule leaves it hungry.');
+  if (sp.has('capsule')) tips.push('🛡 Every attack must hit twice – go for high attack or toxins (poison ignores the capsule).');
+  if (sp.has('biofilm')) tips.push('🟦 Biofilm is tough but stationary – don’t attack head-on, eat the food faster instead.');
+  if (sp.has('spores')) tips.push('⚪ Spores survive hunger – starving it out won’t work, you have to beat it in combat.');
+  if (sp.has('photo')) tips.push('☀ Lives off light and needs little food – attack instead of starving it out.');
+  if (o.speed >= 4) tips.push('⚡ Very fast – it eats your food. Take speed 3 or more, or stay compact with good efficiency.');
+  if (o.attack >= 4) tips.push('✴ Strong attack – match it with defense to hold your ground.');
+  if (move && move.type === 'sitzen') tips.push('🪑 Barely moves – spread fast and take the plate before it grows.');
+  if (move && (move.type === 'gerade' || move.type === 'pendeln')) tips.push('➡ Moves in lanes – a compact colony (Circle) catches it at the front.');
+  if ((o.chemotaxis || 0) >= 2) tips.push('💧 Smells food – it finds free spots fast. Take them first.');
+  if (o.defense <= 1 && o.attack <= 1) tips.push('🎯 Weak in combat – a little attack is enough to push it out.');
+  if (!tips.length) tips.push('⚖ Balanced – an all-rounder with speed, efficiency and some attack is a good choice.');
   return tips.slice(0, max);
 }

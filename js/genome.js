@@ -3,15 +3,15 @@
 // Bewegungsschritte. "turn" = Drehung in 45°-Schritten relativ zur Blickrichtung (+ = rechts).
 // Reihenfolge = Anordnung der Buttons im Editor.
 export const STEPS = {
-  L: { icon: '↖', label: 'halblinks', name: 'Halb links (45°)', turn: -1 },
-  F: { icon: '⬆', label: 'vor', name: 'Geradeaus', turn: 0 },
-  R: { icon: '↗', label: 'halbrechts', name: 'Halb rechts (45°)', turn: 1 },
-  P: { icon: '⏸', label: 'warten', name: 'Warten (nicht bewegen)' },
-  Z: { icon: '🎲', label: 'taumeln', name: 'Taumeln (zufällige Richtung)' },
-  S: { icon: '⬅', label: 'links', name: 'Links (90°)', turn: -2 },
-  B: { icon: '⬇', label: 'umkehren', name: 'Umkehren (180°)', turn: 4 },
-  D: { icon: '➡', label: 'rechts', name: 'Rechts (90°)', turn: 2 },
-  M: { icon: '⇄', label: 'seitenwechsel', name: 'Seitenwechsel (rechts und links tauschen)', turn: 0 },
+  L: { icon: '↖', label: 'half left', name: 'Half left (45°)', turn: -1 },
+  F: { icon: '⬆', label: 'forward', name: 'Straight', turn: 0 },
+  R: { icon: '↗', label: 'half right', name: 'Half right (45°)', turn: 1 },
+  P: { icon: '⏸', label: 'wait', name: 'Wait (do not move)' },
+  Z: { icon: '🎲', label: 'tumble', name: 'Tumble (random direction)' },
+  S: { icon: '⬅', label: 'left', name: 'Left (90°)', turn: -2 },
+  B: { icon: '⬇', label: 'reverse', name: 'Reverse (180°)', turn: 4 },
+  D: { icon: '➡', label: 'right', name: 'Right (90°)', turn: 2 },
+  M: { icon: '⇄', label: 'switch', name: 'Switch sides (swap right and left)', turn: 0 },
 };
 export const STEP_KEYS = Object.keys(STEPS);
 export const MAX_PROGRAM = 6;
@@ -27,32 +27,32 @@ export const stepEntry = (s, n = 1) => (n > 1 ? `${s}${n}` : s);
 
 // Eigenschaften, die Punkte kosten (1 Punkt pro Stufe).
 export const COSTED = [
-  { key: 'speed', label: 'Geschwindigkeit', short: 'Tempo', max: 4, hint: 'Wie oft sich eine Zelle bewegt. Bewegung kostet Energie.' },
-  { key: 'lifespan', label: 'Lebensdauer', short: 'Leben', max: 4, hint: 'Wie alt eine Zelle maximal wird.' },
-  { key: 'efficiency', label: 'Verwertung', short: 'Verwertung', max: 4, hint: 'Wie viel Energie aus der aufgenommenen Nahrung gewonnen wird.' },
-  { key: 'chemotaxis', label: 'Chemotaxis', short: 'Riechen', max: 4, hint: 'Die Zellen „riechen“ Nahrung und weichen öfter vom Muster ab, um gezielt dorthin zu laufen.' },
-  { key: 'attack', label: 'Angriff', short: 'Angriff', max: 5, hint: 'Chance, gegnerische Zellen zu töten, in die man hineinläuft.' },
-  { key: 'defense', label: 'Abwehr', short: 'Abwehr', max: 5, hint: 'Schutz gegen Angriffe.' },
+  { key: 'speed', label: 'Speed', short: 'Speed', max: 4, hint: 'How often a cell moves. Moving costs energy.' },
+  { key: 'lifespan', label: 'Lifespan', short: 'Life', max: 4, hint: 'How old a cell can get.' },
+  { key: 'efficiency', label: 'Efficiency', short: 'Efficiency', max: 4, hint: 'How much energy a cell gets out of the food it eats.' },
+  { key: 'chemotaxis', label: 'Chemotaxis', short: 'Smell', max: 4, hint: 'Cells “smell” food and leave their pattern more often to head straight for it.' },
+  { key: 'attack', label: 'Attack', short: 'Attack', max: 5, hint: 'Chance to kill enemy cells you run into.' },
+  { key: 'defense', label: 'Defense', short: 'Defense', max: 5, hint: 'Protection against attacks.' },
 ];
 
 // Kostenlose Abwägungen: beide Enden haben Vor- und Nachteile.
 export const FREE = [
-  { key: 'metabolism', label: 'Stoffwechsel', max: 4, low: 'sparsam', high: 'gefräßig',
-    options: ['sehr sparsam', 'sparsam', 'mittel', 'hungrig', 'gefräßig'],
-    hint: 'Sparsam: wenig Grundumsatz, nutzt Nahrung effizient, wächst aber langsamer. Gefräßig: frisst schnell, verbraucht aber viel.' },
-  { key: 'division', label: 'Teilung', max: 4, low: 'sehr früh', high: 'sehr spät',
-    options: ['sehr früh', 'früh', 'mittel', 'spät', 'sehr spät'],
-    hint: 'Früh: viele, aber schwache Tochterzellen mit wenig Energie. Spät: wenige, robuste Zellen mit mehr Reserven.' },
+  { key: 'metabolism', label: 'Metabolism', max: 4, low: 'frugal', high: 'greedy',
+    options: ['very frugal', 'frugal', 'medium', 'hungry', 'greedy'],
+    hint: 'Frugal: low base cost, uses food efficiently, but grows slower. Greedy: eats fast, but burns a lot.' },
+  { key: 'division', label: 'Division', max: 4, low: 'very early', high: 'very late',
+    options: ['very early', 'early', 'medium', 'late', 'very late'],
+    hint: 'Early: many weak daughter cells with little energy. Late: fewer, tougher cells with more reserves.' },
 ];
 
 export const SPECIALS = {
-  none: { name: 'Keine', cost: 0, hint: 'Keine Spezialfähigkeit.' },
-  capsule: { name: 'Kapsel', cost: 3, hint: 'Eine Schleimkapsel fängt einen tödlichen Angriff ab und wächst danach langsam nach (Zellen mit Kapsel leuchten heller).' },
-  photo: { name: 'Photosynthese', cost: 3, hint: 'Die Zellen gewinnen ständig etwas Energie aus Licht – auch dort, wo die Nahrung aufgebraucht ist (Zellen schimmern).' },
-  predator: { name: 'Räuber', cost: 3, hint: 'Greift stärker an, frisst getötete Gegner und gewinnt dabei viel Energie (rote Fraßspuren).' },
-  spores: { name: 'Sporen', cost: 3, hint: 'Verhungernde Zellen werden zu ruhenden Sporen (helle Punkte) und erwachen, wenn wieder Nahrung da ist.' },
-  biofilm: { name: 'Biofilm', cost: 3, hint: 'Zellen, die kurz stillstehen, bilden eine Schleimschicht (dunkle Matte): viel widerstandsfähiger und sparsamer im Energieverbrauch.' },
-  toxin: { name: 'Toxine', cost: 3, hint: 'Die Zellen geben Giftstoffe ab (sichtbar als Giftwolke), die gegnerische Nachbarzellen schwächen und töten können.' },
+  none: { name: 'None', cost: 0, hint: 'No special ability.' },
+  capsule: { name: 'Capsule', cost: 3, hint: 'A slime capsule absorbs one deadly attack and then slowly grows back (cells with a capsule look brighter).' },
+  photo: { name: 'Photosynthesis', cost: 3, hint: 'Cells constantly gain a little energy from light – even where the food is gone (cells shimmer).' },
+  predator: { name: 'Predator', cost: 3, hint: 'Attacks harder, eats killed enemies and gains a lot of energy from them (red bite marks).' },
+  spores: { name: 'Spores', cost: 3, hint: 'Starving cells turn into dormant spores (pale dots) and wake up when food returns.' },
+  biofilm: { name: 'Biofilm', cost: 3, hint: 'Cells that stand still build a slime layer (dark mat): much tougher and they use less energy.' },
+  toxin: { name: 'Toxins', cost: 3, hint: 'Cells release poison (visible as a toxic cloud) that weakens and can kill neighbouring enemy cells.' },
 };
 export const SPECIAL_KEYS = Object.keys(SPECIALS);
 
@@ -92,7 +92,7 @@ const clampInt = (v, lo, hi) => Math.max(lo, Math.min(hi, Math.round(Number(v) |
 
 // Macht aus beliebigen (z. B. gespeicherten) Daten ein gültiges Genom.
 export function normalize(raw) {
-  const g = { ...defaultGenome(), name: 'Bakterium' };
+  const g = { ...defaultGenome(), name: 'Bacterium' };
   if (!raw || typeof raw !== 'object') return g;
   if (typeof raw.name === 'string' && raw.name.trim()) g.name = raw.name.trim().slice(0, 32);
   if (typeof raw.color === 'string' && /^#[0-9a-fA-F]{6}$/.test(raw.color)) g.color = raw.color.toLowerCase();
@@ -121,7 +121,7 @@ export const specialsOf = (g) => [g.special, g.bonusSpecial].filter((s) => s && 
 // Zufälliges Bakterium, das das Budget möglichst ausschöpft.
 // limits (optional): { specials, steps, programMax, repeat } aus dem Freischalt-System.
 export function randomGenome(rng, budget, limits = null) {
-  const g = { ...defaultGenome(), name: 'Zufall' };
+  const g = { ...defaultGenome(), name: 'Random' };
   const specials = (limits ? [...limits.specials] : SPECIAL_KEYS).filter((k) => k !== 'none');
   const steps = limits ? [...limits.steps] : STEP_KEYS;
   const progMax = limits ? limits.programMax : MAX_PROGRAM;

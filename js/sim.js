@@ -469,14 +469,14 @@ export class Simulation {
     const alive = this.players.filter((p) => p.count > 0);
     const total = alive.reduce((s, p) => s + p.count, 0);
     if (alive.length === 0) return this._finish(0, 'Alle Kulturen sind ausgestorben.');
-    if (alive.length === 1 && this.players.length > 1) return this._finish(alive[0].id, 'Einzige überlebende Kultur.');
+    if (alive.length === 1 && this.players.length > 1) return this._finish(alive[0].id, 'Last culture standing.');
     const lead = alive.reduce((a, b) => (b.count > a.count ? b : a));
     if (this.players.length > 1 && lead.count / total >= DOMINANCE_SHARE) {
-      if (++this.dominanceTicks >= DOMINANCE_TICKS) return this._finish(lead.id, 'Erdrückende Überlegenheit.');
+      if (++this.dominanceTicks >= DOMINANCE_TICKS) return this._finish(lead.id, 'Overwhelming dominance.');
     } else this.dominanceTicks = 0;
     if (this.tick >= MAX_TICKS) {
       const tied = alive.filter((p) => p.count === lead.count).length > 1;
-      return this._finish(tied ? 0 : lead.id, 'Zeit abgelaufen – die größte Kultur gewinnt.');
+      return this._finish(tied ? 0 : lead.id, 'Time is up – the biggest culture wins.');
     }
   }
 

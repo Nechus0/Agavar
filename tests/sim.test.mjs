@@ -222,5 +222,5 @@ test('Leisten und Konter-Hinweise', () => {
     const tips = counterTips(o, 2);
     assert.ok(tips.length >= 1 && tips.length <= 2 && tips.every((t) => t.length > 15));
   }
-  assert.ok(counterTips({ ...defaultGenome(), special: 'toxin' })[0].includes('Gift'));
+  assert.ok(counterTips({ ...defaultGenome(), special: 'toxin' })[0].includes('Poison'));
 });

@@ -4,75 +4,75 @@
 export const GERMS = {
   sepidermidis: {
     name: 'Staphylococcus epidermidis', shape: 'cluster',
-    fact: 'Lebt auf der Haut jedes Menschen. Er hat keine Geißeln und kann sich nicht selbst fortbewegen – er wächst einfach dort, wo er gerade ist.',
+    fact: 'Lives on the skin of every human. It has no flagella and cannot move on its own – it simply grows where it is.',
   },
   mluteus: {
     name: 'Micrococcus luteus', shape: 'tetrad',
-    fact: 'Bildet leuchtend gelbe Kolonien und liegt meist in Vierergruppen zusammen. Bewegen kann er sich nicht.',
+    fact: 'Forms bright yellow colonies and usually sits in groups of four. It cannot move.',
   },
   mxanthus: {
     name: 'Myxococcus xanthus', shape: 'myxo',
-    fact: 'Gleitet in Schwärmen über Oberflächen, kehrt dabei regelmäßig seine Richtung um und jagt im Rudel andere Bakterien.',
+    fact: 'Glides across surfaces in swarms, regularly reverses direction and hunts other bacteria as a pack.',
   },
   ecoli: {
     name: 'Escherichia coli', shape: 'peritrich',
-    fact: 'Schwimmt mit seinen Geißeln ein Stück geradeaus und „taumelt“ dann in eine zufällige neue Richtung – das nennt man Run-and-Tumble.',
+    fact: 'Swims straight for a while with its flagella, then “tumbles” into a random new direction – this is called run-and-tumble.',
   },
   lacidophilus: {
     name: 'Lactobacillus acidophilus', shape: 'chain',
-    fact: 'Ein Milchsäurebakterium aus Joghurt und Darm. Die Milchsäure, die er bildet, hemmt viele andere Bakterien.',
+    fact: 'A lactic acid bacterium from yoghurt and the gut. The lactic acid it makes holds back many other bacteria.',
   },
   pputida: {
     name: 'Pseudomonas putida', shape: 'polar',
-    fact: 'Kann Nährstoffe „riechen“ und schwimmt gezielt auf sie zu (Chemotaxis). Er baut sogar Bestandteile von Erdöl ab.',
+    fact: 'Can “smell” nutrients and swims straight towards them (chemotaxis). It can even break down parts of crude oil.',
   },
   kpneumoniae: {
     name: 'Klebsiella pneumoniae', shape: 'capsule',
-    fact: 'Umgibt sich mit einer dicken Schleimkapsel, an der Angreifer und sogar Abwehrzellen des Körpers abrutschen.',
+    fact: "Wraps itself in a thick slime capsule that attackers – and even the body's immune cells – slide off.",
   },
   synechococcus: {
     name: 'Synechococcus elongatus', shape: 'cyano',
-    fact: 'Ein Cyanobakterium, das wie eine Pflanze Photosynthese betreibt. Cyanobakterien haben vor Milliarden Jahren den Sauerstoff in unsere Luft gebracht.',
+    fact: 'A cyanobacterium that does photosynthesis like a plant. Billions of years ago, cyanobacteria put the oxygen into our air.',
   },
   bdellovibrio: {
     name: 'Bdellovibrio bacteriovorus', shape: 'predator',
-    fact: 'Ein Raubbakterium: Es rammt andere Bakterien, bohrt sich hinein und frisst sie von innen auf.',
+    fact: 'A predatory bacterium: it rams other bacteria, drills inside and eats them from within.',
   },
   pmirabilis: {
     name: 'Proteus mirabilis', shape: 'swarmer',
-    fact: 'Schwärmt in rhythmischen Wellen über Agarplatten und hinterlässt dabei typische ringförmige Muster.',
+    fact: 'Swarms across agar plates in rhythmic waves and leaves typical ring patterns behind.',
   },
   smarcescens: {
     name: 'Serratia marcescens', shape: 'rod',
-    fact: 'Bildet einen knallroten Farbstoff, das Prodigiosin, der andere Mikroben schädigen kann.',
+    fact: 'Makes a bright red pigment, prodigiosin, which can harm other microbes.',
   },
   bsubtilis: {
     name: 'Bacillus subtilis', shape: 'spore',
-    fact: 'Bildet bei Nahrungsmangel extrem widerstandsfähige Sporen, die Hitze, Trockenheit und viele Jahre überdauern können.',
+    fact: 'When food runs out, it forms extremely tough spores that survive heat, drought and many years.',
   },
   vcholerae: {
     name: 'Vibrio cholerae', shape: 'comma',
-    fact: 'Kommaförmig und mit einer einzigen Geißel einer der schnellsten Schwimmer unter den Bakterien.',
+    fact: 'Comma-shaped and, with a single flagellum, one of the fastest swimmers among bacteria.',
   },
   hpylori: {
     name: 'Helicobacter pylori', shape: 'helix',
-    fact: 'Korkenzieherförmig – er schraubt sich durch den Schleim der Magenwand. Etwa die Hälfte aller Menschen trägt ihn in sich.',
+    fact: 'Corkscrew-shaped – it screws its way through the mucus of the stomach wall. About half of all people carry it.',
   },
   paeruginosa: {
     name: 'Pseudomonas aeruginosa', shape: 'polar',
-    fact: 'Ein Meister des Biofilms: In seiner Schleimschicht kann er bis zu tausendmal unempfindlicher gegen Antibiotika sein.',
+    fact: 'A biofilm master: inside its slime layer it can be up to a thousand times more resistant to antibiotics.',
   },
   bcereus: {
     name: 'Bacillus cereus', shape: 'spore',
-    fact: 'Bildet Sporen, die sogar das Kochen überstehen – deshalb kann er in aufgewärmtem Reis Lebensmittelvergiftungen auslösen.',
+    fact: 'Forms spores that even survive cooking – that is why it can cause food poisoning in reheated rice.',
   },
   saureus: {
     name: 'Staphylococcus aureus', shape: 'cluster',
-    fact: 'Bildet zahlreiche Toxine, die andere Zellen angreifen. Etwa jeder dritte Mensch trägt ihn unbemerkt in der Nase.',
+    fact: 'Makes many toxins that attack other cells. About one in three people carries it unnoticed in their nose.',
   },
   cbotulinum: {
     name: 'Clostridium botulinum', shape: 'drumstick',
-    fact: 'Bildet Sporen und das Botulinumtoxin – eines der stärksten bekannten Gifte überhaupt.',
+    fact: 'Forms spores and botulinum toxin – one of the strongest poisons known.',
   },
 };
 
