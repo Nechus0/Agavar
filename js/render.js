@@ -31,6 +31,22 @@ export class PlateRenderer {
     this.ctx = canvas.getContext('2d');
     this.img = this.ctx.createImageData(sim.N, sim.N);
     this.colors = sim.players.map((p) => hexToRgb(p.genome.color));
+    // Smooth edge: pixels just outside the round plate borrow the food colour of the
+    // nearest plate pixel, and CSS (border-radius: 50%) then cuts a clean circle.
+    const N = sim.N, c = (N - 1) / 2, R = N / 2 - 0.5;
+    this.edge = new Int32Array(N * N).fill(-1);
+    for (let y = 0; y < N; y++) {
+      for (let x = 0; x < N; x++) {
+        const i = y * N + x;
+        if (sim.inPlate[i]) continue;
+        const dx = x - c, dy = y - c, r = Math.hypot(dx, dy);
+        if (r > R + 3) continue;
+        for (let rr = R - 0.5; rr > R - 4; rr -= 0.5) {
+          const j = Math.round(c + (dy / r) * rr) * N + Math.round(c + (dx / r) * rr);
+          if (sim.inPlate[j]) { this.edge[i] = j; break; }
+        }
+      }
+    }
   }
 
   draw() {
@@ -42,7 +58,13 @@ export class PlateRenderer {
     const tick = sim.tick;
     const size = owner.length;
     for (let i = 0, k = 0; i < size; i++, k += 4) {
-      if (!inPlate[i]) { d[k + 3] = 0; continue; }
+      if (!inPlate[i]) {
+        const j = this.edge[i];
+        if (j < 0) { d[k + 3] = 0; continue; }
+        const v = Math.min(100, nutrient[j] | 0) * 3;
+        d[k] = food[v]; d[k + 1] = food[v + 1]; d[k + 2] = food[v + 2]; d[k + 3] = 255;
+        continue;
+      }
       const o = owner[i];
       if (o) {
         const col = colors[o - 1];
@@ -118,7 +140,7 @@ export class PathAnimator {
   constructor(canvas, onStep) {
     this.canvas = canvas;
     this.onStep = onStep;
-    this.color = '#e9c46a';
+    this.color = '#e3c48a';
     this.raf = 0;
     this.actions = [];
   }
@@ -238,7 +260,7 @@ export class PathAnimator {
     ctx.rotate(ang);
     ctx.fillStyle = this.color;
     ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#0e1116';
+    ctx.fillStyle = '#0b1220';
     ctx.beginPath(); ctx.moveTo(0, -r * 0.7); ctx.lineTo(r * 0.45, r * 0.25); ctx.lineTo(-r * 0.45, r * 0.25); ctx.closePath(); ctx.fill();
     ctx.restore();
   }
@@ -250,7 +272,7 @@ export class PathAnimator {
 export class GrowthAnimator {
   constructor(canvas) {
     this.canvas = canvas;
-    this.color = '#e9c46a';
+    this.color = '#e3c48a';
     this.raf = 0;
     this.flat = [{ st: 'P' }];
     this.divEvery = 5;
