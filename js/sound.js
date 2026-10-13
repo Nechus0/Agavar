@@ -48,6 +48,9 @@ const SOUNDS = {
   unlock: () => [784, 988, 1175, 1568].forEach((f, k) => tone(f, k * 0.08, 0.25, { type: 'sine', vol: 0.09 })),
 };
 
+// shared audio context for the music player
+export const audioContext = () => ac();
+
 export function play(name) {
   if (!enabled || !SOUNDS[name]) return;
   try { SOUNDS[name](); } catch { /* Ton ist nicht wichtig genug für einen Fehler */ }

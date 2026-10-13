@@ -33,6 +33,7 @@
         <div class="row gap center-row">
           <button class="btn ghost" data-go="help">📖 How to play</button>
           <button class="btn ghost sound-toggle" aria-label="Sound on/off">🔊</button>
+          <button class="btn ghost music-toggle" aria-label="Music on/off">🎵</button>
         </div>
       </div>
     </section>
@@ -66,33 +67,41 @@
     <section class="screen" id="editor" hidden>
       <header class="bar"><button class="back" id="ed-cancel">‹ Cancel</button><h2 id="ed-title">Editor</h2><button class="btn small primary" id="ed-save">Save</button></header>
       <div class="card ed-top" id="ed-budget">
-        <input id="ed-name" type="text" maxlength="32" autocomplete="off" placeholder="Name, e.g. Bacillus furiosus" aria-label="Name">
+        <div class="name-row">
+          <input id="ed-name" type="text" maxlength="32" autocomplete="off" placeholder="Name, e.g. Bacillus furiosus" aria-label="Name">
+          <button class="btn dice-btn" id="ed-dice" aria-label="Random name" title="Random name">🎲</button>
+        </div>
         <div id="ed-colors" class="swatches"></div>
         <div class="budget-text"><span id="ed-budget-label">Points</span><b id="ed-cost">0 / 20</b></div>
         <div class="meter"><div id="ed-meter"></div></div>
         <div id="ed-meters" class="meters compact"></div>
         <p class="small warn" id="ed-warn" hidden></p>
       </div>
-      <div class="card">
-        <h3>Movement</h3>
+      <div class="previews">
+        <figure><canvas id="ed-preview" class="preview-cell"></canvas><figcaption>One cell and its offspring</figcaption></figure>
+        <figure><canvas id="ed-colony" class="preview-colony"></canvas><figcaption id="ed-colony-label">The colony</figcaption></figure>
+      </div>
+      <nav class="tabs" id="ed-tabs">
+        <button data-tab="move" class="on"><span>🧭</span>Movement</button>
+        <button data-tab="body"><span>🔥</span>Body</button>
+        <button data-tab="traits"><span>⚡</span>Traits</button>
+        <button data-tab="special"><span>✨</span>Special</button>
+      </nav>
+      <div class="card pane" data-pane="move">
         <div id="ed-moves" class="moves"></div>
         <div id="ed-move-opts" class="move-opts"></div>
-        <div class="previews">
-          <figure><canvas id="ed-preview" class="preview-cell"></canvas><figcaption>One cell and its offspring</figcaption></figure>
-          <figure><canvas id="ed-colony" class="preview-colony"></canvas><figcaption id="ed-colony-label">The colony</figcaption></figure>
-        </div>
       </div>
-      <div class="card">
-        <h3>Metabolism &amp; division <span class="muted small">· free</span></h3>
+      <div class="card pane" data-pane="body" hidden>
+        <p class="small muted pane-note">Free – no points needed</p>
         <div id="ed-free"></div>
         <div id="ed-energy" class="energy"></div>
       </div>
-      <div class="card">
-        <h3 class="row-between">Traits <span class="muted small" id="ed-left"></span></h3>
+      <div class="card pane" data-pane="traits" hidden>
+        <p class="small muted pane-note" id="ed-left"></p>
         <div id="ed-costed"></div>
       </div>
-      <div class="card">
-        <h3>Special ability <span class="muted small">· 3 points</span></h3>
+      <div class="card pane" data-pane="special" hidden>
+        <p class="small muted pane-note">One ability · 3 points</p>
         <div id="ed-specials" class="specials"></div>
         <p id="ed-special-hint" class="small muted"></p>
       </div>
@@ -108,7 +117,7 @@
 
     <!-- Simulation -->
     <section class="screen" id="sim" hidden>
-      <header class="bar"><button class="back" id="sim-quit">‹ Quit</button><h2 id="sim-title">Simulation</h2><button class="sound-toggle" aria-label="Sound on/off">🔊</button></header>
+      <header class="bar"><button class="back" id="sim-quit">‹ Quit</button><h2 id="sim-title">Simulation</h2><span class="bar-icons"><button class="music-toggle" aria-label="Music on/off">🎵</button><button class="sound-toggle" aria-label="Sound on/off">🔊</button></span></header>
       <div class="clock-row">
         <svg class="clock" viewBox="0 0 40 40" aria-hidden="true">
           <circle cx="20" cy="20" r="16" fill="none" stroke="#2a3340" stroke-width="5"/>

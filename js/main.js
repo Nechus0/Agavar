@@ -19,6 +19,7 @@ import { MOVES, MOVE_BY_KEY, actionsOf, compile, moveFromProgram, describeMove, 
 import * as store from './storage.js';
 import { meters, METER_INFO, counterTips } from './meters.js';
 import { play, setSoundEnabled } from './sound.js';
+import { startMusic, stopMusic } from './music.js';
 
 const $ = (sel) => document.querySelector(sel);
 const BREW_HOURS = 48; // eine Runde = 48 Stunden Brutzeit
@@ -63,6 +64,19 @@ document.addEventListener('click', (e) => {
   refreshSoundButtons();
   toast(store.getSettings().sound ? '🔊 Sound on' : '🔇 Sound off');
   play('tap');
+});
+
+// Music on/off (only plays during a simulation)
+const musicOn = () => store.getSettings().music !== false;
+function refreshMusicButtons() {
+  document.querySelectorAll('.music-toggle').forEach((b) => { b.classList.toggle('off', !musicOn()); b.setAttribute('aria-pressed', String(musicOn())); });
+}
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.music-toggle')) return;
+  store.updateSettings({ music: !musicOn() });
+  refreshMusicButtons();
+  toast(musicOn() ? '🎵 Music on' : '🎵 Music off');
+  if (current === 'sim' && musicOn() && !run.paused) startMusic(); else stopMusic();
 });
 
 // Inhalt ersetzen, leere Einträge (null/false) überspringen
@@ -346,6 +360,7 @@ function openEditor(b, ctx) {
   if (!ed.move) { ed.move = { type: 'gerade', size: 0, dir: 'R' }; ed.program = ['F']; }
   $('#ed-title').textContent = ctx.mode === 'free' ? 'Free play' : b ? 'Upgrade' : 'New bacterium';
   colony.sim = null;
+  showTab('move');
   go('editor');
   renderEditor();
   renderMove();
@@ -536,7 +551,22 @@ function renderEditor() {
   colony.restart();
 }
 
+// Editor tabs: one section at a time, the previews stay visible above
+function showTab(tab) {
+  document.querySelectorAll('#ed-tabs button').forEach((b) => b.classList.toggle('on', b.dataset.tab === tab));
+  document.querySelectorAll('#editor .pane').forEach((p) => { p.hidden = p.dataset.pane !== tab; });
+}
+$('#ed-tabs').addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-tab]');
+  if (b) { showTab(b.dataset.tab); play('tap'); }
+});
+
 $('#ed-name').addEventListener('input', (e) => { ed.name = e.target.value; });
+$('#ed-dice').addEventListener('click', () => {
+  ed.name = randomName(makeRng(randomSeed()));
+  $('#ed-name').value = ed.name;
+  play('tap');
+});
 $('#ed-cancel').addEventListener('click', () => go(edCtx.returnTo));
 $('#ed-save').addEventListener('click', () => {
   if (!ed.name.trim()) { $('#ed-name').focus(); return toast('Please give your bacterium a name.'); }
@@ -573,23 +603,24 @@ function renderEnergy(ep) {
 const freeLimits = () => getLimits(store.globalWon());
 const freeCtx = () => ({ mode: 'free', budget: store.getSettings().budget, limits: freeLimits(), returnTo: 'setup' });
 
-function segOption(label, key, values, labels) {
-  const s = store.getSettings();
-  const seg = el('div', { class: 'seg' }, values.map((v) => el('button', {
-    class: s[key] === v ? 'on' : '',
-    onclick: () => { store.updateSettings({ [key]: v }); onEnter.setup(); },
-  }, labels[v] ?? String(v))));
-  return el('div', { class: 'opt' }, el('span', {}, label), seg);
+// Settings as a compact list: tap a row to cycle through its values
+function segOption(label, key, values, labels, icon = '') {
+  const cur = store.getSettings()[key];
+  const next = values[(values.indexOf(cur) + 1) % values.length];
+  return el('button', {
+    class: 'set-row',
+    onclick: () => { store.updateSettings({ [key]: next }); play('tap'); onEnter.setup(); },
+  }, el('span', { class: 'set-label' }, icon ? `${icon} ` : '', label), el('span', { class: 'set-value' }, labels[cur] ?? String(cur), el('i', {}, '›')));
 }
 
-function stepperOption(label, key, min, max, step, fmt = (v) => v) {
+function stepperOption(label, key, min, max, step, fmt = (v) => v, icon = '') {
   const s = store.getSettings();
   const set = (v) => { store.updateSettings({ [key]: Math.max(min, Math.min(max, v)) }); onEnter.setup(); };
-  return el('div', { class: 'opt' }, el('span', {}, label),
+  return el('div', { class: 'set-row' }, el('span', { class: 'set-label' }, icon ? `${icon} ` : '', label),
     el('div', { class: 'stepper' },
-      el('button', { onclick: () => set(s[key] - step) }, '−'),
-      el('b', { style: 'min-width:64px;text-align:center' }, fmt(s[key])),
-      el('button', { onclick: () => set(s[key] + step) }, '+')));
+      el('button', { onclick: () => set(s[key] - step), 'aria-label': 'less' }, '−'),
+      el('b', { class: 'set-num' }, fmt(s[key])),
+      el('button', { onclick: () => set(s[key] + step), 'aria-label': 'more' }, '+')));
 }
 
 onEnter.setup = () => {
@@ -612,12 +643,12 @@ onEnter.setup = () => {
   }
   fill($('#su-options'), 
     el('h3', {}, 'Settings'),
-    stepperOption('Opponents', 'opponents', 1, 5, 1),
-    stepperOption('Point budget (for you and the opponents)', 'budget', MIN_BUDGET, MAX_BUDGET, 1, (v) => `${v} pts`),
-    segOption('Plate size', 'size', ['klein', 'mittel', 'gross'], LABELS.size),
-    segOption('Food layout', 'distribution', DISTRIBUTIONS, LABELS.distribution),
-    segOption('Food amount', 'amount', ['wenig', 'normal', 'viel'], LABELS.amount),
-    segOption('Regrowth', 'regen', ['aus', 'langsam', 'normal', 'schnell'], LABELS.regen),
+    stepperOption('Opponents', 'opponents', 1, 5, 1, (v) => v, '🦠'),
+    stepperOption('Points', 'budget', MIN_BUDGET, MAX_BUDGET, 1, (v) => v, '⭐'),
+    segOption('Plate size', 'size', ['klein', 'mittel', 'gross'], LABELS.size, '🧫'),
+    segOption('Food layout', 'distribution', DISTRIBUTIONS, LABELS.distribution, '🍯'),
+    segOption('Food amount', 'amount', ['wenig', 'normal', 'viel'], LABELS.amount, '🥣'),
+    segOption('Regrowth', 'regen', ['aus', 'langsam', 'normal', 'schnell'], LABELS.regen, '🔁'),
     el('p', { class: 'small muted' }, 'Special abilities and special movements are unlocked in your career – for you and the random opponents.'),
   );
 };
@@ -739,6 +770,7 @@ function startMatch(cfg) {
   run.r.draw();
   cancelAnimationFrame(run.raf);
   run.raf = requestAnimationFrame(simFrame);
+  if (musicOn()) startMusic();
 }
 
 function setSpeed(v) {
@@ -797,6 +829,7 @@ $('#sim-speed').addEventListener('click', (e) => {
 $('#sim-pause').addEventListener('click', () => {
   run.paused = !run.paused;
   $('#sim-pause').textContent = run.paused ? '▶' : '⏸';
+  if (run.paused) stopMusic(); else if (musicOn()) startMusic();
 });
 $('#sim-quit').addEventListener('click', async () => {
   const wasPaused = run.paused;
@@ -806,7 +839,7 @@ $('#sim-quit').addEventListener('click', async () => {
     go(run.cfg.mode === 'level' ? 'level-detail' : 'setup');
   } else run.paused = wasPaused;
 });
-onLeave.sim = () => cancelAnimationFrame(run.raf);
+onLeave.sim = () => { cancelAnimationFrame(run.raf); stopMusic(); };
 document.addEventListener('visibilitychange', () => { run.last = 0; demo.last = 0; });
 
 // ---------- Ergebnis ----------
@@ -970,6 +1003,7 @@ $('#rs-upgrade').addEventListener('click', () => {
 // Atlas nachtragen: Keime aus bereits gewonnenen Leveln gelten als entdeckt
 store.discover(store.globalWon().filter((n) => LEVELS[n - 1]).flatMap((n) => levelOpponents(LEVELS[n - 1]).map((o) => o.germ)));
 refreshSoundButtons();
+refreshMusicButtons();
 go('home');
 
 if ('serviceWorker' in navigator && location.protocol === 'https:') {

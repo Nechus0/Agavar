@@ -13,6 +13,7 @@ const DEFAULT_SETTINGS = {
   amount: 'normal',
   regen: 'normal',
   sound: true,
+  music: true,
 };
 
 const cleanWon = (w) => (Array.isArray(w) ? [...new Set(w.filter(Number.isInteger))] : []);
