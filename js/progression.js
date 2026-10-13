@@ -41,14 +41,14 @@ export function getLimits(won) {
 export const careerPoints = (won, stars = {}) =>
   START_POINTS + POINTS_PER_WIN * won.length + Object.values(stars).filter((m) => (m & 7) === 7).length;
 
-// Sterne eines Levels: 1 = Sieg, 2 = Sieg in unter 12 h, 4 = zeitweise 30 % der Platte besiedelt
+// Sterne eines Levels: 1 = Sieg, 2 = Sieg in unter 12 h, 4 = zeitweise 25 % der Platte besiedelt
 export const STAR_GOALS = [
   { bit: 1, icon: '🏆', short: 'Sieg', text: 'Level gewinnen' },
   { bit: 2, icon: '⏱', short: 'unter 12 h', text: 'In unter 12 h Brutzeit gewinnen' },
-  { bit: 4, icon: '🧫', short: '30 % Platte', text: 'Zeitweise 30 % der Platte besiedeln (und gewinnen)' },
+  { bit: 4, icon: '🧫', short: '25 % Platte', text: 'Zeitweise 25 % der Platte besiedeln (und gewinnen)' },
 ];
 export const FAST_TICKS = 1000; // 12 h von 48 h
-export const BIG_PLATE = 0.3;
+export const BIG_PLATE = 0.25;
 export const starCount = (mask) => ((mask & 1) + ((mask >> 1) & 1) + ((mask >> 2) & 1));
 export function starMask(sim) {
   if (sim.winner !== 1) return 0;

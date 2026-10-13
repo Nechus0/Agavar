@@ -102,7 +102,7 @@ Alle Zellen werden in zufälliger Reihenfolge abgearbeitet:
 - **Drei Sterne pro Level**:
   - ★ Sieg
   - ★ Sieg in unter 12 h
-  - ★ zeitweise 30 % der Platte besiedelt
+  - ★ zeitweise 25 % der Platte besiedelt
 
   Sterne aus verschiedenen Versuchen zählen zusammen. Alle drei bringen +1 Ausbaupunkt.
 - **Auswertung**: Nach jedem Spiel gibt es 1–4 Punkte, z. B. „Knapp! Zeitweise 41 % aller Zellen“, „Die Toxine von *S. aureus* haben 812 deiner Zellen getötet“ oder Tipps für fehlende Sterne. Grundlage ist eine Statistik der Todesursachen (verhungert, Alter, Kampf, Toxin) und wer wen getötet hat.

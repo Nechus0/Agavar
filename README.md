@@ -23,7 +23,7 @@ Bakterienkampf auf der Agarplatte: Du entwirfst ein Bakterium, setzt es mit Gegn
   - Teilung, Stoffwechsel, Geschwindigkeit, Lebensdauer, Verwertung, Chemotaxis, Angriff, Abwehr
   - eine Spezialfähigkeit: Kapsel, Photosynthese, Räuber, Sporen, Biofilm oder Toxine
 - **Sterne, Atlas & Erfolge**:
-  - drei Sterne pro Level (Sieg, Sieg unter 12 h, 30 % der Platte); alle drei bringen +1 Ausbaupunkt
+  - drei Sterne pro Level (Sieg, Sieg unter 12 h, 25 % der Platte); alle drei bringen +1 Ausbaupunkt
   - Auswertung nach jedem Spiel mit konkreten Tipps (woran deine Zellen gestorben sind)
   - Bakterien-Atlas mit allen besiegten Keimen und 12 Erfolge
 - **Freies Spiel**: eigenes Bakterium mit frei einstellbarem Budget (6–40). Spezialfähigkeiten und besondere Schritte gibt es nur, wenn sie in einer Karriere freigespielt wurden. Dazu 1–5 Zufallsgegner, Plattengröße und Nährboden einstellbar.
