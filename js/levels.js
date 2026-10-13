@@ -67,7 +67,7 @@ export const LEVELS = [
     desc: 'Pseudomonas aeruginosa verschanzt sich in seinem Biofilm. Wer ihn knacken will, braucht Kraft.',
     plate: { size: 'gross', distribution: 'flecken', amount: 'normal', regen: 'normal' },
     boss: g('paeruginosa', '#2ee6d6', ['F', 'P3'], [3, 3, 4, 4, 5, 3, 1], 'biofilm'),
-    opponents: [g('pmirabilis', '#ff9f43', ['F4', 'R'], [4, 2, 4, 5, 4, 1, 3])],
+    opponents: [g('pmirabilis', '#ff9f43', ['F4', 'R'], [4, 2, 4, 4, 4, 1, 3])],
   },
   {
     name: 'Giftküche',
