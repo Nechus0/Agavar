@@ -1,7 +1,7 @@
 // Oberfläche: Bildschirme, Karriere, Editor, Spielablauf – im Agava-Design-System („Lab at night“).
 import {
   COSTED, FREE, SPECIALS, SPECIAL_KEYS, PALETTE, TRAIT_MAX,
-  MIN_BUDGET, MAX_BUDGET, defaultGenome, cost, normalize, randomGenome, specialsOf, symbolOf,
+  MIN_BUDGET, MAX_BUDGET, defaultGenome, cost, normalize, randomGenome, specialsOf,
 } from './genome.js';
 import { Simulation, DISTRIBUTIONS, MAX_TICKS, energyProfile, phenotype, ROUNDS_PER_HOUR } from './sim.js';
 import { PlateRenderer, drawHistory, GrowthAnimator } from './render.js';
@@ -58,7 +58,8 @@ function germPic(germ, color, cls = '') {
   return s;
 }
 // Kulturfarbe immer zusammen mit ihrem Symbol (Farbe ist nie das einzige Merkmal)
-const culture = (color, cls = '') => el('span', { class: `culture ${cls}`, style: `background:${color}`, 'aria-hidden': 'true' }, symbolOf(color));
+const culture = (color, cls = '') => el('span', { class: `culture ${cls}`, style: `background:${color}`, 'aria-hidden': 'true' });
+const COLOR_NAMES = { '#38a0b4': 'Teal', '#cc5252': 'Red', '#cc8040': 'Orange', '#c0a030': 'Amber', '#52a83e': 'Green', '#5858c4': 'Indigo', '#a040a0': 'Purple', '#c04878': 'Rose' };
 const specialIcon = (key, cls = '') => icon(SPECIAL_ICONS[key], cls);
 
 // feste Symbole im HTML (data-icon) einsetzen
@@ -126,12 +127,12 @@ function go(id) {
   current = id;
   window.scrollTo(0, 0);
   // die Leiste unten ist immer erreichbar; Unterseiten gehören zu Start bzw. Einstellungen
-  const tab = { atlas: 'atlas', awards: 'awards', settings: 'settings', help: 'settings' }[id] || 'home';
+  const tab = { atlas: 'atlas', awards: 'awards', settings: 'settings', help: 'settings', editor: 'lab' }[id] || 'home';
   $('#bottom-nav').hidden = false;
   document.body.classList.add('has-nav');
   document.querySelectorAll('#bottom-nav button').forEach((b) => {
-    b.classList.toggle('on', b.dataset.go === tab);
-    if (b.dataset.go === tab) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
+    b.classList.toggle('on', b.dataset.tab === tab);
+    if (b.dataset.tab === tab) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
   });
   refreshResumeBar();
   if (onEnter[id]) onEnter[id]();
@@ -307,6 +308,13 @@ function playNext(b, n) {
   store.updateSettings({ lastCareer: b.id });
   startMatch({ mode: 'level', level: n, careerId: b.id, player: b, opponents: levelOpponents(lv), ...lv.plate, seed: randomSeed() });
 }
+
+// Lab in der Leiste: das zuletzt gespielte Bakterium bearbeiten (oder das erste anlegen)
+$('#nav-lab').addEventListener('click', () => {
+  if (current === 'editor') return;
+  const b = lastCareer();
+  if (b) { careerId = b.id; openEditor(b, careerCtx(b, 'home')); } else openEditor(null, careerNewCtx('home'));
+});
 
 $('#home-free').addEventListener('click', () => {
   if (store.globalWon().includes(3)) go('setup');
@@ -673,9 +681,9 @@ function renderEditor() {
   if (document.activeElement !== $('#ed-name')) $('#ed-name').value = ed.name;
   fill($('#ed-colors'), ...PALETTE.map((c) => el('button', {
     class: `swatch ${ed.color === c ? 'on' : ''}`, style: `background:${c}`, role: 'radio', 'aria-checked': String(ed.color === c),
-    'aria-label': `Colour ${symbolOf(c)}`,
+    'aria-label': COLOR_NAMES[c] || c,
     onclick: () => { ed.color = c; renderEditor(); animator.setProgram(ed.program, ed.color); },
-  }, symbolOf(c))));
+  })));
 
   fill($('#ed-free'), ...FREE.map(freeCard));
   renderEnergy(energyProfile(normalize(ed)));

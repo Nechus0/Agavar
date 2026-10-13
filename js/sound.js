@@ -7,6 +7,8 @@ export function setSoundEnabled(v) { enabled = !!v; }
 export const soundEnabled = () => enabled;
 
 function ac() {
+  // iOS: als Medienwiedergabe abspielen – sonst schaltet der Stummschalter WebAudio (Musik und Effekte) ab
+  try { if (navigator.audioSession && navigator.audioSession.type !== 'playback') navigator.audioSession.type = 'playback'; } catch {}
   if (!ctx) {
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return null;
