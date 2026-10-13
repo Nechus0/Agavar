@@ -444,6 +444,7 @@ onEnter['level-detail'] = () => {
   fill($('#ld-me'),
     el('div', { class: 'bact-head' }, culture(b.color), el('span', { class: 'name' }, b.name),
       el('button', { class: 'btn small', onclick: () => openEditor(b, careerCtx(b, 'level-detail')) }, ui('flask', 'sm'), 'Lab')),
+    el('div', { class: 'glance' }, el('h3', {}, 'At a glance'), meterBars(normalize(b), boss, boss.name.split(' ')[0])),
     probs.length ? el('p', { class: 'small warn' }, probs.join(' · '), ' – fix it in the lab.')
       : el('p', { class: `small ${free > 0 ? 'free-pts' : 'muted'}` }, free > 0 ? `${free} upgrade ${free === 1 ? 'point' : 'points'} left to spend` : `Ready · ${cost(b)} / ${pts} points used`));
   $('#ld-start').disabled = probs.length > 0;
@@ -942,7 +943,7 @@ function startMatch(cfg) {
   fill($('#sim-shares'), ...run.genomes.map((g) => el('div', { style: `background:${g.color}` })));
   fill($('#sim-legend'), ...run.genomes.map((g, i) => el('div', { class: 'legend-row', title: g.name },
     culture(g.color, 'sm'),
-    el('span', { class: 'legend-name' }, shortName(g, i)),
+    el('span', { class: 'legend-name' }, i === 0 ? `${g.name} (you)` : g.name),
     ...specialsOf(g).map((k) => specialIcon(k, 'xs')),
     el('span', { class: 'n' }, '0 %'))));
   $('#sim-goals').hidden = cfg.mode !== 'level';

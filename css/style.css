@@ -515,3 +515,11 @@ td.win { color: var(--success); }
 .atlas-photo img { max-height: 240px; object-fit: cover; }
 .gm-facts { margin: var(--space-1) 0; row-gap: var(--space-3); }
 #ed-free { display: flex; flex-direction: column; gap: var(--space-3); }
+
+/* Simulation legend: one culture per row with its full name */
+.legend.list { display: flex; flex-direction: column; gap: 0; padding: var(--space-1) var(--space-4); }
+.legend.list .legend-row { min-height: 44px; font-size: 15px; color: var(--text-primary); gap: var(--space-3); }
+.legend.list .legend-row + .legend-row { border-top: 1px solid var(--bg-surface-2); }
+.legend.list .legend-name { font-style: italic; }
+.legend.list .n { font-size: 15px; }
+.glance { display: flex; flex-direction: column; gap: var(--space-3); padding-top: var(--space-2); border-top: 1px solid var(--bg-surface-2); }
