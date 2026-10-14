@@ -92,3 +92,18 @@ export const ACH_ICONS = {
   collector: wrap('<path d="M4 5a2 2 0 0 1 2-2h14v16H6a2 2 0 0 0-2 2z"/><path d="M4 21V5"/>'),
   master: wrap('<path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8 21h8M10 17h4v4"/>'),
 };
+
+// Elemente auf der Platte
+export const ELEMENT_ICONS = {
+  stones: wrap('<path d="M3.5 17.5c0-3 2-5.5 5-5.5s4.5 2.3 4.5 5.5z"/><path d="M12.5 17.5c.3-2.5 2-4 4.2-4s3.8 1.6 3.8 4z"/><path d="M8 9.5c.4-1.8 1.7-3 3.4-3s2.9 1.2 3.1 3z"/><path d="M2.5 17.5h19"/>'),
+  disc: wrap('<circle cx="12" cy="12" r="3.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="8.5" stroke-dasharray="2.5 2.5"/>'),
+  sun: wrap('<path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor" stroke="none" opacity=".35"/><circle cx="12" cy="12" r="9"/><path d="M12 3v18"/><circle cx="16" cy="9" r="1.6" fill="currentColor" stroke="none"/>'),
+  salt: wrap('<path d="M12 3l5 5-5 13-5-13z"/><path d="M7 8h10"/><path d="M12 3v18"/>'),
+  acid: wrap('<path d="M12 3c3.5 4.2 6 7.6 6 10.5a6 6 0 0 1-12 0C6 10.6 8.5 7.2 12 3z"/><path d="M9.5 14.5h5"/>'),
+  sugar: wrap('<path d="M12 3c3.5 4.2 6 7.6 6 10.5a6 6 0 0 1-12 0C6 10.6 8.5 7.2 12 3z" fill="currentColor" stroke="none" opacity=".35"/><path d="M12 3c3.5 4.2 6 7.6 6 10.5a6 6 0 0 1-12 0C6 10.6 8.5 7.2 12 3z"/><path d="M9 14a3 3 0 0 0 3 3"/>'),
+  heat: wrap('<path d="M10 14.5V5a2 2 0 0 1 4 0v9.5a4 4 0 1 1-4 0z"/><path d="M12 9v7"/>'),
+  flow: wrap('<path d="M3 8c3-2 6 2 9 0s6-2 9 0"/><path d="M3 13c3-2 6 2 9 0s6-2 9 0"/><path d="M3 18c3-2 6 2 9 0s6-2 9 0"/>'),
+  mould: wrap('<circle cx="12" cy="12" r="4.5" fill="currentColor" stroke="none" opacity=".5"/><path d="M12 3.5v3M12 17.5v3M3.5 12h3M17.5 12h3M6 6l2.1 2.1M15.9 15.9 18 18M6 18l2.1-2.1M15.9 8.1 18 6"/>'),
+  phage: wrap('<path d="M12 2.5l4 2.3v4.6l-4 2.3-4-2.3V4.8z"/><path d="M12 11.7v5.3"/><path d="M12 17l-4.5 4M12 17l4.5 4M12 17l-6 1.5M12 17l6 1.5"/>'),
+  immune: wrap('<path d="M12 3.5c4.6 0 8.5 3.2 8.5 8.3 0 4.6-3.6 8.7-8.6 8.7-4.8 0-8.4-3.5-8.4-8.2 0-5 3.7-8.8 8.5-8.8z"/><circle cx="10" cy="11" r="2.2" fill="currentColor" stroke="none"/><circle cx="14.4" cy="13.2" r="1.8" fill="currentColor" stroke="none"/>'),
+};

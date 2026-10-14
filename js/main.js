@@ -14,7 +14,8 @@ import {
   STAR_GOALS, starMask, starCount,
 } from './progression.js';
 import { analyze, ACHIEVEMENTS } from './insights.js';
-import { SPECIAL_ICONS, TRAIT_ICONS, UI_ICONS, ACH_ICONS } from './icons.js';
+import { SPECIAL_ICONS, TRAIT_ICONS, UI_ICONS, ACH_ICONS, ELEMENT_ICONS } from './icons.js';
+import { ELEMENTS, elementsOf } from './elements.js';
 import { MOVES, MOVE_BY_KEY, actionsOf, compile, moveFromProgram, describeMove, pathSvg } from './movement.js';
 import * as store from './storage.js';
 import { meters, METER_INFO, counterTips } from './meters.js';
@@ -112,6 +113,7 @@ const LABELS = {
   size: { klein: 'Small', mittel: 'Medium', gross: 'Large' },
   distribution: { gleichmaessig: 'Even', flecken: 'Patches', ring: 'Ring', zentrum: 'Center', rauschen: 'Noise', poren: 'Pores', schnitt: 'Cut' },
   amount: { wenig: 'Little', normal: 'Normal', viel: 'Lots' },
+  amountLong: { wenig: 'Scarce', normal: 'Normal', viel: 'Plenty' },
   regen: { aus: 'Off', langsam: 'Slow', normal: 'Normal', schnell: 'Fast' },
 };
 
@@ -348,11 +350,22 @@ onEnter['level-detail'] = () => {
   $('#ld-title').textContent = `Level ${n}`;
   fill($('#ld-intro'),
     el('h1', {}, lv.name),
-    el('p', { class: 'sub' }, lv.desc),
-    el('div', { class: 'plate-chips' },
-      el('span', { class: 'pchip' }, ui('dish', 'sm'), `${LABELS.size[pl.size]} plate`),
-      el('span', { class: 'pchip' }, ui('food', 'sm'), `${LABELS.distribution[pl.distribution]} food`),
-      el('span', { class: 'pchip' }, ui('restart', 'sm'), `${LABELS.regen[pl.regen]} regrowth`)));
+    el('p', { class: 'sub' }, lv.desc));
+  const preview = el('canvas', { class: 'plate', role: 'img', 'aria-label': `Plate preview: ${LABELS.distribution[pl.distribution].toLowerCase()} food` });
+  const els = elementsOf(pl);
+  fill($('#ld-plate'),
+    el('div', { class: 'plate-top' },
+      el('div', { class: 'plate-ring preview-ring' }, preview),
+      el('div', { class: 'plate-facts' },
+        lv.note ? el('p', { class: 'lab-note' }, lv.note) : null,
+        el('dl', { class: 'facts' },
+          el('dt', {}, 'Food'), el('dd', {}, LABELS.amountLong[pl.amount]),
+          el('dt', {}, 'Layout'), el('dd', {}, LABELS.distribution[pl.distribution]),
+          el('dt', {}, 'Regrowth'), el('dd', {}, LABELS.regen[pl.regen]),
+          el('dt', {}, 'Size'), el('dd', {}, LABELS.size[pl.size])))),
+    els.length ? el('div', { class: 'el-list' }, els.map(elementRow)) : null);
+  drawPreview(preview, lv, n);
+  showNewElements(els);
   fill($('#ld-foes'),
     foeRow(boss), ...others.map(foeRow),
     el('div', { class: 'tip' }, ui('bulb'), el('span', {}, counterTips(boss, 1)[0])));
@@ -378,6 +391,36 @@ onEnter['level-detail'] = () => {
   coach.hidden = n !== 1 || won.includes(1);
   coach.textContent = 'Tap Start and watch – your bacterium plays on its own. Use 5× or 10× to fast-forward.';
 };
+// Vorschau der Platte zu Spielbeginn: Futterverteilung, Elemente und Startpunkte
+function drawPreview(canvas, lv, n) {
+  const opp = levelOpponents(lv);
+  const me = curCareer();
+  const sim = new Simulation({ genomes: [normalize(me || opp[0]), ...fixColors(normalize(me || opp[0]), opp)], ...lv.plate, seed: 1000 + n });
+  new PlateRenderer(canvas, sim, worldOfLevel(n).theme).draw();
+}
+
+const elIcon = (k, cls = 'sm') => icon(ELEMENT_ICONS[k], cls);
+function elementRow(k) {
+  const e = ELEMENTS[k];
+  return el('div', { class: 'el-row' }, el('span', { class: 'el-ico' }, elIcon(k, 'md')), el('div', { class: 'main' }, el('b', {}, e.name), el('small', {}, e.effect)));
+}
+
+// Neues Element: einmalig ein Info-Blatt mit Bild, Name und Wirkung
+function showNewElements(keys) {
+  const seen = new Set(store.getSettings().seenElements || []);
+  const fresh = keys.filter((k) => !seen.has(k));
+  if (!fresh.length) return;
+  store.updateSettings({ seenElements: [...seen, ...fresh] });
+  setTimeout(() => {
+    if (current !== 'level-detail') return;
+    openSheet('New on the plate', ...fresh.map((k) => el('div', { class: 'el-intro' },
+      el('span', { class: 'el-ico big' }, elIcon(k, 'lg')),
+      el('b', {}, ELEMENTS[k].name),
+      el('small', { class: 'muted' }, ELEMENTS[k].look),
+      el('p', {}, ELEMENTS[k].effect))));
+  }, 350);
+}
+
 const starLabel = (g) => ({ 1: 'Win', 2: 'Under 12 h', 4: '25 % plate' }[g.bit]);
 
 $('#ld-start').addEventListener('click', () => {
@@ -790,6 +833,18 @@ function checkEvents() {
       ev.slow = true; banner('Close race – slow motion'); play('alarm');
     }
   }
+  while (sim.notices && ev.notice < sim.notices.length) {
+    const nt = sim.notices[ev.notice++];
+    const who = nt.target ? (nt.target === 1 ? 'your colony' : `${names[nt.target - 1]}'s colony`) : '';
+    const text = {
+      'sugar-warn': 'Honey drop in 1 h – see the blinking ring',
+      disc: who ? `Antibiotic disc placed on ${who}` : 'Antibiotic disc placed',
+      mould: 'Mould spores landed on the plate',
+      phage: `Phage outbreak in ${who}`,
+      immune: 'Immune cells arrive',
+    }[nt.kind];
+    if (text) { banner(text, nt.target === 1 ? 'bad' : ''); play('alarm'); }
+  }
   if (!ev.sixH && sim.tick >= MAX_TICKS - 500) { ev.sixH = true; banner('6 hours of incubation left'); play('alarm'); }
 }
 
@@ -810,14 +865,25 @@ function startMatch(cfg) {
   run.genomes = [player, ...opponents];
   run.sim = new Simulation({
     genomes: run.genomes, size: cfg.size, distribution: cfg.distribution,
-    amount: cfg.amount, regen: cfg.regen, seed: cfg.seed,
+    amount: cfg.amount, regen: cfg.regen, elements: cfg.elements, seed: cfg.seed,
   });
   const theme = cfg.mode === 'level' ? worldOfLevel(cfg.level).theme : null;
   run.r = new PlateRenderer($('#plate'), run.sim, theme);
   run.paused = false;
   run.acc = 0;
   run.last = 0;
-  run.ev = { contact: false, dead: new Set(), leader: 0, leaderTick: -999, slow: false, sixH: false, peakPlate: 0 };
+  run.ev = { contact: false, dead: new Set(), leader: 0, leaderTick: -999, slow: false, sixH: false, peakPlate: 0, notice: 0 };
+  const elKeys = elementsOf(cfg);
+  $('#sim-elements').hidden = !elKeys.length;
+  fill($('#sim-elements'), ...elKeys.map((k) => el('div', { class: 'legend-row' }, elIcon(k, 'sm'), el('span', { class: 'legend-name plain' }, ELEMENTS[k].name))));
+  // geplante Ereignisse als Marken auf der Zeitleiste
+  const marks = [];
+  for (const p of run.sim.pulses || []) marks.push(p.at);
+  for (const d of run.sim.discs || []) if (d.at > 0) marks.push(d.at);
+  for (const m of run.sim.moulds || []) if (m.at > 0) marks.push(m.at);
+  for (const t of run.sim.phageAt || []) marks.push(t);
+  if ((run.sim.immune || []).length) marks.push(run.sim.immuneAt);
+  fill($('#clock-marks'), ...marks.filter((t) => t > 0 && t < MAX_TICKS).map((t) => el('i', { style: `left:${(t / MAX_TICKS) * 100}%` })));
   resetBanners();
   clearTimeout(run.endTimer);
   if (cfg.mode === 'level') {

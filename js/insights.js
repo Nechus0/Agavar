@@ -19,7 +19,7 @@ export function analyze(sim, genomes, mask = 0) {
 
   // Woran sind die eigenen Zellen gestorben?
   const d = p.died;
-  const deaths = d.starve + d.age + d.fight + d.toxin;
+  const deaths = d.starve + d.age + d.fight + d.toxin + (d.env || 0);
   if (deaths > 20) {
     let killer = 0;
     for (let id = 2; id < p.killedBy.length; id++) if (p.killedBy[id] > (p.killedBy[killer] || 0)) killer = id;
@@ -28,6 +28,8 @@ export function analyze(sim, genomes, mask = 0) {
     if (byKiller / deaths >= 0.3) {
       if (d.toxin > d.fight) out.push({ kind: 'tip', text: `${name}'s toxins killed ${byKiller.toLocaleString('en-US')} of your cells.` });
       else out.push({ kind: 'tip', text: `${name} killed ${byKiller.toLocaleString('en-US')} of your cells in combat.` });
+    } else if ((d.env || 0) / deaths >= 0.3) {
+      out.push({ kind: 'tip', text: `The plate itself killed ${d.env.toLocaleString('en-US')} of your cells.` });
     } else if (d.starve / deaths >= 0.5) {
       out.push({ kind: 'tip', text: 'Most of your cells starved.' });
     } else if (d.age / deaths >= 0.4) {

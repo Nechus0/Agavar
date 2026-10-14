@@ -47,6 +47,52 @@ export class PlateRenderer {
         }
       }
     }
+    if (sim.envOn) this._prepareEnv();
+  }
+
+  // feste Färbungen der Elemente (Säure, Wärme, Salz, Schatten) einmal vorberechnen:
+  // Farbe = Farbe * mul + add (je Kanal), für Nährboden und – nur Schatten – für Zellen
+  _prepareEnv() {
+    const sim = this.sim, N = sim.N, size = N * N;
+    const mul = new Float32Array(size).fill(1), add = new Float32Array(size * 3), cmul = new Float32Array(size).fill(1);
+    const tint = (i, col, w) => {
+      if (w <= 0) return;
+      mul[i] *= 1 - w;
+      for (let c = 0; c < 3; c++) add[i * 3 + c] = add[i * 3 + c] * (1 - w) + col[c] * w;
+    };
+    for (let i = 0; i < size; i++) {
+      if (!sim.inPlate[i]) continue;
+      if (sim.acid) tint(i, [196, 70, 96], sim.acid[i] * 0.42);
+      if (sim.temp) { const t = sim.temp[i]; if (t > 0) tint(i, [236, 104, 40], t * 0.3); else tint(i, [130, 186, 236], -t * 0.34); }
+      if (sim.salt) tint(i, [246, 244, 236], sim.salt[i] * 0.45);
+      if (sim.light) {
+        const L = sim.light[i], sh = 0.5 + 0.5 * L;
+        if (L > 0.5) tint(i, [255, 236, 170], (L - 0.5) * 0.18);
+        mul[i] *= sh; for (let c = 0; c < 3; c++) add[i * 3 + c] *= sh;
+        cmul[i] = 0.62 + 0.38 * L;
+      }
+    }
+    this.env = { mul, add, cmul };
+    if (sim.flow) {
+      const a = sim.flowAngle, ca = Math.cos(a), sa = Math.sin(a);
+      const along = new Float32Array(size), lane = new Uint8Array(size);
+      for (let i = 0; i < size; i++) {
+        const x = i % N, y = (i / N) | 0;
+        along[i] = x * ca + y * sa;
+        const across = -x * sa + y * ca;
+        lane[i] = ((Math.round(across) % 6) + 6) % 6 === 0 ? 1 : 0;
+      }
+      this.env.along = along; this.env.lane = lane;
+    }
+  }
+
+  // Wände: Steine, Salzkristalle, Schimmel und Antibiotika-Plättchen
+  _wallColor(i, kind, tick, d, k) {
+    const h = (Math.imul(i, 2654435761) >>> 0) % 97;
+    if (kind === 1) { const v = (h % 7) * 5 - 15; d[k] = 116 + v; d[k + 1] = 112 + v; d[k + 2] = 102 + v; }
+    else if (kind === 2) { const sp = h % 11 === 0 && ((tick >> 3) + h) % 9 === 0; const v = sp ? 255 : 222 + (h % 4) * 6; d[k] = v; d[k + 1] = v; d[k + 2] = sp ? 255 : v - 10; }
+    else if (kind === 3) { const fz = (h + (tick >> 4)) % 5 === 0; d[k] = fz ? 112 : 196 + (h % 5) * 6; d[k + 1] = fz ? 150 : 204 + (h % 5) * 5; d[k + 2] = fz ? 120 : 180 + (h % 5) * 5; }
+    else { d[k] = 238; d[k + 1] = 234; d[k + 2] = 222; }
   }
 
   draw() {
@@ -57,6 +103,7 @@ export class PlateRenderer {
     const photo = sim.players.map((p) => p.ph.photo);
     const tick = sim.tick;
     const size = owner.length;
+    const env = this.env, wall = sim.wall, abx = sim.abx, inf = sim.infected, lysis = sim.lysis;
     for (let i = 0, k = 0; i < size; i++, k += 4) {
       if (!inPlate[i]) {
         const j = this.edge[i];
@@ -65,10 +112,15 @@ export class PlateRenderer {
         d[k] = food[v]; d[k + 1] = food[v + 1]; d[k + 2] = food[v + 2]; d[k + 3] = 255;
         continue;
       }
+      if (wall && wall[i]) { this._wallColor(i, wall[i], tick, d, k); d[k + 3] = 255; continue; }
       const o = owner[i];
       if (o) {
         const col = colors[o - 1];
-        if (spore[i]) {
+        if (inf && inf[i]) {
+          // von Phagen befallen: Zelle wird blass, kurz vor dem Platzen fast weiß
+          const t = 0.35 + inf[i] * 0.07;
+          d[k] = col[0] + (235 - col[0]) * t; d[k + 1] = col[1] + (235 - col[1]) * t; d[k + 2] = col[2] + (235 - col[2]) * t;
+        } else if (spore[i]) {
           // Sporen: helle, fast weiße Punkte
           d[k] = 150 + col[0] * 0.4; d[k + 1] = 150 + col[1] * 0.4; d[k + 2] = 150 + col[2] * 0.4;
         } else if (biofilm[o - 1] && still[i] >= 2) {
@@ -84,16 +136,71 @@ export class PlateRenderer {
           if (shield[i]) { d[k] += (255 - d[k]) * 0.3; d[k + 1] += (255 - d[k + 1]) * 0.3; d[k + 2] += (255 - d[k + 2]) * 0.3; }
         }
         if (fog[i]) { const t = fog[i] / 20; d[k] += (TOXIN[0] - d[k]) * t; d[k + 1] += (TOXIN[1] - d[k + 1]) * t; d[k + 2] += (TOXIN[2] - d[k + 2]) * t; }
+        if (env && env.cmul[i] !== 1) { const m = env.cmul[i]; d[k] *= m; d[k + 1] *= m; d[k + 2] *= m; }
       } else {
         const v = Math.min(100, nutrient[i] | 0) * 3;
         let r = food[v], g = food[v + 1], b = food[v + 2];
         if (fog[i]) { const t = fog[i] / 12; r += (TOXIN[0] - r) * t; g += (TOXIN[1] - g) * t; b += (TOXIN[2] - b) * t; }
         if (bite[i]) { const t = bite[i] / 14; r += (BITE[0] - r) * t; g += (BITE[1] - g) * t; b += (BITE[2] - b) * t; }
+        if (env) {
+          const m = env.mul[i], a3 = i * 3;
+          r = r * m + env.add[a3]; g = g * m + env.add[a3 + 1]; b = b * m + env.add[a3 + 2];
+          // Strömung: feine helle Streifen, die mitwandern
+          if (env.lane && env.lane[i] && ((env.along[i] - tick * 0.25) % 18 + 18) % 18 < 3) { r += (255 - r) * 0.16; g += (255 - g) * 0.16; b += (255 - b) * 0.16; }
+          // Hemmhof: klare, kühle Zone mit hellem Rand
+          if (abx && abx[i] > 0.01) {
+            const c = abx[i];
+            const w = c < 0.16 ? 0.5 : 0.3 * c;
+            r += (206 - r) * w; g += (222 - g) * w; b += (220 - b) * w;
+          }
+          if (lysis && lysis[i]) { const t = lysis[i] / 22; r += (240 - r) * t; g += (240 - g) * t; b += (230 - b) * t; }
+        }
         d[k] = r; d[k + 1] = g; d[k + 2] = b;
       }
       d[k + 3] = 255;
     }
     this.ctx.putImageData(img, 0, 0);
+    if (sim.envOn) this._overlay();
+  }
+
+  // bewegte Elemente über dem Raster: Honig-Ankündigung, Tropfen-Welle, Immunzellen
+  _overlay() {
+    const sim = this.sim, ctx = this.ctx, tick = sim.tick;
+    for (const p of sim.pulses || []) {
+      if (tick >= p.warn && tick < p.at) {
+        const blink = 0.45 + 0.4 * Math.sin(tick / 4);
+        ctx.save();
+        ctx.setLineDash([2, 2]);
+        ctx.strokeStyle = `rgba(255, 214, 120, ${blink})`;
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.arc(p.x + 0.5, p.y + 0.5, p.r * 0.7, 0, Math.PI * 2); ctx.stroke();
+        ctx.restore();
+      } else if (tick >= p.at && tick < p.at + 40) {
+        const f = (tick - p.at) / 40;
+        ctx.strokeStyle = `rgba(255, 226, 150, ${0.8 * (1 - f)})`;
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.arc(p.x + 0.5, p.y + 0.5, p.r * (0.3 + f), 0, Math.PI * 2); ctx.stroke();
+      }
+    }
+    for (const m of sim.immune || []) {
+      if (!m.on) continue;
+      const pulse = 1 + 0.06 * Math.sin(tick / 6 + m.wob);
+      const r = m.r * pulse;
+      ctx.fillStyle = 'rgba(236, 240, 250, 0.28)';
+      ctx.strokeStyle = 'rgba(250, 250, 255, 0.85)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let a = 0; a <= 24; a++) {
+        const t = (a / 24) * Math.PI * 2;
+        const rr = r * (1 + 0.1 * Math.sin(t * 3 + tick / 9 + m.wob));
+        const x = m.x + 0.5 + Math.cos(t) * rr, y = m.y + 0.5 + Math.sin(t) * rr;
+        if (a === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = 'rgba(150, 140, 210, 0.75)';
+      ctx.beginPath(); ctx.arc(m.x + 0.5 - r * 0.25, m.y + 0.5, r * 0.28, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(m.x + 0.5 + r * 0.25, m.y + 0.5 + r * 0.1, r * 0.24, 0, Math.PI * 2); ctx.fill();
+    }
   }
 }
 

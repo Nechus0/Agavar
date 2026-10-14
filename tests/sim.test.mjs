@@ -6,6 +6,7 @@ import { LEVELS, levelOpponents } from '../js/levels.js';
 import { GERMS, germSvg } from '../js/germs.js';
 import { getLimits, problems, rewardsOf, unlockLevelOf, careerPoints, nextLevel, START_POINTS, POINTS_PER_WIN } from '../js/progression.js';
 import { makeRng } from '../js/rng.js';
+import { ELEMENTS } from '../js/elements.js';
 
 const opts = (genomes, seed = 1) => ({ genomes, size: 'klein', distribution: 'gleichmaessig', amount: 'normal', regen: 'normal', seed });
 
@@ -65,12 +66,14 @@ test('Toxine erzeugen eine sichtbare Giftwolke', () => {
   assert.ok(sim.fog.some((v) => v > 0));
 });
 
-test('10 Level, jedes mit echtem besonderen Gegner', () => {
-  assert.equal(LEVELS.length, 10);
+test('20 Level in Welt 1, jedes mit echtem besonderen Gegner und einer Begründung für die Platte', () => {
+  assert.equal(LEVELS.length, 20);
   for (const lv of LEVELS) {
     const opps = levelOpponents(lv);
     assert.ok(opps.length >= 1 && opps.length <= 5);
     assert.ok(opps[0].boss);
+    assert.ok(lv.note && lv.note.length > 20, `${lv.name}: Labornotiz fehlt`);
+    for (const e of lv.plate.elements || []) assert.ok(ELEMENTS[e.type], `${lv.name}: unbekanntes Element ${e.type}`);
     for (const o of opps) {
       assert.ok(GERMS[o.germ], `Keim ${o.germ} fehlt`);
       assert.equal(o.name, GERMS[o.germ].name);
@@ -250,4 +253,25 @@ test('Spezialfähigkeiten kosten je nach Stärke unterschiedlich viel', () => {
   const costs = Object.entries(SPECIALS).filter(([k]) => k !== 'none').map(([, s]) => s.cost);
   assert.ok(new Set(costs).size >= 3);
   assert.ok(SPECIALS.toxin.cost > SPECIALS.spores.cost);
+});
+
+test('Elemente: gleicher Seed, gleicher Verlauf; Wände blockieren; jedes Element läuft', () => {
+  const g = { ...defaultGenome(), speed: 4, efficiency: 4, program: ['F', 'R'] };
+  for (const type of Object.keys(ELEMENTS)) {
+    const o = { ...opts([g, { ...g, color: '#cc5252' }], 9), elements: [{ type, at: type === 'phage' ? [150] : 0 }] };
+    const a = new Simulation(o).run(400), b = new Simulation(o).run(400);
+    assert.deepEqual(a.history, b.history, type);
+  }
+  const sim = new Simulation({ ...opts([g], 4), elements: [{ type: 'stones', count: 8 }] }).run(300);
+  let blocked = 0;
+  for (let i = 0; i < sim.owner.length; i++) if (sim.wall[i]) { blocked++; assert.equal(sim.owner[i], 0); }
+  assert.ok(blocked > 20);
+});
+
+test('Antibiotika-Plättchen und Immunzellen töten Zellen', () => {
+  const g = { ...defaultGenome(), speed: 6, efficiency: 6, lifespan: 4, program: ['F', 'R'] };
+  const disc = new Simulation({ ...opts([g], 2), elements: [{ type: 'disc', at: 0, halo: 0.6 }] }).run(800);
+  assert.ok(disc.players[0].died.env > 0);
+  const imm = new Simulation({ ...opts([g], 2), elements: [{ type: 'immune', at: 100 }] }).run(800);
+  assert.ok(imm.players[0].died.env > 0);
 });

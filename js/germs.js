@@ -130,6 +130,26 @@ export const GERMS = {
     name: 'Streptococcus agalactiae', shape: 'chain', world: 1, home: 'Skin and mucous membranes',
     fact: 'Grows in chains and wears a sugar capsule. Usually harmless, but it can infect wounds and newborn babies.',
   },
+  slugdunensis: {
+    name: 'Staphylococcus lugdunensis', shape: 'cluster', world: 1, home: 'Skin of the lower body',
+    fact: 'Looks like a harmless skin staph, but behaves more like its aggressive cousin S. aureus when it gets into a graze.',
+  },
+  cjeikeium: {
+    name: 'Corynebacterium jeikeium', shape: 'rod', world: 1, home: 'Skin of hospital patients',
+    fact: 'Resistant to almost every common antibiotic – which is exactly why it survives where creams and drugs wipe out other skin germs.',
+  },
+  dermacoccus: {
+    name: 'Dermacoccus nishinomiyaensis', shape: 'tetrad', world: 1, home: 'Sun-exposed skin',
+    fact: 'Forms orange colonies. Its pigments act like a little sunscreen against UV light.',
+  },
+  fmagna: {
+    name: 'Finegoldia magna', shape: 'cluster', world: 1, home: 'Deep skin wounds and ulcers',
+    fact: 'Hates oxygen and hides deep in wounds and ulcers, where it feeds on what the body leaks into the wound.',
+  },
+  pmultocida: {
+    name: 'Pasteurella multocida', shape: 'capsule', world: 1, home: 'Mouths of cats and dogs – and bite wounds',
+    fact: 'Lives in the mouths of cats and dogs. A bite pushes it deep into the skin, which is why bite wounds are rinsed for a long time.',
+  },
 };
 
 // Kleine SVG-Zeichnung (Seitenverhältnis 3:2) der typischen Zellform.

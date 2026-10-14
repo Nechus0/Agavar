@@ -23,6 +23,7 @@ export const UNLOCKS = [
   { after: 8, specials: ['biofilm'], slots: 2 },
   { after: 9, specials: ['toxin'] },
   { after: 10, title: 'Wound Healer' },
+  { after: 20, title: 'Skin Specialist' },
   // later worlds (see docs/WORLDS.md): Photosynthesis in Water, Spores and Predator in Soil
   { after: 45, specials: ['photo'] },
   { after: 63, specials: ['spores'] },

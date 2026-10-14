@@ -123,7 +123,7 @@ export class Simulation {
       kills: 0,
       extinctAt: -1,
       // Statistik für die Auswertung nach dem Spiel
-      died: { starve: 0, age: 0, fight: 0, toxin: 0 },
+      died: { starve: 0, age: 0, fight: 0, toxin: 0, env: 0 },
       killedBy: new Array(opts.genomes.length + 1).fill(0), // killedBy[id] = von Spieler id getötete Zellen
       peakShare: 0, // höchster Anteil an allen lebenden Zellen
       peakPlate: 0, // höchster Anteil an der Plattenfläche
@@ -209,11 +209,13 @@ export class Simulation {
     const n = this.players.length;
     const offset = rng() * Math.PI * 2;
     const startR = n === 1 ? 0 : R * 0.58;
+    this.starts = [];
     this.players.forEach((p, k) => {
       const a = offset + (k / n) * Math.PI * 2;
       const startDir = rng.int(8); // ganze Startkolonie blickt in dieselbe Richtung
       const sx = Math.round(c + Math.cos(a) * startR);
       const sy = Math.round(c + Math.sin(a) * startR);
+      this.starts.push([sx, sy]);
       for (let dy = -2; dy <= 2; dy++) {
         for (let dx = -2; dx <= 2; dx++) {
           if (dx * dx + dy * dy > 5) continue;
@@ -223,6 +225,8 @@ export class Simulation {
         }
       }
     });
+    this.notices = [];
+    this._initElements();
     this._count();
     this._record();
   }
@@ -240,6 +244,7 @@ export class Simulation {
     this.still[i] = 0;
     this.spore[i] = 0;
     this.stamp[i] = this.tick + 1;
+    if (this.infected) this.infected[i] = 0;
   }
 
   // cause: 'starve' | 'age' | 'fight' | 'toxin'; killer = Spieler-id bei Kampf/Toxin
@@ -251,6 +256,7 @@ export class Simulation {
     }
     this.owner[i] = 0;
     this.spore[i] = 0;
+    if (this.infected) this.infected[i] = 0;
     // Abgestorbene Zellen geben etwas Nahrung an den Boden zurück.
     this.nutrient[i] = Math.min(this.nutrient[i] + 4 + Math.max(0, this.energy[i]) * 0.2, Math.max(this.nutrientMax[i], 20));
     this.energy[i] = 0;
@@ -270,6 +276,7 @@ export class Simulation {
     this.stamp[to] = this.tick + 1;
     this.owner[from] = 0;
     this.energy[from] = 0;
+    if (this.infected) { this.infected[to] = this.infected[from]; this.infected[from] = 0; }
   }
 
   _neighbor(i, d) {
@@ -277,7 +284,7 @@ export class Simulation {
     const x = (i % N) + DX[d], y = ((i / N) | 0) + DY[d];
     if (x < 0 || y < 0 || x >= N || y >= N) return -1;
     const j = y * N + x;
-    return this.inPlate[j] ? j : -1;
+    return this.inPlate[j] && !(this.wall && this.wall[j]) ? j : -1;
   }
 
   _defense(j) {
@@ -300,14 +307,20 @@ export class Simulation {
     const fog = this.fog;
     const bite = this.bite;
     for (let i = 0; i < size; i++) { if (fog[i]) fog[i]--; if (bite[i]) bite[i]--; }
+    if (this.envOn) this._elementsTick();
 
-    // Nahrung wächst nach.
-    if (this.regen > 0) {
+    // Nahrung wächst nach (an Salzkristallen schneller).
+    const salt = this.salt;
+    if (this.regen > 0 || salt) {
       const nm = this.nutrientMax, r = this.regen;
       for (let i = 0; i < size; i++) {
-        if (nutrient[i] < nm[i]) nutrient[i] = Math.min(nm[i], nutrient[i] + r * (0.3 + nm[i] / 100));
+        const ri = salt ? r + salt[i] * 0.5 : r;
+        if (ri > 0 && nutrient[i] < nm[i]) nutrient[i] = Math.min(nm[i], nutrient[i] + ri * (0.3 + nm[i] / 100));
       }
     }
+    const env = this.envOn;
+    const { temp, acid, light, abx, infected, lysis } = this;
+    const flow = this.flow;
 
     // Belegte Zellen in zufälliger Reihenfolge abarbeiten (fair für alle Spieler).
     let n = 0;
@@ -333,18 +346,60 @@ export class Simulation {
         continue;
       }
 
+      // Phagen: infizierte Zellen platzen nach kurzer Zeit und stecken Nachbarn derselben Kolonie an
+      if (infected && infected[i]) {
+        if (++infected[i] > 7) {
+          this._kill(i, 'env');
+          lysis[i] = 16;
+          this._infectAround(i, o, 3, 0.5);
+        }
+        continue;
+      }
+
       // Altern und Grundumsatz
       this.age[i]++;
+      const slimy = ph.biofilm && this.still[i] >= 2;
       // Biofilm: stillstehende Zellen im Schleim sparen Energie
-      energy[i] -= ph.biofilm && this.still[i] >= 2 ? ph.basal * 0.7 : ph.basal;
+      energy[i] -= slimy ? ph.basal * 0.7 : ph.basal;
       // Kapsel wächst langsam nach
       if (ph.capsule && !this.shield[i] && rng() < 0.02) this.shield[i] = 1;
 
+      let uptake = ph.uptake, moveChance = ph.moveChance, lightHere = 1;
+      if (env) {
+        // warme Seite: alles läuft schneller, kalte Seite: alles langsamer
+        if (temp) {
+          const t = temp[i];
+          energy[i] -= ph.basal * 0.45 * t;
+          uptake *= 1 + 0.4 * t;
+          moveChance = Math.min(1, moveChance * (1 + 0.4 * t));
+          if (t > 0 && rng() < t * 0.6) this.age[i]++;
+        }
+        // saure Seite: Zellen altern schneller, Abwehr und Schleim schützen
+        if (acid && acid[i] > 0.03) {
+          const guard = slimy ? 0.1 : Math.max(0.1, 1 - ph.defense / 4);
+          if (rng() < acid[i] * guard) this.age[i] += 3;
+        }
+        // Sonne: trocknet aus, Schatten schützt, Schleim auch
+        if (light) {
+          lightHere = light[i];
+          energy[i] -= lightHere * 0.5 * (slimy || this.shield[i] ? 0.35 : 1);
+        }
+        // Salz: zieht Wasser aus der Zelle
+        if (salt && salt[i] > 0.02) energy[i] -= salt[i] * 0.9;
+        // Antibiotikum: tötet im Hemmhof, Kapsel und Biofilm halten länger durch
+        if (abx && abx[i] > 0.02) {
+          let k = abx[i] * 0.06;
+          if (this.shield[i]) k *= 0.3;
+          if (slimy) k *= 0.25;
+          if (rng() < k) { this._kill(i, 'env'); continue; }
+        }
+      }
+
       // Fressen
-      const take = Math.min(nutrient[i], ph.uptake);
+      const take = Math.min(nutrient[i], uptake);
       nutrient[i] -= take;
       energy[i] += take * ph.efficiency;
-      if (ph.photo) energy[i] += PHOTO_GAIN; // Energie aus Licht
+      if (ph.photo) energy[i] += PHOTO_GAIN * (light ? 0.4 + lightHere : 1); // Energie aus Licht
       if (energy[i] > MAX_ENERGY) energy[i] = MAX_ENERGY;
 
       if (this.age[i] > this.maxAge[i]) {
@@ -371,7 +426,7 @@ export class Simulation {
 
       // Bewegung nach dem Muster
       let cur = i;
-      if (rng() < ph.moveChance) {
+      if (rng() < moveChance) {
         const prog = ph.program;
         const s = prog[this.step[i] % prog.length];
         this.step[i] = (this.step[i] + 1) % prog.length;
@@ -428,6 +483,11 @@ export class Simulation {
           }
         }
       }
+      // Strömung schiebt Zellen weiter, Biofilm klebt fest
+      if (flow && cur === i && !(ph.biofilm && this.still[i] >= 2) && rng() < flow.p) {
+        const j = this._neighbor(i, flow.d);
+        if (j >= 0 && !owner[j]) { this._move(i, j); cur = j; }
+      }
       if (cur === i) { if (this.still[i] < 255) this.still[i]++; }
       if (energy[cur] <= 0) {
         if (ph.spores) { this.spore[cur] = 1; energy[cur] = 0; } else this._kill(cur, 'starve');
@@ -455,6 +515,259 @@ export class Simulation {
     this._count();
     if (tick % 5 === 0) this._record();
     this._checkEnd();
+  }
+
+  // ---------- Elemente auf der Platte (Steine, Antibiotika, Sonne, Phagen …) ----------
+  _initElements() {
+    const E = this.opts.elements || [];
+    this.envOn = E.length > 0;
+    if (!this.envOn) return;
+    const N = this.N, size = N * N, rng = this.rng;
+    const c = (N - 1) / 2, R = N / 2 - 0.5;
+    this.R = R;
+    this.wall = new Uint8Array(size);
+    this.discs = []; this.moulds = []; this.pulses = []; this.immune = []; this.phageAt = []; this.immuneAt = -1;
+    this.lysis = null;
+    const nearStart = (x, y, d) => this.starts.some(([sx, sy]) => (x - sx) ** 2 + (y - sy) ** 2 < d * d);
+    const freeSpot = (minR, maxR, keep) => {
+      for (let t = 0; t < 60; t++) {
+        const a = rng() * Math.PI * 2, d = minR + Math.sqrt(rng()) * (maxR - minR);
+        const x = c + Math.cos(a) * d * R, y = c + Math.sin(a) * d * R;
+        if (!nearStart(x, y, keep)) return [x, y];
+      }
+      return [c, c];
+    };
+    const field = (fn) => {
+      const f = new Float32Array(size);
+      for (let i = 0; i < size; i++) if (this.inPlate[i]) f[i] = fn((i % N - c) / R, ((i / N | 0) - c) / R);
+      return f;
+    };
+    const setWall = (i, kind) => {
+      if (!this.inPlate[i] || this.wall[i]) return;
+      if (this.owner[i]) this._kill(i, 'env');
+      this.wall[i] = kind; this.nutrient[i] = 0; this.nutrientMax[i] = 0;
+    };
+    for (const e of E) {
+      const ang = rng() * Math.PI * 2, ca = Math.cos(ang), sa = Math.sin(ang);
+      const side = (nx, ny) => nx * ca + ny * sa; // -1 … 1 quer über die Platte
+      switch (e.type) {
+        case 'stones': {
+          for (let k = 0; k < (e.count || 6); k++) {
+            const rr = R * (0.05 + rng() * 0.06);
+            const [x0, y0] = freeSpot(0.1, 0.85, rr + 7);
+            const ph1 = rng() * 6, ph2 = rng() * 6;
+            for (let y = Math.floor(y0 - rr * 1.4); y <= y0 + rr * 1.4; y++) for (let x = Math.floor(x0 - rr * 1.4); x <= x0 + rr * 1.4; x++) {
+              if (x < 0 || y < 0 || x >= N || y >= N) continue;
+              const a = Math.atan2(y - y0, x - x0);
+              const edge = rr * (1 + 0.22 * Math.sin(a * 3 + ph1) + 0.12 * Math.sin(a * 5 + ph2));
+              if (Math.hypot(x - x0, y - y0) <= edge) setWall(y * N + x, 1);
+            }
+          }
+          break;
+        }
+        case 'salt': {
+          this.salt = this.salt || new Float32Array(size);
+          for (let k = 0; k < (e.count || 5); k++) {
+            const rr = R * (0.03 + rng() * 0.02);
+            const [x0, y0] = freeSpot(0.15, 0.85, rr * 3.5 + 6);
+            const zone = rr * 3.4;
+            for (let y = Math.floor(y0 - zone); y <= y0 + zone; y++) for (let x = Math.floor(x0 - zone); x <= x0 + zone; x++) {
+              if (x < 0 || y < 0 || x >= N || y >= N) continue;
+              const i = y * N + x, d = Math.hypot(x - x0, y - y0);
+              if (!this.inPlate[i]) continue;
+              // eckiger Kristall (Raute), darum herum die salzige Zone
+              if (Math.abs(x - x0) + Math.abs(y - y0) <= rr * 1.25) { setWall(i, 2); continue; }
+              const sv = Math.max(0, 1 - d / zone);
+              if (sv > this.salt[i]) this.salt[i] = sv;
+              if (!this.wall[i]) { this.nutrientMax[i] = Math.min(100, this.nutrientMax[i] + 45 * sv); this.nutrient[i] = this.nutrientMax[i]; }
+            }
+          }
+          break;
+        }
+        case 'acid': this.acid = field((nx, ny) => Math.max(0, (side(nx, ny) + 0.15) / 1.15) ** 1.4 * (e.strength || 1)); this.acidAngle = ang; break;
+        case 'heat': this.temp = field((nx, ny) => Math.max(-1, Math.min(1, side(nx, ny) * 1.2)) * (e.strength || 1)); this.heatAngle = ang; break;
+        case 'sun': this.light = field((nx, ny) => 1 / (1 + Math.exp(-side(nx, ny) * 10))); this.sunAngle = ang; break;
+        case 'flow': {
+          const d = Math.round((Math.atan2(sa, ca) / (Math.PI / 4)) + 8 + 2) & 7; // Raster-Richtung (0 = oben)
+          this.flow = { d, p: 0.09 * (e.strength || 1) };
+          this.flowAngle = Math.atan2(DY[d], DX[d]);
+          break;
+        }
+        case 'disc': this.discs.push({ at: e.at || 0, where: e.where || 'center', life: e.life || 2400, r: R * 0.065, halo: R * (e.halo || 0.32), x: c, y: c, placed: false }); break;
+        case 'mould': {
+          const [x, y] = e.where === 'center' ? [c, c] : freeSpot(0.1, 0.5, R * 0.35);
+          this.moulds.push({ at: e.at || 0, x, y, r0: R * 0.04, max: R * (e.size || 0.2), grow: e.grow || 3000, placed: false });
+          break;
+        }
+        case 'sugar': {
+          for (let t = e.first || 450; t < MAX_TICKS - 100; t += e.every || 750) {
+            const [x, y] = freeSpot(0, 0.75, 0);
+            this.pulses.push({ warn: t - Math.round(ROUNDS_PER_HOUR), at: t, x, y, r: R * 0.17, amount: e.amount || 80 });
+          }
+          break;
+        }
+        case 'phage': this.phageAt = e.at || [1200, 2300, 3300]; break;
+        case 'immune': {
+          this.immuneAt = e.at ?? 700;
+          for (let k = 0; k < (e.count || 2); k++) {
+            const a = rng() * Math.PI * 2;
+            this.immune.push({ x: c + Math.cos(a) * R * 0.9, y: c + Math.sin(a) * R * 0.9, r: R * 0.075, tx: c, ty: c, on: false, wob: rng() * 6 });
+          }
+          break;
+        }
+      }
+    }
+    if (this.discs.length || this.moulds.length) this.abx = new Float32Array(size);
+    if (this.phageAt.length) { this.infected = new Uint8Array(size); this.lysis = new Uint8Array(size); }
+    this._placeTimed();
+    if (this.abx) this._updateAbx();
+  }
+
+  // Phagen springen auf Zellen derselben Kolonie in der Nähe über (Kapseln schützen meist)
+  _infectAround(i, o, rad, chance) {
+    const N = this.N, x0 = i % N, y0 = (i / N) | 0, inf = this.infected;
+    for (let y = Math.max(0, y0 - rad); y <= Math.min(N - 1, y0 + rad); y++) {
+      for (let x = Math.max(0, x0 - rad); x <= Math.min(N - 1, x0 + rad); x++) {
+        const j = y * N + x;
+        if (this.owner[j] !== o || inf[j] || this.spore[j]) continue;
+        if (this.rng() < (this.shield[j] ? chance * 0.3 : chance)) inf[j] = 1;
+      }
+    }
+  }
+
+  _notice(kind, extra = {}) { this.notices.push({ tick: this.tick, kind, ...extra }); }
+
+  // größte Kolonie: Spieler-id und Schwerpunkt
+  _leader() {
+    const N = this.N, n = this.players.length;
+    const sx = new Float64Array(n + 1), sy = new Float64Array(n + 1), cnt = new Uint32Array(n + 1);
+    const owner = this.owner;
+    for (let i = 0; i < owner.length; i++) { const o = owner[i]; if (o) { sx[o] += i % N; sy[o] += (i / N) | 0; cnt[o]++; } }
+    let best = 0;
+    for (let o = 1; o <= n; o++) if (cnt[o] > (cnt[best] || 0)) best = o;
+    return best ? { id: best, x: sx[best] / cnt[best], y: sy[best] / cnt[best] } : null;
+  }
+
+  _placeTimed() {
+    const N = this.N, tick = this.tick;
+    for (const d of this.discs) {
+      if (d.placed || tick < d.at) continue;
+      if (d.where === 'leader') { const l = this._leader(); if (l) { d.x = l.x; d.y = l.y; d.target = l.id; } }
+      d.placed = true; d.t0 = tick;
+      for (let y = Math.floor(d.y - d.r); y <= d.y + d.r; y++) for (let x = Math.floor(d.x - d.r); x <= d.x + d.r; x++) {
+        if (x < 0 || y < 0 || x >= N || y >= N || Math.hypot(x - d.x, y - d.y) > d.r) continue;
+        const i = y * N + x;
+        if (!this.inPlate[i]) continue;
+        if (this.owner[i]) this._kill(i, 'env');
+        this.wall[i] = 4; this.nutrient[i] = 0; this.nutrientMax[i] = 0;
+      }
+      if (tick > 0) this._notice('disc', { target: d.target || 0 });
+    }
+    for (const m of this.moulds) if (!m.placed && tick >= m.at) { m.placed = true; m.t0 = tick; if (tick > 0) this._notice('mould'); }
+  }
+
+  _updateAbx() {
+    const N = this.N, abx = this.abx, tick = this.tick;
+    abx.fill(0);
+    const paint = (x0, y0, inner, outer, strength) => {
+      for (let y = Math.max(0, Math.floor(y0 - outer)); y <= Math.min(N - 1, y0 + outer); y++) {
+        for (let x = Math.max(0, Math.floor(x0 - outer)); x <= Math.min(N - 1, x0 + outer); x++) {
+          const d = Math.hypot(x - x0, y - y0);
+          if (d > outer) continue;
+          const v = d <= inner ? strength : strength * Math.min(1, 1.5 * (1 - (d - inner) / Math.max(1, outer - inner)));
+          const i = y * N + x;
+          if (v > abx[i]) abx[i] = v;
+        }
+      }
+    };
+    for (const d of this.discs) {
+      if (!d.placed) continue;
+      const fade = Math.max(0, 1 - (tick - d.t0) / d.life);
+      if (fade <= 0) continue;
+      d.cur = d.r + (d.halo - d.r) * Math.sqrt(fade);
+      paint(d.x, d.y, d.r, d.cur, 1);
+    }
+    for (const m of this.moulds) {
+      if (!m.placed) continue;
+      const rad = m.r0 + (m.max - m.r0) * Math.min(1, (tick - m.t0) / m.grow);
+      m.cur = rad;
+      // die Schimmelkolonie wächst über die Platte und verdrängt alles
+      for (let y = Math.floor(m.y - rad); y <= m.y + rad; y++) for (let x = Math.floor(m.x - rad); x <= m.x + rad; x++) {
+        if (x < 0 || y < 0 || x >= N || y >= N) continue;
+        const i = y * N + x;
+        const a = Math.atan2(y - m.y, x - m.x);
+        if (!this.inPlate[i] || this.wall[i] || Math.hypot(x - m.x, y - m.y) > rad * (1 + 0.12 * Math.sin(a * 7 + m.x))) continue;
+        if (this.owner[i]) this._kill(i, 'env');
+        this.wall[i] = 3; this.nutrient[i] = 0; this.nutrientMax[i] = 0;
+      }
+      paint(m.x, m.y, rad, rad * 1.8 + 3, 0.9);
+    }
+  }
+
+  _elementsTick() {
+    const tick = this.tick, N = this.N, rng = this.rng;
+    if (this.discs.length || this.moulds.length) {
+      this._placeTimed();
+      if (tick % 10 === 0) this._updateAbx();
+    }
+    if (this.lysis) for (let i = 0; i < this.lysis.length; i++) if (this.lysis[i]) this.lysis[i]--;
+    // Honigtropfen: erst angekündigt, dann landet frisches Futter
+    for (const p of this.pulses) {
+      if (tick === p.warn) this._notice('sugar-warn');
+      if (tick !== p.at) continue;
+      for (let y = Math.max(0, Math.floor(p.y - p.r)); y <= Math.min(N - 1, p.y + p.r); y++) {
+        for (let x = Math.max(0, Math.floor(p.x - p.r)); x <= Math.min(N - 1, p.x + p.r); x++) {
+          const i = y * N + x, d = Math.hypot(x - p.x, y - p.y) / p.r;
+          if (d > 1 || !this.inPlate[i] || this.wall[i]) continue;
+          this.nutrient[i] = Math.min(100, this.nutrient[i] + p.amount * (1 - d * d));
+        }
+      }
+    }
+    // Phagen-Ausbruch in der größten Kolonie, mitten im dichtesten Teil
+    if (this.phageAt.includes(tick)) {
+      const l = this._leader();
+      if (l) {
+        let seed = -1, bestN = -1;
+        for (let t = 0; t < 400; t++) {
+          const i = (rng() * this.owner.length) | 0;
+          if (this.owner[i] !== l.id) continue;
+          let nb = 0;
+          for (let d = 0; d < 8; d++) { const j = this._neighbor(i, d); if (j >= 0 && this.owner[j] === l.id) nb++; }
+          if (nb > bestN) { bestN = nb; seed = i; }
+          if (nb === 8) break;
+        }
+        if (seed >= 0) {
+          this.infected[seed] = 1;
+          this._infectAround(seed, l.id, 3, 1);
+          this._notice('phage', { target: l.id });
+        }
+      }
+    }
+    // Immunzellen: kommen vom Rand, ziehen zur größten Kolonie und fressen alles, was sie berühren
+    if (this.immune.length && tick >= this.immuneAt) {
+      if (tick === this.immuneAt) this._notice('immune');
+      if (tick % 15 === 0 || tick === this.immuneAt) {
+        const l = this._leader();
+        if (l) this.immune.forEach((m, k) => { m.tx = l.x + Math.cos(k * 2.4 + tick / 200) * this.R * 0.12; m.ty = l.y + Math.sin(k * 2.4 + tick / 200) * this.R * 0.12; });
+      }
+      const c = (N - 1) / 2;
+      for (const m of this.immune) {
+        m.on = true;
+        const dx = m.tx - m.x, dy = m.ty - m.y, d = Math.hypot(dx, dy) || 1;
+        const sp = 0.2;
+        m.x += (dx / d) * sp + Math.cos(tick / 23 + m.wob) * 0.08;
+        m.y += (dy / d) * sp + Math.sin(tick / 29 + m.wob) * 0.08;
+        const off = Math.hypot(m.x - c, m.y - c), lim = this.R - m.r * 0.5;
+        if (off > lim) { m.x = c + ((m.x - c) / off) * lim; m.y = c + ((m.y - c) / off) * lim; }
+        for (let y = Math.max(0, Math.floor(m.y - m.r)); y <= Math.min(N - 1, m.y + m.r); y++) {
+          for (let x = Math.max(0, Math.floor(m.x - m.r)); x <= Math.min(N - 1, m.x + m.r); x++) {
+            const i = y * N + x;
+            if (!this.owner[i] || Math.hypot(x - m.x, y - m.y) > m.r || rng() > 0.1) continue;
+            if (this.shield[i]) this.shield[i] = 0; else this._kill(i, 'env');
+          }
+        }
+      }
+    }
   }
 
   _count() {

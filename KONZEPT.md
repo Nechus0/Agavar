@@ -61,28 +61,48 @@ Stufen 1–4 kosten je 1 Punkt, 5–7 je 2 und 8–10 je 3 (verteilen ist günst
 
 Die Gegner sind echte Keime. Ihre Spieleigenschaften entsprechen ihren echten Eigenschaften.
 
-| # | Level | Besonderer Gegner | echte Eigenschaft | Freischaltung |
-|---|---|---|---|---|
-| 1 | Hautkontakt | *Staphylococcus epidermidis* | hat keine Geißeln, bewegt sich nicht | Bewegungsart „Sitzen“ |
-| 2 | Das Rudel | *Myxococcus xanthus* | gleitet und kehrt regelmäßig die Richtung um, jagt im Rudel | Bewegungsart „Pendeln“, größere Muster |
-| 3 | Run and Tumble | *Escherichia coli* | schwimmt geradeaus, taumelt dann in eine Zufallsrichtung | Bewegungsart „Taumeln“ |
-| 4 | Die Kapsel | *Klebsiella pneumoniae* | dicke Schleimkapsel | Kapsel |
-| 5 | Lichtfänger | *Synechococcus elongatus* | Cyanobakterium, Photosynthese | Photosynthese, größere Bewegungsmuster |
-| 6 | Hungersnot | *Bacillus subtilis* | bildet Endosporen | Sporen |
-| 7 | Der Räuber | *Bdellovibrio bacteriovorus* | Raubbakterium, frisst andere Bakterien | Räuber, Bewegungsarten „Schlängeln“ und „Acht“ (gezeigt vom Begleiter *Helicobacter pylori*) |
-| 8 | Schleimfestung | *Pseudomonas aeruginosa* | Paradebeispiel für Biofilme | Biofilm |
-| 9 | Giftküche | *Staphylococcus aureus* | bildet viele Toxine | Toxine |
-| 10 | Der Endgegner | *Clostridium botulinum* | Sporen und Botulinumtoxin | Titel „Meister der Agarplatte“ |
+Welt 1 (Haut) hat 20 Level. Jedes Level hat ein Szenario mit Begründung („Labornotiz“): Warum ist hier so wenig/viel Futter, warum liegt es in Flecken, im Ring oder in der Mitte? So kann man sich vorbereiten. Ab Level 11 kommt pro Level ein Element auf der Platte hinzu.
 
-**Begleitgegner** (ebenfalls echte Keime, mit passenden Eigenschaften):
-- *Pseudomonas putida*: riecht Nahrung (Chemotaxis 2)
-- *Proteus mirabilis*: schnell schwärmend
-- *Helicobacter pylori*: schlängelt sich korkenzieherartig
-- *Micrococcus luteus*: gelb, unbeweglich
-- *Lactobacillus acidophilus*: Milchsäure, hoher Angriff
-- *Serratia marcescens*: roter Farbstoff mit antimikrobieller Wirkung
-- *Vibrio cholerae*: sehr schneller Schwimmer
-- *Bacillus cereus*: Sporen
+| # | Level | Besonderer Gegner | Platte / Element |
+|---|---|---|---|
+| 1 | Skin Contact | *Staphylococcus epidermidis* | gleichmäßig |
+| 2 | Twitching | *Acinetobacter johnsonii* | Poren |
+| 3 | Hot Tub Rash | *Pseudomonas aeruginosa* | Poren |
+| 4 | The Sore | *Streptococcus pyogenes* | Flecken |
+| 5 | Armpit | *Corynebacterium* | Poren |
+| 6 | Sweaty Feet | *Brevibacterium linens* | Poren, wenig Futter |
+| 7 | Tick Bite | *Borrelia burgdorferi* | Mitte |
+| 8 | The Catheter | *Staphylococcus epidermidis* (Biofilm) | Schnitt |
+| 9 | Tropical Sore | *Corynebacterium diphtheriae* | körnig |
+| 10 | The Abscess | *Staphylococcus aureus* | Schnitt |
+| 11 | Gravel Graze | *Staphylococcus lugdunensis* | Steine |
+| 12 | Antiseptic Cream | *Corynebacterium jeikeium* | Antibiotika-Plättchen (zweites nach 20 h auf die größte Kolonie) |
+| 13 | Beach Towel | *Dermacoccus nishinomiyaensis* | Sonne & Schatten |
+| 14 | Salt Crust | *Brevibacterium linens* | Salzkristalle |
+| 15 | Acid Mantle | *Cutibacterium acnes* | saure Seite |
+| 16 | Honey Dressing | *Finegoldia magna* | Honigtropfen, kein Nachwachsen |
+| 17 | Fever | *Streptococcus pyogenes* | warme & kalte Seite |
+| 18 | Rinsing | *Pasteurella multocida* | Strömung |
+| 19 | Mouldy Plaster | *Staphylococcus aureus* | Penicillin-Schimmel |
+| 20 | Pus & Phages | *Pseudomonas aeruginosa* | Immunzellen und Phagen |
+
+## Elemente auf der Platte
+
+Alle Elemente sind deterministisch (gleicher Seed = gleicher Verlauf) und werden in `js/sim.js` simuliert, Texte stehen in `js/elements.js`. Jedes Element wird beim ersten Auftreten mit einem Info-Blatt vorgestellt, steht in der Legende unter der Platte, und geplante Ereignisse sind als Marken auf der Zeitleiste sichtbar und werden als Meldung unter der Platte angekündigt.
+
+| Element | Wirkung | Darstellung |
+|---|---|---|
+| Steine | blockieren den Weg | graue Steine |
+| Antibiotika-Plättchen | tötet im Hemmhof, Hof schrumpft mit der Zeit; Kapsel/Biofilm halten länger | weißes Plättchen, klarer Ring |
+| Sonne & Schatten | Sonne kostet Energie, Schatten schützt; Schleim schützt; Photosynthese nur im Licht stark | helle und abgedunkelte Hälfte |
+| Salzkristalle | Futter wächst schnell nach, Salz zieht Energie | weiße Kristalle, helle Zone |
+| Saure Seite | Zellen altern schneller; Abwehr/Biofilm schützen | rötliche Tönung |
+| Honigtropfen | frisches Futter, eine Stunde vorher markiert | blinkender Ring, Welle |
+| Warm & kalt | warm: alles schneller (Fressen, Bewegung, Altern), kalt: langsamer | orange/blaue Tönung |
+| Strömung | schiebt Zellen weiter, Biofilm klebt | wandernde helle Streifen |
+| Penicillin-Schimmel | wächst und schiebt einen Hemmhof vor sich her | weißgrüner Flaum mit klarem Ring |
+| Phagen | befallen die größte Kolonie, springen auf Nachbarn derselben Kolonie über; Kapsel schützt meist | Zellen werden blass und platzen |
+| Immunzellen | ziehen zur größten Kolonie und fressen, was sie berühren | große, blasse Zellen mit Kern |
 
 Die Schwierigkeit wird per Massensimulation geprüft (`node tools/levels-check.mjs`). Dabei halten die Spieler-Bakterien das Karriere-Budget und die bis dahin freigeschalteten Fähigkeiten ein. Getestet werden drei Spielertypen:
 - zufällig gebaute Bakterien
