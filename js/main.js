@@ -16,6 +16,7 @@ import {
 import { analyze, ACHIEVEMENTS, deathBreakdown, plateReport } from './insights.js';
 import { SPECIAL_ICONS, TRAIT_ICONS, UI_ICONS, ACH_ICONS, ELEMENT_ICONS } from './icons.js';
 import { ELEMENTS, elementsOf } from './elements.js';
+import { MUTATIONS, mutationChoices } from './mutations.js';
 import { MOVES, MOVE_BY_KEY, actionsOf, compile, moveFromProgram, describeMove, pathSvg } from './movement.js';
 import * as store from './storage.js';
 import { meters, METER_INFO, counterTips } from './meters.js';
@@ -681,6 +682,12 @@ function traitEffect(key, v) {
 
 const freeName = (t, v) => { const o = t.options[Math.round(v)]; return o[0].toUpperCase() + o.slice(1); };
 const freeText = (t, v) => {
+  if (t.key === 'size') {
+    const z = (v - 2) / 2;
+    if (Math.abs(z) < 0.15) return 'Normal-sized cells';
+    return z < 0 ? `Divides ${Math.round(-25 * z)} % sooner and burns ${Math.round(-20 * z)} % less – but fragile`
+      : `+${(1.2 * z).toFixed(1)} defense and eats ${Math.round(18 * z)} % more – but slower and hungrier`;
+  }
   if (t.key === 'division') {
     const at = Math.round(between(FREE_TABLES.divideAt, v));
     return `Divides at ${at} energy – ${v < 1.5 ? 'many small cells' : v > 2.5 ? 'few strong cells' : 'balanced'}`;
@@ -705,7 +712,7 @@ function freeRow(t) {
   };
   slider.addEventListener('input', update);
   slider.addEventListener('change', update);
-  const ends = t.key === 'division' ? ['Early', 'Late'] : ['Frugal', 'Greedy'];
+  const ends = t.key === 'division' ? ['Early', 'Late'] : t.key === 'size' ? ['Small', 'Large'] : ['Frugal', 'Greedy'];
   return el('div', { class: 'trait' },
     el('div', { class: 'trait-head' }, icon(TRAIT_ICONS[t.key]), el('b', {}, t.label), name),
     slider,
@@ -725,6 +732,11 @@ function renderEditor() {
     el('span', { class: 'main' }, el('b', {}, m.name), el('small', {}, describeMove(ed.move).replace(/ · (clockwise|counter-clockwise)/, '').split(' · ').slice(1).join(' · ') || 'Tap to change')),
     ui('chevron', 'sm'));
   fill($('#ed-slots'), slotTile(1), slotTile(2));
+  const muts = ed.mutations || [];
+  $('#ed-mut-group').hidden = !muts.length;
+  fill($('#ed-muts'), ...muts.filter((k) => MUTATIONS[k]).map((k) => el('div', { class: 'slot-row static' },
+    el('span', { class: 'sp-ico' }, ui('flask', 'sm')),
+    el('span', { class: 'main' }, el('b', {}, MUTATIONS[k].name), el('small', {}, MUTATIONS[k].text + (MUTATIONS[k].needs && !specialsOf(ed).includes(MUTATIONS[k].needs) ? ` (needs ${SPECIALS[MUTATIONS[k].needs].name.toLowerCase()})` : ''))))));
 
   const budget = edCtx.budget;
   const left = budget - cost(ed);
@@ -1107,8 +1119,11 @@ function showResult() {
     rewards: firstWin ? rewardsOf(cfg.level) : [],
     achievements: newAch,
     germs: newGerms,
+    // neue Mutation zur Wahl nach jedem ersten Sieg
+    mutation: firstWin && me ? { id: me.id, choices: mutationChoices(me, cfg.level) } : null,
   };
-  const hasNews = unlocks.points || unlocks.rewards.length || newAch.length || newGerms.length;
+  if (unlocks.mutation && !unlocks.mutation.choices.length) unlocks.mutation = null;
+  const hasNews = unlocks.mutation || unlocks.points || unlocks.rewards.length || newAch.length || newGerms.length;
   $('#rs-rewards').hidden = true;
   // Details
   renderSummary(sim, mask);
@@ -1215,6 +1230,22 @@ function showUnlocks(u) {
   const otherGerms = u.germs.filter((k) => !boss || k !== boss.germ);
   if (otherGerms.length) rewards.push(rewardRow(ui('atlas'), 'New in your atlas', otherGerms.map((k) => GERMS[k].name).join(', '), 'Read about it in the Atlas'));
   if (rewards.length) sections.push(winSection('Rewards', ...rewards));
+  const ok = $('#win-ok');
+  ok.disabled = false;
+  if (u.mutation) {
+    ok.disabled = true;
+    const cards = u.mutation.choices.map((k) => el('button', {
+      class: 'mut-card', 'aria-pressed': 'false',
+      onclick: (e) => {
+        store.addMutation(u.mutation.id, k);
+        cards.forEach((c) => { c.classList.toggle('on', c === e.currentTarget); c.setAttribute('aria-pressed', String(c === e.currentTarget)); c.disabled = true; });
+        ok.disabled = false;
+        play('star');
+      },
+    }, el('span', { class: 'mut-ico' }, ui('flask', 'md')), el('b', {}, MUTATIONS[k].name), el('small', {}, MUTATIONS[k].text)));
+    sections.push(el('section', { class: 'win-section' }, el('h3', { class: 'win-label' }, 'Choose a mutation'), el('div', { class: 'mut-grid' }, cards),
+      el('p', { class: 'small muted' }, 'It stays with this bacterium for the whole world.')));
+  }
   if (u.achievements.length) sections.push(winSection('Achievements', ...u.achievements.map((a) => rewardRow(icon(ACH_ICONS[a.key]), '', a.name, a.desc, 'gold'))));
   fill($('#win-body'), ...sections);
   $('#win-modal').hidden = false;
@@ -1223,6 +1254,7 @@ function showUnlocks(u) {
   setTimeout(() => play('unlock'), 300);
 }
 function closeWin(e) {
+  if ($('#win-ok').disabled) return; // erst eine Mutation wählen
   if (e && e.target.closest('.modal-box') && !e.target.closest('#win-ok')) return;
   if (e && e.type === 'touchend') e.preventDefault();
   $('#win-modal').hidden = true;

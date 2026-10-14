@@ -68,8 +68,42 @@ export function upkeepOf(g) {
   return levels * UPKEEP_PER_LEVEL + (UPKEEP_SPECIAL[g.special] || 0) + (g.bonusSpecial ? UPKEEP_SPECIAL[g.bonusSpecial] || 0 : 0);
 }
 
+// Zellgröße (0 winzig … 4 riesig, 2 = normal): klein teilt sich früh und ist billig, groß ist zäh und frisst mehr
+const sizeFactor = (g) => Math.max(-1, Math.min(1, ((g.size ?? 2) - 2) / 2));
+
 export function phenotype(g) {
   const sp = new Set([g.special, g.bonusSpecial]);
+  const mu = new Set(g.mutations || []);
+  const z = sizeFactor(g);
+  const ph = phenotypeBase(g, sp);
+  // Zellgröße
+  ph.divideAt *= z < 0 ? 1 + 0.25 * z : 1 + 0.3 * z;
+  ph.uptake *= 1 + 0.18 * z;
+  ph.basal *= z < 0 ? 1 + 0.2 * z : 1 + 0.25 * z;
+  ph.defense += z < 0 ? 0.8 * z : 1.2 * z;
+  ph.moveChance *= z > 0 ? 1 - 0.15 * z : 1;
+  ph.maxAge = Math.round(ph.maxAge * (z < 0 ? 1 + 0.12 * z : 1));
+  // Mutationen
+  if (mu.has('thick_wall')) { ph.defense += 0.5; ph.moveChance *= 0.94; }
+  if (mu.has('thrifty')) ph.basal *= 0.88;
+  if (mu.has('sprinter')) ph.moveChance = Math.min(1, ph.moveChance * 1.12);
+  if (mu.has('long_life')) ph.maxAge = Math.round(ph.maxAge * 1.2);
+  if (mu.has('keen_nose')) ph.chemoChance += 0.08;
+  if (mu.has('big_brood')) ph.divideAt *= 0.9;
+  if (mu.has('fighter')) ph.attack += 0.5;
+  ph.sweet = mu.has('sweet_tooth');
+  ph.saltTol = mu.has('salt_tolerant') ? 0.4 : 1;
+  ph.acidTol = mu.has('acid_proof') ? 0.35 : 1;
+  ph.sunTol = mu.has('sun_hardy') ? 0.4 : 1;
+  ph.abxTol = mu.has('resistant') ? 0.6 : 1;
+  ph.capsuleRegrow = mu.has('fast_capsule') ? 0.1 : 0.05;
+  ph.toxinDmg = mu.has('potent_toxin') ? 16 : 12;
+  ph.matStill = mu.has('deep_mat') ? 2 : 3;
+  ph.matDef = mu.has('deep_mat') ? 5 : 4;
+  return ph;
+}
+
+function phenotypeBase(g, sp) {
   return {
     program: expandProgram(g.program),
     // eine dicke Kapsel macht die Zelle schwerfälliger
@@ -323,7 +357,7 @@ export class Simulation {
     const q = this.players[this.owner[j] - 1].ph;
     let d = q.defense + this.energy[j] / 50;
     if (this.spore[j]) d = q.defense + 3; // Sporenhülle
-    else if (q.biofilm && this.still[j] >= 3) d += attacker && attacker.predator ? 1 : 4; // Schleimschicht
+    else if (q.biofilm && this.still[j] >= q.matStill) d += attacker && attacker.predator ? 1 : q.matDef; // Schleimschicht
     return d;
   }
 
@@ -391,11 +425,11 @@ export class Simulation {
       // Altern und Grundumsatz
       this.age[i]++;
       // Biofilm braucht echtes Stillsitzen; in der Matte kommt weniger Futter an die einzelne Zelle
-      const slimy = ph.biofilm && this.still[i] >= 3;
+      const slimy = ph.biofilm && this.still[i] >= ph.matStill;
       // Biofilm: stillstehende Zellen im Schleim sparen Energie
       energy[i] -= slimy ? ph.basal * 0.6 : ph.basal;
       // Kapsel wächst langsam nach
-      if (ph.capsule && !this.shield[i] && rng() < 0.05) this.shield[i] = 1;
+      if (ph.capsule && !this.shield[i] && rng() < ph.capsuleRegrow) this.shield[i] = 1;
 
       let uptake = slimy ? ph.uptake * 0.7 : ph.uptake, moveChance = ph.moveChance, lightHere = 1;
       if (env) {
@@ -410,25 +444,27 @@ export class Simulation {
         // saure Seite: Zellen altern schneller, Abwehr und Schleim schützen
         if (acid && acid[i] > 0.03) {
           const guard = slimy ? 0.1 : Math.max(0.1, 1 - ph.defense / 4);
-          if (rng() < acid[i] * guard) this.age[i] += 3;
+          if (rng() < acid[i] * guard * ph.acidTol) this.age[i] += 3;
         }
         // Sonne: trocknet aus, Schatten schützt, Schleim auch
         if (light) {
           lightHere = light[i];
-          energy[i] -= lightHere * 0.6 * (this.shield[i] ? 0.7 : 1);
+          energy[i] -= lightHere * 0.6 * (this.shield[i] ? 0.7 : 1) * ph.sunTol;
         }
         // Salz: zieht Wasser aus der Zelle
-        if (salt && salt[i] > 0.02) energy[i] -= salt[i] * 2;
+        if (salt && salt[i] > 0.02) energy[i] -= salt[i] * 2 * ph.saltTol;
         // Antibiotikum: tötet im Hemmhof, Kapsel und Biofilm halten länger durch
         // Antibiotikum: Kapseln helfen nicht, nur ein ruhender Biofilm schützt
         if (abx && abx[i] > 0.02) {
           let k = abx[i] * 0.09;
           if (slimy) k *= 0.2;
+          k *= ph.abxTol;
           if (rng() < k) { this._kill(i, 'env', 0, 'abx'); continue; }
         }
       }
 
       // Fressen
+      if (ph.sweet && nutrient[i] > 50) uptake *= 1.25;
       const take = Math.min(nutrient[i], uptake);
       nutrient[i] -= take;
       energy[i] += take * ph.efficiency;
@@ -459,7 +495,7 @@ export class Simulation {
         if (j >= 0 && owner[j] && owner[j] !== o && !this.spore[j]) {
           // Gift dringt durch Kapseln, aber Biofilm-Matten halten es zur Hälfte ab
           const q = this.players[owner[j] - 1].ph;
-          energy[j] -= q.biofilm && this.still[j] >= 3 ? 3 : 12;
+          energy[j] -= q.biofilm && this.still[j] >= q.matStill ? ph.toxinDmg / 4 : ph.toxinDmg;
           if (this.contactTick < 0) this.contactTick = tick;
           if (energy[j] <= 0) { this._kill(j, 'toxin', o); p.kills++; }
         }
@@ -525,7 +561,7 @@ export class Simulation {
         }
       }
       // Strömung schiebt Zellen weiter, Biofilm klebt fest
-      if (flow && cur === i && !(ph.biofilm && this.still[i] >= 3) && rng() < flow.p) {
+      if (flow && cur === i && !(ph.biofilm && this.still[i] >= ph.matStill) && rng() < flow.p) {
         const j = this._neighbor(i, flow.d);
         if (j >= 0 && !owner[j]) { this._move(i, j); cur = j; p.env.drift++; }
       }

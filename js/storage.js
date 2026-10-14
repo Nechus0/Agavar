@@ -82,6 +82,14 @@ export function deleteBacterium(id) {
   save();
 }
 
+// Mutation dauerhaft zum Bakterium hinzufügen
+export function addMutation(id, key) {
+  const b = getBacterium(id);
+  if (!b) return;
+  b.mutations = [...new Set([...(b.mutations || []), key])];
+  save();
+}
+
 // Markiert einen Level-Sieg. Liefert true beim ersten Sieg in diesem Level.
 export function markWon(id, level) {
   const b = getBacterium(id);

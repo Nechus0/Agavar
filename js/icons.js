@@ -32,6 +32,7 @@ export const TRAIT_ICONS = {
   attack: wrap('<path d="M12 2.5l2.2 6.3L20.5 7l-3.9 5 3.9 5-6.3-1.8L12 21.5l-2.2-6.3L3.5 17l3.9-5-3.9-5 6.3 1.8z"/>'),
   defense: wrap('<path d="M12 2.5l8 3v6c0 5.2-3.4 8.6-8 10-4.6-1.4-8-4.8-8-10v-6z"/>'),
   division: wrap('<circle cx="7.5" cy="12" r="5"/><circle cx="16.5" cy="12" r="5"/>'),
+  size: wrap('<circle cx="7" cy="15" r="3"/><circle cx="15" cy="10" r="6.5"/>'),
   metabolism: wrap('<path d="M12 2.5c3 4 6 6.5 6 11a6 6 0 0 1-12 0c0-2.5 1.2-4 2.5-5.5.3 2 1.2 3 2.5 3.5 0-3.5-.5-6 1-9z"/>'),
 };
 

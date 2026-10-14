@@ -289,3 +289,10 @@ test('Gegenspieler: Kapsel schützt nicht vor Antibiotika, ruhender Biofilm scho
   assert.ok(capsule > 0);
   assert.ok(biofilm < capsule * 0.6, `biofilm ${biofilm} vs capsule ${capsule}`);
 });
+
+test('Zellgröße und Mutationen verändern den Phänotyp', () => {
+  const small = phenotype({ ...defaultGenome(), size: 0 }), big = phenotype({ ...defaultGenome(), size: 4 });
+  assert.ok(small.divideAt < big.divideAt && small.basal < big.basal && small.defense < big.defense);
+  const thrifty = phenotype({ ...defaultGenome(), mutations: ['thrifty'] });
+  assert.ok(thrifty.basal < phenotype(defaultGenome()).basal);
+});

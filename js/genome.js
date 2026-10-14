@@ -46,6 +46,9 @@ export const FREE = [
   { key: 'division', label: 'Division', max: 4, low: 'very early', high: 'very late',
     options: ['very early', 'early', 'medium', 'late', 'very late'],
     hint: 'Early: many weak daughter cells with little energy. Late: fewer, tougher cells with more reserves.' },
+  { key: 'size', label: 'Cell size', max: 4, low: 'tiny', high: 'huge',
+    options: ['tiny', 'small', 'medium', 'large', 'huge'],
+    hint: 'Small: divides sooner and costs little, but is fragile. Large: tough and eats more, but slow and hungry.' },
 ];
 
 export const SPECIALS = {
@@ -86,7 +89,7 @@ export function defaultGenome() {
     color: PALETTE[0],
     program: ['F'],
     speed: 0, lifespan: 0, efficiency: 0, chemotaxis: 0, attack: 0, defense: 0,
-    division: 2, metabolism: 2,
+    division: 2, metabolism: 2, size: 2,
     special: 'none',
   };
 }
@@ -138,6 +141,7 @@ export function normalize(raw) {
   }
   // zweite Spezialfähigkeit (Gegner haben sie umsonst, Spieler kaufen den zweiten Platz)
   if (SPECIAL_KEYS.includes(raw.bonusSpecial) && raw.bonusSpecial !== 'none' && raw.bonusSpecial !== g.special) g.bonusSpecial = raw.bonusSpecial;
+  if (Array.isArray(raw.mutations)) g.mutations = [...new Set(raw.mutations.filter((k) => typeof k === 'string'))].slice(0, 40);
   if (typeof raw.id === 'string') g.id = raw.id;
   return g;
 }
