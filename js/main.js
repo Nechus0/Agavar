@@ -1057,13 +1057,19 @@ function showResult() {
     }));
   }
   const tripleNow = cfg.mode === 'level' && newStars && ((store.getBacterium(cfg.careerId)?.career.stars[cfg.level] || 0) & 7) === 7;
-  // Neues kommt gesammelt in einem Fenster am Ende der Runde
-  const unlocks = [
-    ...(firstWin ? rewardRows(cfg.level) : []),
-    tripleNow ? rewardRow(ui('plus'), '+1 upgrade point', 'All three stars in this level') : null,
-    ...newAch.map((a) => rewardRow(icon(ACH_ICONS[a.key]), a.name, a.desc)),
-    newGerms.length ? rewardRow(ui('atlas'), 'New in your atlas', newGerms.map((k) => GERMS[k].name).join(', ')) : null,
-  ].filter(Boolean);
+  // Neues kommt gesammelt in einem Fenster am Ende der Runde – nach Art sortiert
+  const me = store.getBacterium(cfg.careerId);
+  const gain = (firstWin ? POINTS_PER_WIN : 0) + (tripleNow ? 1 : 0);
+  const after = me ? ptsOf(me) : 0;
+  const unlocks = {
+    level: firstWin ? cfg.level : 0,
+    mask,
+    points: gain ? { gain, before: after - gain, after, name: me ? me.name : '', triple: tripleNow } : null,
+    rewards: firstWin ? rewardsOf(cfg.level) : [],
+    achievements: newAch,
+    germs: newGerms,
+  };
+  const hasNews = unlocks.points || unlocks.rewards.length || newAch.length || newGerms.length;
   $('#rs-rewards').hidden = true;
   // Details
   fill($('#rs-analysis'), ...analyze(sim, run.genomes, mask).map((a) =>
@@ -1101,27 +1107,53 @@ function showResult() {
   two.classList.toggle('single', two.querySelectorAll('button:not([hidden])').length === 1);
   play(won ? 'win' : 'lose');
   if (newStars) setTimeout(() => play('star'), 700);
-  if (unlocks.length) setTimeout(() => showUnlocks(firstWin ? cfg.level : 0, unlocks), 900);
+  if (hasNews) setTimeout(() => showUnlocks(unlocks), 900);
 }
 
-const rewardRow = (ico, title, sub) => el('div', { class: 'reward' }, el('span', { class: 'badge' }, ico), el('span', { class: 'main' }, el('b', {}, title), sub ? el('small', {}, sub) : null));
-const rewardRows = (level) => [
-  rewardRow(ui('plus'), `+${POINTS_PER_WIN} upgrade point`, 'For your bacterium in this world'),
-  ...rewardsOf(level).map((r) => rewardRow(rewardIcon(r), r.text, 'Stays unlocked in every world')),
-];
+// eine Zeile im Gewinn-Fenster: Art (klein) über dem Namen, darunter was es bedeutet
+const rewardRow = (ico, kind, title, sub, tone = '') => el('div', { class: `reward ${tone}` },
+  el('span', { class: 'badge' }, ico),
+  el('span', { class: 'main' }, kind ? el('span', { class: 'kind' }, kind) : null, el('b', {}, title), sub ? el('small', {}, sub) : null));
+const REWARD_KIND = { move: 'New movement', special: 'New ability', slot: 'New slot', bigger: 'Bigger patterns', title: 'New title' };
+const rewardSub = (r) => ({
+  move: 'Pick it under Movement in the Lab',
+  special: 'Choose it under Abilities in the Lab',
+  slot: 'Add a second ability in the Lab',
+  bigger: 'More sizes for your movement patterns',
+  title: 'Shown on your profile',
+}[r.type] || '');
+const winSection = (label, ...rows) => el('section', { class: 'win-section' }, el('h3', { class: 'win-label' }, label), el('div', { class: 'rewards' }, ...rows));
 
-// Fenster mit allem, was in dieser Runde neu dazukam (beim ersten Sieg mit dem besiegten Keim)
-function showUnlocks(level, rows) {
-  const lv = level ? LEVELS[level - 1] : null;
-  const germ = lv ? GERMS[lv.boss.germ] : null;
+// Fenster mit allem, was in dieser Runde neu dazukam: besiegter Keim, Belohnungen, Erfolge
+function showUnlocks(u) {
+  const lv = u.level ? LEVELS[u.level - 1] : null;
+  const boss = lv ? lv.boss : null;
+  const germ = boss ? GERMS[boss.germ] : null;
+  const starsGot = starCount(u.mask);
   $('#win-title').textContent = lv ? 'Level cleared' : 'New unlocks';
-  if (germ) fill($('#win-sub'), 'You beat ', el('i', {}, germ.name), '.'); else fill($('#win-sub'));
-  $('#win-sub').hidden = !germ;
-  $('#win-germ').innerHTML = germ ? germSvg(germ.shape, lv.boss.color) : '';
-  $('#win-germ').hidden = !germ;
-  $('#win-fact').textContent = germ ? germ.fact : '';
-  $('#win-fact').hidden = !germ;
-  fill($('#win-rewards'), ...rows);
+  fill($('#win-sub'), lv ? `Level ${u.level} · ${lv.name}` : '', u.mask ? el('span', { class: 'win-stars', 'aria-label': `${starsGot} of 3 stars` }, [0, 1, 2].map((k) => el('span', { class: k < starsGot ? 'on' : '' }, '★'))) : null);
+  const sections = [];
+  if (germ) {
+    const inAtlas = u.germs.includes(boss.germ);
+    sections.push(el('section', { class: 'win-germ-card' },
+      germPic(boss.germ, boss.color, 'win-germ'),
+      el('div', { class: 'main' },
+        el('span', { class: 'kind' }, 'Defeated'),
+        el('b', { class: 'germ-name' }, germ.name),
+        el('p', {}, germ.fact),
+        inAtlas ? el('span', { class: 'atlas-tag' }, ui('atlas', 'xs'), 'Added to your atlas') : null)));
+  }
+  const rewards = [];
+  if (u.points) {
+    rewards.push(rewardRow(ui('plus'), 'Upgrade points', `+${u.points.gain} ${u.points.gain === 1 ? 'point' : 'points'}`,
+      `${u.points.before} → ${u.points.after} for ${u.points.name}${u.points.triple ? ' · includes 1 for three stars' : ''}`, 'gold'));
+  }
+  for (const r of u.rewards) rewards.push(rewardRow(r.type === 'move' ? icon(pathSvg(actionsOf({ type: r.key, size: 0, dir: 'R' })), 'md') : rewardIcon(r), REWARD_KIND[r.type] || 'Unlocked', r.short || r.text, rewardSub(r)));
+  const otherGerms = u.germs.filter((k) => !boss || k !== boss.germ);
+  if (otherGerms.length) rewards.push(rewardRow(ui('atlas'), 'New in your atlas', otherGerms.map((k) => GERMS[k].name).join(', '), 'Read about it in the Atlas'));
+  if (rewards.length) sections.push(winSection('Rewards', ...rewards));
+  if (u.achievements.length) sections.push(winSection('Achievements', ...u.achievements.map((a) => rewardRow(icon(ACH_ICONS[a.key]), '', a.name, a.desc, 'gold'))));
+  fill($('#win-body'), ...sections);
   $('#win-modal').hidden = false;
   $('#win-modal').scrollTop = 0;
   document.body.classList.add('modal-open');
