@@ -151,7 +151,7 @@ export class PlateRenderer {
         cr = col[0] + (235 - col[0]) * t; cg = col[1] + (235 - col[1]) * t; cb = col[2] + (235 - col[2]) * t;
       } else if (spore[i]) {
         cr = 150 + col[0] * 0.4; cg = 150 + col[1] * 0.4; cb = 150 + col[2] * 0.4;
-      } else if (biofilm[o - 1] && still[i] >= 2) {
+      } else if (biofilm[o - 1] && still[i] >= 3) {
         // Biofilm: dunklere, gemusterte Matte
         const f = ((i % N) + ((i / N) | 0)) & 1 ? 0.5 : 0.66;
         cr = col[0] * f; cg = col[1] * f; cb = col[2] * f;

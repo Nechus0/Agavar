@@ -11,7 +11,7 @@ import { LEVELS, levelOpponents } from './levels.js';
 import { GERMS, germSvg } from './germs.js';
 import {
   getLimits, unlockLevelOf, rewardsOf, problems, careerPoints, nextLevel, START_POINTS, POINTS_PER_WIN,
-  STAR_GOALS, starMask, starCount,
+  STAR_GOALS, starMask, starCount, challengeOf,
 } from './progression.js';
 import { analyze, ACHIEVEMENTS, deathBreakdown, plateReport } from './insights.js';
 import { SPECIAL_ICONS, TRAIT_ICONS, UI_ICONS, ACH_ICONS, ELEMENT_ICONS } from './icons.js';
@@ -296,7 +296,7 @@ function renderHome() {
         },
       }, el('b', {}, String(lvn)), el('span', { 'aria-hidden': 'true' }, [1, 2, 4].map((bit) => el('i', { class: m & bit ? 'on' : '' }, '★'))));
     })),
-    el('p', { class: 'small muted' }, '★ Win · ★ Under 12 h · ★ 25 % of the plate. All three in a level give +1 upgrade point.')));
+    el('p', { class: 'small muted' }, '★ Win · ★ Under 12 h · ★ the level challenge. All three in a level give +1 upgrade point.')));
 }
 
 function playNext(b, n) {
@@ -371,8 +371,9 @@ onEnter['level-detail'] = () => {
     el('div', { class: 'tip' }, ui('bulb'), el('span', {}, counterTips(boss, 1)[0])));
   const mask = b.career.stars[n] || 0;
   fill($('#ld-goals'),
-    el('div', { class: 'goal-stars' }, STAR_GOALS.map((g) => el('div', { class: `goal ${mask & g.bit ? 'done' : ''}`, title: g.text },
-      el('span', { class: 'star', 'aria-hidden': 'true' }, '★'), el('span', {}, starLabel(g))))),
+    el('div', { class: 'goal-stars' }, STAR_GOALS.map((g) => el('div', { class: `goal ${mask & g.bit ? 'done' : ''}`, title: g.bit === 4 ? challengeOf(lv).text : g.text },
+      el('span', { class: 'star', 'aria-hidden': 'true' }, '★'), el('span', {}, starLabel(g, lv))))),
+    el('p', { class: 'small muted challenge-line' }, `Challenge: ${challengeOf(lv).text}.`),
     won.includes(n) ? null : el('div', { class: 'reward-line' }, 'First win:',
       el('span', { class: 'plus' }, `+${POINTS_PER_WIN} point`),
       ...rewardsOf(n).map((r) => el('span', { class: 'rw' }, rewardIcon(r), r.short || r.text))));
@@ -421,7 +422,7 @@ function showNewElements(keys) {
   }, 350);
 }
 
-const starLabel = (g) => ({ 1: 'Win', 2: 'Under 12 h', 4: '25 % plate' }[g.bit]);
+const starLabel = (g, lv) => ({ 1: 'Win', 2: 'Under 12 h', 4: challengeOf(lv).short }[g.bit]);
 
 $('#ld-start').addEventListener('click', () => {
   const b = curCareer();
@@ -599,7 +600,7 @@ const SPECIAL_MATCH = {
   spores: ['Survives hunger and old age', 'Sleeping spores do not grow or fight'],
   capsule: ['Blocks one hit, phages and immune cells', 'Toxins and antibiotics go straight through · slower'],
   photo: ['Energy without food, in the light', 'Little help in the shade'],
-  biofilm: ['Resting cells resist attacks, toxins, antibiotics, salt and currents', 'No protection while moving · predators bite through'],
+  biofilm: ['Resting cells resist attacks, antibiotics and currents, and partly toxins', 'Only works when sitting still · mats eat less · predators bite through'],
   predator: ['Feeds on the enemies it kills', 'Tough defenses and capsules stop it'],
   toxin: ['Poisons crowds of enemies, even through capsules', 'Biofilm halves it · costs energy'],
 };
@@ -948,12 +949,15 @@ function updateSimUi() {
   if (run.cfg.mode === 'level') {
     const me = sim.players[0];
     const fastLost = sim.tick > 1000;
-    const big = me.peakPlate >= 0.25;
+    const lv = LEVELS[run.cfg.level - 1];
+    const ch = challengeOf(lv);
+    const chOk = ch.ok(sim, run.genomes[0]);
+    const chLost = (ch.fixed && !chOk) || (ch.failed && ch.failed(sim)) || (sim.done && !(sim.winner === 1 && chOk));
     const won = sim.done && sim.winner === 1;
     fill($('#sim-goals'),
       el('div', { class: `goal-chip ${won ? 'done' : sim.done ? 'lost' : ''}` }, el('span', { class: 'star', 'aria-hidden': 'true' }, '★'), 'Win'),
       el('div', { class: `goal-chip ${won && !fastLost ? 'done' : fastLost ? 'lost' : ''}` }, el('span', { class: 'star', 'aria-hidden': 'true' }, '★'), 'Under 12 h'),
-      el('div', { class: `goal-chip ${big ? 'done' : ''}` }, el('span', { class: 'star', 'aria-hidden': 'true' }, '★'), '25 % plate'));
+      el('div', { class: `goal-chip ${chLost ? 'lost' : chOk && !ch.fixed ? 'done' : ''}`, title: ch.text }, el('span', { class: 'star', 'aria-hidden': 'true' }, '★'), ch.progress && !chOk ? ch.progress(sim) : ch.short));
   }
   if (run.ev) checkEvents();
   fightLevel();
@@ -1058,7 +1062,7 @@ function showResult() {
   $('#rs-where').textContent = `Level ${cfg.level} · ${LEVELS[cfg.level - 1].name}`;
 
   const firstWin = cfg.mode === 'level' && won && store.markWon(cfg.careerId, cfg.level);
-  const mask = cfg.mode === 'level' ? starMask(sim) : 0;
+  const mask = cfg.mode === 'level' ? starMask(sim, LEVELS[cfg.level - 1], run.genomes[0]) : 0;
   const newStars = cfg.mode === 'level' ? store.addStars(cfg.careerId, cfg.level, mask) : 0;
   const newGerms = cfg.mode === 'level' && won ? store.discover(levelOpponents(LEVELS[cfg.level - 1]).map((o) => o.germ)) : [];
   const ctx = {
@@ -1083,7 +1087,7 @@ function showResult() {
       const got = mask & g.bit, old = all & g.bit;
       return el('div', { class: 'star-col', title: g.text },
         el('span', { class: `big-star ${got ? 'got' : old ? 'old' : ''} ${newStars & g.bit ? 'new' : ''}`, 'aria-hidden': 'true' }, '★'),
-        el('small', {}, starLabel(g)),
+        el('small', {}, starLabel(g, LEVELS[cfg.level - 1])),
         el('span', { class: 'state' }, got ? (newStars & g.bit ? 'New' : 'Earned') : old ? 'Earned before' : 'Missed'));
     }));
   }
@@ -1164,7 +1168,7 @@ function renderSummary(sim, mask) {
   const tile = (value, label) => el('div', { class: 'sum-tile' }, el('b', {}, value), el('small', {}, label));
   const block = (title, ...kids) => el('div', { class: 'sum-block' }, el('h3', { class: 'win-label' }, title), ...kids);
   const plate = plateReport(sim);
-  const notes = analyze(sim, run.genomes, mask);
+  const notes = analyze(sim, run.genomes, mask, run.cfg.mode === 'level' ? LEVELS[run.cfg.level - 1] : null);
   fill($('#rs-analysis'),
     el('div', { class: 'sum-tiles' },
       tile(`${Math.round(me.peakPlate * 100)} %`, 'of the plate at best'),

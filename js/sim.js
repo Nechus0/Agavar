@@ -319,7 +319,7 @@ export class Simulation {
     const q = this.players[this.owner[j] - 1].ph;
     let d = q.defense + this.energy[j] / 50;
     if (this.spore[j]) d = q.defense + 3; // Sporenhülle
-    else if (q.biofilm && this.still[j] >= 2) d += attacker && attacker.predator ? 1.2 : 3.5; // Schleimschicht
+    else if (q.biofilm && this.still[j] >= 3) d += attacker && attacker.predator ? 1.2 : 3; // Schleimschicht
     return d;
   }
 
@@ -386,13 +386,14 @@ export class Simulation {
 
       // Altern und Grundumsatz
       this.age[i]++;
-      const slimy = ph.biofilm && this.still[i] >= 2;
+      // Biofilm braucht echtes Stillsitzen; in der Matte kommt weniger Futter an die einzelne Zelle
+      const slimy = ph.biofilm && this.still[i] >= 3;
       // Biofilm: stillstehende Zellen im Schleim sparen Energie
       energy[i] -= slimy ? ph.basal * 0.7 : ph.basal;
       // Kapsel wächst langsam nach
       if (ph.capsule && !this.shield[i] && rng() < 0.02) this.shield[i] = 1;
 
-      let uptake = ph.uptake, moveChance = ph.moveChance, lightHere = 1;
+      let uptake = slimy ? ph.uptake * 0.75 : ph.uptake, moveChance = ph.moveChance, lightHere = 1;
       if (env) {
         // warme Seite: alles läuft schneller, kalte Seite: alles langsamer
         if (temp) {
@@ -410,10 +411,10 @@ export class Simulation {
         // Sonne: trocknet aus, Schatten schützt, Schleim auch
         if (light) {
           lightHere = light[i];
-          energy[i] -= lightHere * 0.6 * (slimy ? 0.35 : this.shield[i] ? 0.7 : 1);
+          energy[i] -= lightHere * 0.6 * (this.shield[i] ? 0.7 : 1);
         }
         // Salz: zieht Wasser aus der Zelle
-        if (salt && salt[i] > 0.02) energy[i] -= salt[i] * (slimy ? 1.2 : 2);
+        if (salt && salt[i] > 0.02) energy[i] -= salt[i] * 2;
         // Antibiotikum: tötet im Hemmhof, Kapsel und Biofilm halten länger durch
         // Antibiotikum: Kapseln helfen nicht, nur ein ruhender Biofilm schützt
         if (abx && abx[i] > 0.02) {
@@ -451,7 +452,7 @@ export class Simulation {
         if (j >= 0 && owner[j] && owner[j] !== o && !this.spore[j]) {
           // Gift dringt durch Kapseln, aber Biofilm-Matten halten es zur Hälfte ab
           const q = this.players[owner[j] - 1].ph;
-          energy[j] -= q.biofilm && this.still[j] >= 2 ? 4.5 : 9;
+          energy[j] -= q.biofilm && this.still[j] >= 3 ? 6 : 9;
           energy[i] -= 0.3;
           if (this.contactTick < 0) this.contactTick = tick;
           if (energy[j] <= 0) { this._kill(j, 'toxin', o); p.kills++; }
@@ -518,7 +519,7 @@ export class Simulation {
         }
       }
       // Strömung schiebt Zellen weiter, Biofilm klebt fest
-      if (flow && cur === i && !(ph.biofilm && this.still[i] >= 2) && rng() < flow.p) {
+      if (flow && cur === i && !(ph.biofilm && this.still[i] >= 3) && rng() < flow.p) {
         const j = this._neighbor(i, flow.d);
         if (j >= 0 && !owner[j]) { this._move(i, j); cur = j; p.env.drift++; }
       }

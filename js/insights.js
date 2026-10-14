@@ -1,11 +1,11 @@
 // Auswertung nach dem Spiel („woran lag es?“) und Erfolge.
 import { moveFromProgram } from './movement.js';
-import { BIG_PLATE } from './progression.js';
+import { challengeOf } from './progression.js';
 
 const pct = (x) => `${Math.round(x * 100)} %`;
 
 // Liefert 1–4 kurze Punkte: { kind: 'good' | 'info' | 'tip', text }
-export function analyze(sim, genomes, mask = 0) {
+export function analyze(sim, genomes, mask = 0, level = null) {
   const p = sim.players[0];
   const won = sim.winner === 1;
   const out = [];
@@ -33,7 +33,7 @@ export function analyze(sim, genomes, mask = 0) {
 
   if (won && mask) {
     if (!(mask & 2)) out.push({ kind: 'tip', text: `Missing star: win in under 12 h. This time it took ${Math.round((48 * sim.tick) / 4000)} h.` });
-    if (!(mask & 4)) out.push({ kind: 'tip', text: `Missing star: cover ${pct(BIG_PLATE)} of the plate. Your best was ${pct(p.peakPlate)}.` });
+    if (!(mask & 4)) out.push({ kind: 'tip', text: `Missing star: ${challengeOf(level).text.replace(/ and win$| \(and win\)$/, '').toLowerCase()}.` });
   }
   return out.slice(0, 4);
 }

@@ -25,6 +25,7 @@ export const LEVELS = [
   },
   {
     name: 'Twitching',
+    challenge: ['boss'],
     note: 'Skin is mostly dry. Food only collects around pores and sweat glands – small rich spots on a thin base.',
     desc: 'Acinetobacter pulls itself across the skin with tiny hooks – forward, back, forward – and attacks whatever it meets.',
     plate: { size: 'klein', distribution: 'poren', amount: 'normal', regen: 'normal' },
@@ -33,6 +34,7 @@ export const LEVELS = [
   },
   {
     name: 'Hot Tub Rash',
+    challenge: ['hunter', 300],
     note: 'Warm water opened every pore. Rich spots all over the plate, but each one is small.',
     desc: 'A warm whirlpool: Pseudomonas swims into the hair follicles – straight ahead, then off in a new direction. Micrococcus already lives here.',
     plate: { size: 'mittel', distribution: 'poren', amount: 'normal', regen: 'normal' },
@@ -41,6 +43,7 @@ export const LEVELS = [
   },
   {
     name: 'The Sore',
+    challenge: ['pure'],
     note: 'A scratched sore: blood and plasma pooled in a few large patches. Between them the skin is almost bare.',
     desc: 'Streptococcus pyogenes hides in a slime capsule – every attack must hit twice. Pink Kocuria grabs the free spots.',
     plate: { size: 'mittel', distribution: 'flecken', amount: 'normal', regen: 'normal' },
@@ -57,6 +60,7 @@ export const LEVELS = [
   },
   {
     name: 'Sweaty Feet',
+    challenge: ['lean', 16],
     note: 'Thick, dry skin between the toes. Hardly any food – every spot is precious and gone fast.',
     desc: 'Little air, little food between the toes. Brevibacterium makes feet smell, Kytococcus eats pits into the soles.',
     plate: { size: 'mittel', distribution: 'poren', amount: 'wenig', regen: 'normal' },
@@ -65,6 +69,7 @@ export const LEVELS = [
   },
   {
     name: 'Tick Bite',
+    challenge: ['boss'],
     note: 'The tick fed right in the middle. The blood is in the centre; the edges are almost empty.',
     desc: 'A tick brings Borrelia, which screws through the skin like a corkscrew. Capsule-wearing Streptococcus agalactiae comes along.',
     plate: { size: 'mittel', distribution: 'zentrum', amount: 'normal', regen: 'normal' },
@@ -73,6 +78,7 @@ export const LEVELS = [
   },
   {
     name: 'The Catheter',
+    challenge: ['hunter', 800],
     note: 'The tube runs straight through the skin. A rich stripe of fluid along it, dry skin on both sides – on a large plate.',
     desc: 'Your first opponent returns: on a plastic tube in the skin, Staphylococcus epidermidis builds a tough biofilm. Staphylococcus hominis helps.',
     plate: { size: 'gross', distribution: 'schnitt', amount: 'normal', regen: 'normal' },
@@ -81,6 +87,7 @@ export const LEVELS = [
   },
   {
     name: 'Tropical Sore',
+    challenge: ['pure'],
     note: 'Heat and humidity: the food lies in a messy, grainy pattern all over the plate.',
     desc: 'In a skin sore in the tropics, Corynebacterium diphtheriae releases its toxin. Cutibacterium and Kocuria fight for space.',
     plate: { size: 'mittel', distribution: 'rauschen', amount: 'normal', regen: 'normal' },
@@ -92,6 +99,7 @@ export const LEVELS = [
   },
   {
     name: 'The Abscess',
+    challenge: ['boss'],
     note: 'A deep cut filled with pus. One rich stripe through a large plate – whoever holds it has the food.',
     desc: 'Chapter boss: Staphylococcus aureus – toxins AND a protective capsule, deep in an infected wound. Two seasoned skin invaders join it.',
     plate: { size: 'gross', distribution: 'schnitt', amount: 'normal', regen: 'normal' },
@@ -104,6 +112,7 @@ export const LEVELS = [
   // ---------- World 1, part 2: the plate itself fights back ----------
   {
     name: 'Gravel Graze',
+    challenge: ['lean', 24],
     note: 'You fell off your bike. Grit and little stones are stuck in the graze – they block the way, and blood pooled in patches between them.',
     desc: 'Staphylococcus lugdunensis looks like a harmless skin germ, but in a graze it turns nasty. Pink Kocuria is already there.',
     plate: { size: 'mittel', distribution: 'flecken', amount: 'normal', regen: 'normal', elements: [{ type: 'stones', count: 7 }] },
@@ -112,6 +121,7 @@ export const LEVELS = [
   },
   {
     name: 'Antiseptic Cream',
+    challenge: ['clean', 300],
     note: 'A dab of antiseptic cream sits in the middle of the cut. Nothing grows close to it – but the cream wears off. And whoever spreads the most gets the next dab.',
     desc: 'Corynebacterium jeikeium shrugs off almost every drug and hides in a tough biofilm. Staphylococcus epidermidis is back as well.',
     plate: { size: 'mittel', distribution: 'gleichmaessig', amount: 'normal', regen: 'normal', elements: [{ type: 'disc', at: 0, where: 'center' }, { type: 'disc', at: 1700, where: 'leader', halo: 0.26 }] },
@@ -128,6 +138,7 @@ export const LEVELS = [
   },
   {
     name: 'Salt Crust',
+    challenge: ['lean', 26],
     note: 'After a long run the sweat has dried. Salt crystals crust the skin and little else is left – except around the crystals, where moisture keeps drawing food out.',
     desc: 'Brevibacterium loves salt – it is also used to make smelly cheese. Cutibacterium waits deep in the pores.',
     plate: { size: 'mittel', distribution: 'poren', amount: 'wenig', regen: 'langsam', elements: [{ type: 'salt', count: 6 }] },
@@ -136,6 +147,7 @@ export const LEVELS = [
   },
   {
     name: 'Acid Mantle',
+    challenge: ['pure'],
     note: 'Cutibacterium has been turning skin oil into acid for days. One side of the plate is very sour – cells there grow old fast.',
     desc: 'Cutibacterium acnes makes the skin sour and does fine in it. Corynebacterium snaps through the oily skin.',
     plate: { size: 'mittel', distribution: 'gleichmaessig', amount: 'normal', regen: 'normal', elements: [{ type: 'acid' }] },
@@ -144,6 +156,7 @@ export const LEVELS = [
   },
   {
     name: 'Honey Dressing',
+    challenge: ['honey', 3],
     note: 'An old ulcer, cleaned out and almost empty – food only trickles back slowly. But the nurse drips medical honey on it every few hours.',
     desc: 'Finegoldia magna hides deep in ulcers and smells its way to food. Streptococcus pyogenes joins the race.',
     plate: { size: 'mittel', distribution: 'gleichmaessig', amount: 'normal', regen: 'langsam', elements: [{ type: 'sugar', first: 320, every: 520, amount: 90 }] },
@@ -152,6 +165,7 @@ export const LEVELS = [
   },
   {
     name: 'Fever',
+    challenge: ['hunter', 1500],
     note: 'The body fights back with fever. One side of the wound burns hot, the other is cooled by an ice pack.',
     desc: 'Streptococcus pyogenes causes scarlet fever and loves the heat. Staphylococcus hominis spreads in wide arcs.',
     plate: { size: 'gross', distribution: 'flecken', amount: 'normal', regen: 'normal', elements: [{ type: 'heat' }] },
@@ -160,6 +174,7 @@ export const LEVELS = [
   },
   {
     name: 'Rinsing',
+    challenge: ['boss'],
     note: 'A cat bite is rinsed under the tap for minutes. The water keeps pushing everything downstream – and keeps bringing fresh food.',
     desc: 'Pasteurella multocida comes from a cat’s mouth and wears a thick capsule. Streptococcus agalactiae came along.',
     plate: { size: 'mittel', distribution: 'gleichmaessig', amount: 'normal', regen: 'schnell', elements: [{ type: 'flow' }] },
@@ -168,6 +183,7 @@ export const LEVELS = [
   },
   {
     name: 'Mouldy Plaster',
+    challenge: ['clean', 500],
     note: 'A plaster stayed on far too long and grew mould. Just like on Fleming’s famous plate, a clear ring spreads around it – and after a day, more spores land.',
     desc: 'Staphylococcus aureus – the germ on Fleming’s plate when penicillin was discovered. Staphylococcus epidermidis builds biofilm beside it.',
     plate: { size: 'gross', distribution: 'gleichmaessig', amount: 'viel', regen: 'normal', elements: [{ type: 'mould', at: 0, size: 0.24 }, { type: 'mould', at: 1500, size: 0.16 }] },
@@ -176,6 +192,7 @@ export const LEVELS = [
   },
   {
     name: 'Pus & Phages',
+    challenge: ['lean', 36],
     note: 'The wound is badly infected. The immune system sends white blood cells, and the doctors try phage therapy – both go for the biggest colony.',
     desc: 'World finale: Pseudomonas aeruginosa with biofilm and toxins, the favourite target of phage therapy. Two old enemies return.',
     plate: { size: 'gross', distribution: 'schnitt', amount: 'normal', regen: 'normal', elements: [{ type: 'immune', at: 600, count: 2 }, { type: 'phage', at: [900, 1800, 2700] }] },
