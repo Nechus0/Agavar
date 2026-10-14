@@ -3,7 +3,7 @@ import {
   COSTED, FREE, SPECIALS, SPECIAL_KEYS, PALETTE, TRAIT_MAX, SLOT2_COST, stepCost,
   defaultGenome, cost, normalize, randomGenome, specialsOf,
 } from './genome.js';
-import { Simulation, DISTRIBUTIONS, MAX_TICKS, energyProfile, phenotype, ROUNDS_PER_HOUR } from './sim.js';
+import { Simulation, DISTRIBUTIONS, MAX_TICKS, energyProfile, phenotype, ROUNDS_PER_HOUR, between, FREE_TABLES } from './sim.js';
 import { PlateRenderer, drawHistory, GrowthAnimator } from './render.js';
 import { makeRng, randomSeed } from './rng.js';
 import { randomName } from './names.js';
@@ -449,8 +449,6 @@ function openEditor(b, ctx) {
   ed.move = moveFromProgram(ed.program) || ed.move || null;
   if (!ed.move) { ed.move = { type: 'gerade', size: 0, dir: 'R' }; ed.program = ['F']; }
   $('#ed-title').textContent = b ? 'Lab' : 'New bacterium';
-  const w = WORLDS.find((x) => x.n === ctx.world);
-  $('#ed-world').textContent = `${w ? w.name : 'Skin'} strain`;
   colony.sim = null;
   const coach = $('#ed-coach');
   coach.hidden = !!b;
@@ -666,18 +664,19 @@ function traitEffect(key, v) {
   }
 }
 
-const UPTAKE = [2, 2.8, 3.6, 4.4, 5.2];
-const BASAL = [0.22, 0.32, 0.43, 0.55, 0.68];
-const DIVIDE_AT = [26, 38, 52, 66, 80];
-const freeName = (t, v) => t.options[v][0].toUpperCase() + t.options[v].slice(1);
-const freeText = (t, v) => (t.key === 'division'
-  ? `Divides at ${DIVIDE_AT[v]} energy – ${v <= 1 ? 'many small cells' : v >= 3 ? 'few strong cells' : 'balanced'}`
-  : `Eats up to ${UPTAKE[v].toFixed(1)} per step, burns ${BASAL[v].toFixed(2)} just staying alive`);
+const freeName = (t, v) => { const o = t.options[Math.round(v)]; return o[0].toUpperCase() + o.slice(1); };
+const freeText = (t, v) => {
+  if (t.key === 'division') {
+    const at = Math.round(between(FREE_TABLES.divideAt, v));
+    return `Divides at ${at} energy – ${v < 1.5 ? 'many small cells' : v > 2.5 ? 'few strong cells' : 'balanced'}`;
+  }
+  return `Eats up to ${between(FREE_TABLES.uptake, v).toFixed(1)} per step, burns ${between(FREE_TABLES.basal, v).toFixed(2)} just staying alive`;
+};
 function freeRow(t) {
   const v = ed[t.key];
   const name = el('span', { class: 'small' }, freeName(t, v));
   const text = el('span', { class: 'trait-effect' }, freeText(t, v));
-  const slider = el('input', { type: 'range', min: '0', max: '4', step: '1', value: String(v), 'aria-label': t.label, 'aria-valuetext': freeName(t, v) });
+  const slider = el('input', { type: 'range', min: '0', max: '4', step: '0.1', value: String(v), 'aria-label': t.label, 'aria-valuetext': freeName(t, v) });
   // nur Text neu setzen – der Regler bleibt erhalten, sonst bricht das Ziehen ab
   const update = () => {
     const nv = Number(slider.value);

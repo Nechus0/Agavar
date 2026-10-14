@@ -122,8 +122,12 @@ export function normalize(raw) {
     const p = raw.program.map(parseStep).filter(Boolean).slice(0, MAX_PROGRAM).map((x) => stepEntry(x.s, x.n));
     g.program = p.length ? p : ['P'];
   }
-  for (const t of [...COSTED, ...FREE]) {
+  for (const t of COSTED) {
     if (raw[t.key] !== undefined) g[t.key] = clampInt(raw[t.key], 0, t.max);
+  }
+  // Stoffwechsel und Teilung: stufenlos in Zehnteln
+  for (const t of FREE) {
+    if (raw[t.key] !== undefined) g[t.key] = Math.max(0, Math.min(t.max, Math.round((Number(raw[t.key]) || 0) * 10) / 10));
   }
   if (SPECIAL_KEYS.includes(raw.special)) g.special = raw.special;
   // ältere Spielstände: Chemotaxis war früher eine Spezialfähigkeit (3 Punkte) -> jetzt Eigenschaft Stufe 3

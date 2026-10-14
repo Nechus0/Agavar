@@ -35,6 +35,13 @@ const level = (table, v) => {
   const i = Math.min(table.length - 2, Math.floor(x));
   return table[i] + (table[i + 1] - table[i]) * (x - i);
 };
+// Stoffwechsel und Teilung sind stufenlos (0–4 mit Nachkommastellen): zwischen den Tabellenwerten interpolieren
+export const between = (table, x) => {
+  const v = Math.max(0, Math.min(table.length - 1, Number(x) || 0));
+  const i = Math.min(table.length - 2, Math.floor(v));
+  return table[i] + (table[i + 1] - table[i]) * (v - i);
+};
+export const FREE_TABLES = T;
 const MOVE_COST = 0.3;
 const PHOTO_GAIN = 0.45;
 export const ROUNDS_PER_HOUR = 4000 / 48;
@@ -58,9 +65,9 @@ export function phenotype(g) {
     moveChance: level(T.moveChance, g.speed),
     maxAge: Math.round(level(T.maxAge, g.lifespan)),
     efficiency: level(T.efficiency, g.efficiency),
-    uptake: T.uptake[g.metabolism],
-    basal: T.basal[g.metabolism],
-    divideAt: T.divideAt[g.division],
+    uptake: between(T.uptake, g.metabolism),
+    basal: between(T.basal, g.metabolism),
+    divideAt: between(T.divideAt, g.division),
     attack: g.attack / 2,
     defense: g.defense / 2,
     spores: sp.has('spores'),

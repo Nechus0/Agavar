@@ -398,7 +398,7 @@ export class GrowthAnimator {
   }
 
   // division setting 0 (very early) … 4 (very late) -> steps between divisions
-  setDivision(div) { this.divEvery = 3 + (div | 0); this.reset(); }
+  setDivision(div) { this.divEvery = 3 + Math.round(Number(div) || 0); this.reset(); }
 
   reset() {
     this.seed = 11;
