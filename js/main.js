@@ -502,8 +502,8 @@ function setMove(move) {
 function moveSheet() {
   const lim = edCtx.limits;
   const grid = el('div', { class: 'move-grid', role: 'radiogroup', 'aria-label': 'Movement pattern' });
-  const sizeRow = el('div', { class: 'row-card card' });
-  const desc = el('p', { class: 'small muted' });
+  const sizeRow = el('div', { class: 'size-row' });
+  const desc = el('p', { class: 'small muted move-desc' });
   const canvas = el('canvas', { class: 'path-preview', 'aria-hidden': 'true' });
   const choose = (move) => { if (setMove(move)) { draw(); sheetAnimator.setProgram(ed.program, ed.color); } };
   const draw = () => {
@@ -524,8 +524,9 @@ function moveSheet() {
       el('span', { class: 'move-name' }, mv.name),
       el('span', { class: 'move-sub' }, locked ? `Level ${lockReason(res)}` : ''));
     }));
-    sizeRow.hidden = !m.sizes;
-    if (m.sizes) fill(sizeRow, el('span', {}, 'Size'), el('div', { class: 'seg inline', role: 'radiogroup', 'aria-label': 'Pattern size' }, m.sizes.map((label, k) => {
+    sizeRow.classList.toggle('off', !m.sizes);
+    if (!m.sizes) fill(sizeRow, el('span', {}, 'Size'), el('span', { class: 'small muted' }, 'Fixed'));
+    else fill(sizeRow, el('span', {}, 'Size'), el('div', { class: 'seg inline', role: 'radiogroup', 'aria-label': 'Pattern size' }, m.sizes.map((label, k) => {
       const r = compile({ ...cur, size: k, dir: 'R' }, lim);
       return el('button', {
         class: `${cur.size === k ? 'on' : ''} ${r.program ? '' : 'locked'}`, role: 'radio', 'aria-checked': String(cur.size === k),
@@ -535,7 +536,7 @@ function moveSheet() {
     desc.textContent = m.desc;
   };
   draw();
-  openSheet('Movement', grid, sizeRow, el('div', { class: 'card path-card' }, canvas, desc));
+  openSheet('Movement', el('div', { class: 'path-card' }, canvas, desc), grid, sizeRow);
   sheetAnimator = new GrowthAnimator(canvas);
   sheetAnimator.setDivision(ed.division);
   sheetAnimator.setProgram(ed.program, ed.color);
@@ -587,15 +588,19 @@ function abilitySheet(slot) {
 function slotTile(slot) {
   const lim = edCtx.limits;
   const key = slot === 1 ? ed.special : ed.bonusSpecial || 'none';
+  const row = (cls, ico, name, sub, right, onclick) => el('button', { class: `slot-row ${cls}`, onclick },
+    el('span', { class: 'sp-ico' }, ico), el('span', { class: 'main' }, el('b', {}, name), el('small', {}, sub)), right);
   if (slot === 2 && (lim.slots || 1) < 2) {
-    return el('button', { class: 'slot locked', onclick: () => toast(`The second slot unlocks after level ${unlockLevelOf('slot')}.`) },
-      el('span', { class: 'sp-ico' }, ui('lock', 'md')), el('b', {}, 'Second slot'), el('small', {}, `After level ${unlockLevelOf('slot')}`));
+    return row('locked', ui('lock', 'sm'), 'Second ability', `Unlocks after level ${unlockLevelOf('slot')}`, null,
+      () => toast(`The second slot unlocks after level ${unlockLevelOf('slot')}.`));
   }
   const empty = key === 'none';
-  return el('button', { class: `slot ${empty ? 'empty' : ''}`, onclick: () => abilitySheet(slot) },
-    el('span', { class: 'sp-ico' }, empty ? ui('plus', 'md') : specialIcon(key, 'md')),
-    el('b', {}, empty ? (slot === 1 ? 'No ability' : 'Second slot') : SPECIALS[key].name),
-    el('small', {}, empty ? (slot === 1 ? 'Tap to choose' : `+${SLOT2_COST} pts for the slot`) : `${SPECIALS[key].cost + (slot === 2 ? SLOT2_COST : 0)} pts`));
+  const pts = empty ? null : SPECIALS[key].cost + (slot === 2 ? SLOT2_COST : 0);
+  return row(empty ? 'empty' : '', empty ? ui('plus', 'sm') : specialIcon(key, 'sm'),
+    empty ? (slot === 1 ? 'Choose an ability' : 'Second ability') : SPECIALS[key].name,
+    empty ? (slot === 1 ? 'Optional' : `Slot costs ${SLOT2_COST} pts extra`) : SPECIAL_SHORT[key],
+    el('span', { class: 'row-end' }, pts ? el('span', { class: 'cost' }, `${pts} pts`) : null, ui('chevron', 'sm')),
+    () => abilitySheet(slot));
 }
 
 // Wirkung einer Stufe in Zahlen – direkt aus den Spielwerten der Simulation
@@ -681,7 +686,7 @@ function renderEditor() {
       el('div', { class: 'pips', 'aria-hidden': 'true' }, Array.from({ length: TRAIT_MAX }, (_, k) => el('i', { class: `${k < v ? 'on' : ''} ${k >= 4 ? (k >= 7 ? 'c3' : 'c2') : ''}` }))),
       el('span', { class: 'trait-effect' }, traitEffect(t.key, v)));
   }));
-  fill($('#ed-free'), ...FREE.map(freeRow));
+  fill($('#ed-free'), ...FREE.map(freeRow), el('div', { class: 'stat-strip', id: 'ed-energy' }));
   renderEnergy(energyProfile(normalize(ed)));
   renderBudget();
   colony.restart();
@@ -725,10 +730,11 @@ function fmtDuration(rounds) {
 }
 function renderEnergy(ep) {
   const net = perHour(ep.intake - ep.cost);
+  const stat = (value, label, bad = false) => el('div', { class: 'stat' }, el('b', { class: bad ? 'bad' : '' }, value), el('small', {}, label));
   fill($('#ed-energy'),
-    el('span', { class: 'echip' }, 'Energy ', el('b', { class: net >= 0 ? '' : 'bad' }, `${net >= 0 ? '+' : ''}${net}`), ' /h'),
-    el('span', { class: 'echip' }, 'Divides every ', el('b', {}, fmtDuration(ep.roundsToDivide))),
-    el('span', { class: 'echip' }, 'Lasts ', el('b', {}, fmtDuration(Math.min(ep.roundsWithoutFood, ep.maxAge))), ' without food'));
+    stat(`${net >= 0 ? '+' : ''}${net}/h`, 'energy', net < 0),
+    stat(fmtDuration(ep.roundsToDivide), 'to divide'),
+    stat(fmtDuration(Math.min(ep.roundsWithoutFood, ep.maxAge)), 'without food'));
 }
 
 // ---------- Simulation ----------
