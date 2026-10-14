@@ -61,7 +61,8 @@ function expandProgram(program) {
 // Unterhalt: jede Ausbaustufe und jede Fähigkeit kostet die Zelle Energie in jeder Runde.
 // Ein „Super-Bakterium“ mit allem lohnt sich darum nur, wo es viel Futter gibt – bei Knappheit gewinnt das schlanke.
 export const UPKEEP_PER_LEVEL = 0.006;
-export const UPKEEP_SPECIAL = { none: 0, capsule: 0.05, biofilm: 0.03, toxin: 0.05, predator: 0.03, photo: 0, spores: 0.02 };
+// Fähigkeiten sind stark, aber teuer im Unterhalt – und jede hat eine Achillesferse (siehe unten)
+export const UPKEEP_SPECIAL = { none: 0, capsule: 0.1, biofilm: 0.04, toxin: 0.08, predator: 0.05, photo: 0, spores: 0.03 };
 export function upkeepOf(g) {
   const levels = ['speed', 'lifespan', 'efficiency', 'chemotaxis', 'attack', 'defense'].reduce((a, k) => a + (Number(g[k]) || 0), 0);
   return levels * UPKEEP_PER_LEVEL + (UPKEEP_SPECIAL[g.special] || 0) + (g.bonusSpecial ? UPKEEP_SPECIAL[g.bonusSpecial] || 0 : 0);
@@ -72,12 +73,15 @@ export function phenotype(g) {
   return {
     program: expandProgram(g.program),
     // eine dicke Kapsel macht die Zelle schwerfälliger
-    moveChance: level(T.moveChance, g.speed) * (sp.has('capsule') ? 0.85 : 1),
+    // Kapsel: schwer und träge
+    moveChance: level(T.moveChance, g.speed) * (sp.has('capsule') ? 0.7 : 1),
     maxAge: Math.round(level(T.maxAge, g.lifespan)),
     efficiency: level(T.efficiency, g.efficiency),
-    uptake: between(T.uptake, g.metabolism),
+    // Räuber sind Jäger, keine Weidegänger: vom Agar holen sie nur wenig
+    uptake: between(T.uptake, g.metabolism) * (sp.has('predator') ? 0.55 : 1),
     basal: between(T.basal, g.metabolism) + upkeepOf(g),
-    divideAt: between(T.divideAt, g.division),
+    // eine Kapsel muss bei jeder Teilung mit aufgebaut werden
+    divideAt: between(T.divideAt, g.division) + (sp.has('capsule') ? 8 : 0),
     attack: g.attack / 2,
     defense: g.defense / 2,
     spores: sp.has('spores'),
@@ -319,7 +323,7 @@ export class Simulation {
     const q = this.players[this.owner[j] - 1].ph;
     let d = q.defense + this.energy[j] / 50;
     if (this.spore[j]) d = q.defense + 3; // Sporenhülle
-    else if (q.biofilm && this.still[j] >= 3) d += attacker && attacker.predator ? 1.2 : 3; // Schleimschicht
+    else if (q.biofilm && this.still[j] >= 3) d += attacker && attacker.predator ? 1 : 4; // Schleimschicht
     return d;
   }
 
@@ -389,11 +393,11 @@ export class Simulation {
       // Biofilm braucht echtes Stillsitzen; in der Matte kommt weniger Futter an die einzelne Zelle
       const slimy = ph.biofilm && this.still[i] >= 3;
       // Biofilm: stillstehende Zellen im Schleim sparen Energie
-      energy[i] -= slimy ? ph.basal * 0.7 : ph.basal;
+      energy[i] -= slimy ? ph.basal * 0.6 : ph.basal;
       // Kapsel wächst langsam nach
-      if (ph.capsule && !this.shield[i] && rng() < 0.02) this.shield[i] = 1;
+      if (ph.capsule && !this.shield[i] && rng() < 0.05) this.shield[i] = 1;
 
-      let uptake = slimy ? ph.uptake * 0.75 : ph.uptake, moveChance = ph.moveChance, lightHere = 1;
+      let uptake = slimy ? ph.uptake * 0.7 : ph.uptake, moveChance = ph.moveChance, lightHere = 1;
       if (env) {
         // warme Seite: alles läuft schneller, kalte Seite: alles langsamer
         if (temp) {
@@ -442,18 +446,20 @@ export class Simulation {
       }
 
       // Toxine: schwächen eine zufällige gegnerische Nachbarzelle (sichtbar als Wolke).
-      if (ph.toxin && rng() < 0.35) {
+      if (ph.toxin && rng() < 0.45) {
         const j = this._neighbor(i, rng.int(8));
         if (j >= 0) {
           // sichtbare Giftwolke um die getroffene Stelle
           fog[j] = 16;
           for (let dd = 0; dd < 8; dd += 2) { const k2 = this._neighbor(j, dd); if (k2 >= 0 && fog[k2] < 9) fog[k2] = 9; }
+          // Achillesferse: Gift verdirbt auch das Futter – bei Knappheit schadet es dem Giftbildner selbst
+          nutrient[j] *= 0.85;
+          energy[i] -= 0.5;
         }
         if (j >= 0 && owner[j] && owner[j] !== o && !this.spore[j]) {
           // Gift dringt durch Kapseln, aber Biofilm-Matten halten es zur Hälfte ab
           const q = this.players[owner[j] - 1].ph;
-          energy[j] -= q.biofilm && this.still[j] >= 3 ? 6 : 9;
-          energy[i] -= 0.3;
+          energy[j] -= q.biofilm && this.still[j] >= 3 ? 3 : 12;
           if (this.contactTick < 0) this.contactTick = tick;
           if (energy[j] <= 0) { this._kill(j, 'toxin', o); p.kills++; }
         }
@@ -500,7 +506,7 @@ export class Simulation {
           } else if (owner[j] !== o) {
             // Kampf
             if (this.contactTick < 0) this.contactTick = tick;
-            const atk = ph.attack + (ph.predator ? 1 : 0) + rng() * 3;
+            const atk = ph.attack + (ph.predator ? 2 : 0) + rng() * 3;
             const def = this._defense(j, ph) + rng() * 3;
             if (atk > def + 0.5 && this.shield[j]) {
               this.shield[j] = 0; // Kapsel fängt den Angriff ab
@@ -509,7 +515,7 @@ export class Simulation {
               this._kill(j, 'fight', o);
               p.kills++;
               energy[i] -= 1.5;
-              if (ph.predator) { energy[i] = Math.min(MAX_ENERGY, energy[i] + 25); bite[j] = 12; }
+              if (ph.predator) { energy[i] = Math.min(MAX_ENERGY, energy[i] + 30); bite[j] = 12; }
               this._move(i, j);
               cur = j;
             } else {
@@ -665,7 +671,10 @@ export class Simulation {
       for (let x = Math.max(0, x0 - rad); x <= Math.min(N - 1, x0 + rad); x++) {
         const j = y * N + x;
         if (this.owner[j] !== o || inf[j] || this.spore[j]) continue;
-        if (this.rng() < (this.shield[j] ? chance * 0.3 : chance)) inf[j] = 1;
+        // Kapseln halten Phagen ab, in dichten Biofilm-Matten breiten sie sich dagegen besonders leicht aus
+        const ph = this.players[o - 1].ph;
+        const c = this.shield[j] ? chance * 0.15 : ph.biofilm && this.still[j] >= 3 ? Math.min(1, chance * 1.5) : chance;
+        if (this.rng() < c) inf[j] = 1;
       }
     }
   }

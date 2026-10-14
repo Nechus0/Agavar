@@ -591,22 +591,22 @@ function moveSheet() {
 
 // Fähigkeiten: Platz 1 und – gegen Punkte – Platz 2
 const SPECIAL_SHORT = {
-  none: 'Keep the points for traits.',
+  none: 'Keep the points for traits – and save the upkeep.',
   spores: 'Starving cells sleep as spores and wake when food returns.',
-  capsule: 'Absorbs one deadly attack, then slowly grows back.',
+  capsule: 'A slime coat absorbs hits and grows back fast.',
   photo: 'A little energy from light, even where the food is gone.',
-  biofilm: 'Cells that sit still build a tough slime mat.',
-  predator: 'Eats the enemies it kills and gains a lot of energy.',
-  toxin: 'A poison cloud weakens enemy neighbours.',
+  biofilm: 'Cells that sit still build a tough, thrifty slime mat.',
+  predator: 'Hunts and eats enemy cells for a lot of energy.',
+  toxin: 'Strong poison clouds that kill enemy neighbours.',
 };
-// Stärken und Schwächen: es gibt keine Fähigkeit, die gegen alles hilft
+// Jede Fähigkeit ist stark für bestimmte Lagen – und hat eine Achillesferse
 const SPECIAL_MATCH = {
   spores: ['Survives hunger and old age', 'Sleeping spores do not grow or fight'],
-  capsule: ['Blocks one hit, phages and immune cells', 'Toxins and antibiotics go straight through · slower'],
+  capsule: ['Blocks hits, phages and immune cells', 'Slow and costly to divide · toxins and antibiotics go through'],
   photo: ['Energy without food, in the light', 'Little help in the shade'],
-  biofilm: ['Resting cells resist attacks, antibiotics and currents, and partly toxins', 'Only works when sitting still · mats eat less · predators bite through'],
-  predator: ['Feeds on the enemies it kills', 'Tough defenses and capsules stop it'],
-  toxin: ['Poisons crowds of enemies, even through capsules', 'Biofilm halves it · costs energy'],
+  biofilm: ['Resting cells resist attacks, toxins, antibiotics and currents · saves energy', 'Only while sitting still · mats eat less · phages and predators thrive'],
+  predator: ['Big energy from every kill', 'Barely feeds on agar – starves when enemies are rare or armoured'],
+  toxin: ['Kills crowds of enemies, even through capsules', 'Spoils food and burns energy · useless against biofilm'],
 };
 const unlockText = (k) => { const lvl = unlockLevelOf('special', k); return lvl > LEVELS.length ? `World ${worldOfLevel(lvl).n}` : `Level ${lvl}`; };
 

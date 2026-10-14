@@ -50,12 +50,12 @@ export const FREE = [
 
 export const SPECIALS = {
   none: { name: 'None', cost: 0, hint: 'No special ability.' },
-  capsule: { name: 'Capsule', cost: 5, hint: 'A slime capsule absorbs one deadly attack and then slowly grows back (cells with a capsule look brighter).' },
+  capsule: { name: 'Capsule', cost: 5, hint: 'A slime coat absorbs hits and grows back fast, but makes cells slow and costly to divide (cells with a capsule look brighter).' },
   photo: { name: 'Photosynthesis', cost: 5, hint: 'Cells constantly gain a little energy from light – even where the food is gone (cells shimmer).' },
-  predator: { name: 'Predator', cost: 6, hint: 'Attacks harder, eats killed enemies and gains a lot of energy from them (red bite marks).' },
+  predator: { name: 'Predator', cost: 6, hint: 'Attacks harder and eats killed enemies, but barely feeds on agar (red bite marks).' },
   spores: { name: 'Spores', cost: 4, hint: 'Starving cells turn into dormant spores (pale dots) and wake up when food returns.' },
   biofilm: { name: 'Biofilm', cost: 6, hint: 'Cells that stand still build a slime layer (dark mat): much tougher and they use less energy.' },
-  toxin: { name: 'Toxins', cost: 7, hint: 'Cells release poison (visible as a toxic cloud) that weakens and can kill neighbouring enemy cells.' },
+  toxin: { name: 'Toxins', cost: 7, hint: 'Cells release poison clouds that kill neighbouring enemies – but spoil the food and cost energy.' },
 };
 export const SPECIAL_KEYS = Object.keys(SPECIALS);
 
