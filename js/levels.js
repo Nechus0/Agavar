@@ -207,15 +207,16 @@ export const LEVELS = [
   },
 ];
 
-// Stärke der Gegner je Level (+n auf Tempo, Leben, Verwertung, Angriff und Abwehr). Der Spieler bringt
-// durch Sterne zusätzliche Punkte mit; die Werte sind mit tools/tune-levels.mjs so gewählt, dass ein
-// gleichmäßig verteiltes „faules“ Bakterium meist verliert, ein durchdachtes aber gewinnt.
-export const LEVEL_POWER = [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 2, 2, 2, 1];
-const TRAITS5 = ['speed', 'lifespan', 'efficiency', 'attack', 'defense'];
+// Stärke der Gegner je Level in Ausbaustufen, reihum verteilt auf Abwehr, Verwertung, Angriff, Tempo, Leben
+// (5 = +1 auf alle fünf). Der Spieler bringt durch Sterne zusätzliche Punkte mit; die Werte sind mit
+// tools/tune-levels.mjs so gewählt, dass ein gleichmäßig verteiltes „faules“ Bakterium meist verliert,
+// ein durchdachtes aber gewinnt.
+export const LEVEL_POWER = [0, 0, 10, 5, 5, 5, 5, 0, 15, 5, 0, 10, 10, 10, 10, 10, 5, 0, 10, 5];
+const TRAITS5 = ['defense', 'efficiency', 'attack', 'speed', 'lifespan'];
 const powerOverride = typeof process !== 'undefined' && process.env && process.env.POWER_LEVEL ? [Number(process.env.POWER_LEVEL), Number(process.env.POWER)] : null;
 LEVELS.forEach((lv, i) => {
-  const bump = powerOverride && powerOverride[0] === i + 1 ? powerOverride[1] : LEVEL_POWER[i] || 0;
-  for (const o of [lv.boss, ...lv.opponents]) for (const k of TRAITS5) o[k] = Math.min(10, o[k] + bump);
+  const p = powerOverride && powerOverride[0] === i + 1 ? powerOverride[1] : LEVEL_POWER[i] || 0;
+  for (const o of [lv.boss, ...lv.opponents]) TRAITS5.forEach((k, j) => { o[k] = Math.min(10, o[k] + Math.floor(p / 5) + (j < p % 5 ? 1 : 0)); });
 });
 
 // Anpassungsfähige Gegner (lv.adapts): der besondere Gegner bringt ein Gegenmittel zu deiner Fähigkeit mit.
