@@ -211,7 +211,7 @@ export const LEVELS = [
 // (5 = +1 auf alle fünf). Der Spieler bringt durch Sterne zusätzliche Punkte mit; die Werte sind mit
 // tools/tune-levels.mjs so gewählt, dass ein gleichmäßig verteiltes „faules“ Bakterium meist verliert,
 // ein durchdachtes aber gewinnt.
-export const LEVEL_POWER = [0, 0, 10, 7, 6, 8, 7, 3, 15, 5, 0, 10, 10, 10, 10, 10, 5, 0, 10, 5];
+export const LEVEL_POWER = [0, 0, 10, 7, 6, 8, 7, 3, 15, 6, 2, 10, 10, 10, 10, 10, 7, 4, 10, 8];
 const TRAITS5 = ['defense', 'efficiency', 'attack', 'speed', 'lifespan'];
 const powerOverride = typeof process !== 'undefined' && process.env && process.env.POWER_LEVEL ? [Number(process.env.POWER_LEVEL), Number(process.env.POWER)] : null;
 LEVELS.forEach((lv, i) => {
