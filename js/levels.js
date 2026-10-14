@@ -144,11 +144,11 @@ export const LEVELS = [
   },
   {
     name: 'Honey Dressing',
-    note: 'An old ulcer, cleaned out and almost empty – nothing grows back on its own. But the nurse drips medical honey on it every few hours.',
+    note: 'An old ulcer, cleaned out and almost empty – food only trickles back slowly. But the nurse drips medical honey on it every few hours.',
     desc: 'Finegoldia magna hides deep in ulcers and smells its way to food. Streptococcus pyogenes joins the race.',
-    plate: { size: 'mittel', distribution: 'gleichmaessig', amount: 'wenig', regen: 'aus', elements: [{ type: 'sugar', first: 380, every: 620 }] },
-    boss: g('fmagna', '#cc5252', ['F2', 'Z'], [5, 4, 5, 4, 4, 1, 2], 'none', { chemotaxis: 4 }),
-    opponents: [g('spyogenes', '#c04878', ['F', 'R'], [4, 4, 4, 4, 4, 2, 2], 'capsule')],
+    plate: { size: 'mittel', distribution: 'gleichmaessig', amount: 'normal', regen: 'langsam', elements: [{ type: 'sugar', first: 320, every: 520, amount: 90 }] },
+    boss: g('fmagna', '#cc5252', ['F2', 'Z'], [4, 5, 6, 4, 4, 3, 0], 'none', { chemotaxis: 6 }),
+    opponents: [g('spyogenes', '#c04878', ['F', 'R'], [3, 5, 5, 4, 4, 3, 0], 'capsule', { chemotaxis: 3 })],
   },
   {
     name: 'Fever',
@@ -192,7 +192,7 @@ export const LEVELS = [
 const TRAITS5 = ['speed', 'lifespan', 'efficiency', 'attack', 'defense'];
 LEVELS.forEach((lv, i) => {
   if (i < 10) return;
-  const bump = [1, 1, 0, 1, 1, 1, 2, 2, 2, 2][i - 10] || 0;
+  const bump = [1, 2, 1, 1, 1, 1, 2, 2, 2, 1][i - 10] || 0;
   for (const o of [lv.boss, ...lv.opponents]) for (const k of TRAITS5) o[k] = Math.min(10, o[k] + bump);
 });
 
