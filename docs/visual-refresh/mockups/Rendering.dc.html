@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Agava — plate rendering</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800&amp;family=Manrope:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#2EF2B4}a:hover{color:#7DFFD6}
+</style>
+</helmet>
+<div style="width: 1440px; height: 844px; box-sizing: border-box; padding: 48px 56px; background: #070B14; color: #F2F5FA; font-family: Manrope, sans-serif; display: flex; flex-direction: column; gap: 30px">
+
+  <div style="display: flex; flex-direction: column; gap: 6px">
+    <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: .14em; color: #2EF2B4">THE PLATE</span>
+    <h2 style="margin: 0; font-family: Unbounded, sans-serif; font-size: 32px; font-weight: 700">Rendering &amp; resolution</h2>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px">
+
+    <div style="display: flex; flex-direction: column; gap: 16px; align-items: center">
+      <div style="width: 300px; height: 300px; border-radius: 50%; overflow: hidden; border: 3px solid #3a4434; background: #131810">
+        <svg viewBox="0 0 100 100" width="300" height="300" aria-hidden="true">
+          <defs><filter id="blurA"><feGaussianBlur stdDeviation="1.1"></feGaussianBlur></filter></defs>
+          <g style="filter: url(#blurA)">
+            <circle cx="50" cy="50" r="50" style="fill: #6a5426"></circle>
+            <g style="fill: #4f8f3c"><rect x="22" y="28" width="6" height="6"></rect><rect x="28" y="28" width="6" height="6"></rect><rect x="34" y="28" width="6" height="6"></rect><rect x="22" y="34" width="6" height="6"></rect><rect x="28" y="34" width="6" height="6"></rect><rect x="34" y="34" width="6" height="6"></rect><rect x="40" y="34" width="6" height="6"></rect><rect x="16" y="40" width="6" height="6"></rect><rect x="22" y="40" width="6" height="6"></rect><rect x="28" y="40" width="6" height="6"></rect><rect x="34" y="40" width="6" height="6"></rect><rect x="22" y="46" width="6" height="6"></rect><rect x="28" y="46" width="6" height="6"></rect><rect x="34" y="22" width="6" height="6"></rect></g>
+            <g style="fill: #b04c4c"><rect x="60" y="60" width="6" height="6"></rect><rect x="66" y="60" width="6" height="6"></rect><rect x="60" y="66" width="6" height="6"></rect><rect x="66" y="66" width="6" height="6"></rect><rect x="72" y="66" width="6" height="6"></rect><rect x="54" y="72" width="6" height="6"></rect><rect x="60" y="72" width="6" height="6"></rect><rect x="66" y="72" width="6" height="6"></rect><rect x="72" y="54" width="6" height="6"></rect></g>
+          </g>
+        </svg>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 6px; align-items: center; text-align: center">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .12em; color: #7884A0">TODAY</span>
+        <b style="font-size: 18px">Soft, flat, slightly blurry</b>
+        <span style="font-size: 14px; color: #A3AEC4; line-height: 1.5; max-width: 320px">One cell = one pixel, stretched to a fixed 720 px canvas. On a 3× iPhone that canvas is upscaled again.</span>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 16px; align-items: center">
+      <div style="width: 300px; height: 300px; border-radius: 50%; overflow: hidden; box-shadow: 0 0 0 1px rgba(255,255,255,.2)">
+        <svg viewBox="0 0 200 200" width="300" height="300" aria-hidden="true">
+          <defs>
+            <radialGradient id="agarC" cx="50%" cy="50%" r="55%"><stop offset="0" style="stop-color: #F2AD45"></stop><stop offset="1" style="stop-color: #B86E1E"></stop></radialGradient>
+            <filter id="gooC"><feGaussianBlur stdDeviation="2.4"></feGaussianBlur><feColorMatrix values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -9"></feColorMatrix></filter>
+          </defs>
+          <circle cx="100" cy="100" r="100" style="fill: url(#agarC)"></circle>
+          <g style="filter: url(#gooC); fill: #2EF2B4"><circle cx="66" cy="76" r="22"></circle><circle cx="84" cy="58" r="13"></circle><circle cx="46" cy="96" r="13"></circle><circle cx="82" cy="98" r="11"></circle></g>
+          <g style="filter: url(#gooC); fill: #FF5A6E"><circle cx="134" cy="132" r="18"></circle><circle cx="118" cy="150" r="11"></circle><circle cx="152" cy="114" r="10"></circle></g>
+        </svg>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 6px; align-items: center; text-align: center">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .12em; color: #38C8FF">STEP 1 · SHARP</span>
+        <b style="font-size: 18px">Native resolution, organic edges</b>
+        <span style="font-size: 14px; color: #A3AEC4; line-height: 1.5; max-width: 320px">Canvas sized to CSS width × devicePixelRatio. Colony outlines traced as smooth contours, not stretched pixels.</span>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 16px; align-items: center">
+      <div style="width: 300px; height: 300px; border-radius: 50%; box-shadow: 0 0 90px rgba(245,181,71,.35), 0 0 0 1px rgba(255,255,255,.26)">
+        <svg viewBox="0 0 200 200" width="300" height="300" aria-hidden="true">
+          <defs>
+            <radialGradient id="agarD" cx="46%" cy="42%" r="62%"><stop offset="0" style="stop-color: #FFE6AE"></stop><stop offset=".5" style="stop-color: #F2AD45"></stop><stop offset="1" style="stop-color: #8E4C10"></stop></radialGradient>
+            <radialGradient id="glassD" cx="30%" cy="20%" r="60%"><stop offset="0" style="stop-color: #fff; stop-opacity: .5"></stop><stop offset=".4" style="stop-color: #fff; stop-opacity: .04"></stop><stop offset="1" style="stop-color: #fff; stop-opacity: 0"></stop></radialGradient>
+            <radialGradient id="vigD" cx="50%" cy="50%" r="50%"><stop offset=".72" style="stop-color: #000; stop-opacity: 0"></stop><stop offset="1" style="stop-color: #2A1200; stop-opacity: .6"></stop></radialGradient>
+            <radialGradient id="toxD" cx="50%" cy="50%" r="50%"><stop offset="0" style="stop-color: #FF5A6E; stop-opacity: .55"></stop><stop offset="1" style="stop-color: #FF5A6E; stop-opacity: 0"></stop></radialGradient>
+            <filter id="gooD"><feGaussianBlur stdDeviation="2.4"></feGaussianBlur><feColorMatrix values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -9"></feColorMatrix></filter>
+            <filter id="softD"><feGaussianBlur stdDeviation="6"></feGaussianBlur></filter>
+          </defs>
+          <circle cx="100" cy="100" r="100" style="fill: #0A101C"></circle>
+          <circle cx="100" cy="100" r="96" style="fill: url(#agarD)"></circle>
+          <g style="filter: url(#softD); fill: #2EF2B4; opacity: .4"><circle cx="66" cy="80" r="36"></circle></g>
+          <g style="filter: url(#gooD); fill: #2EF2B4"><circle cx="66" cy="76" r="22"></circle><circle cx="84" cy="58" r="13"></circle><circle cx="46" cy="96" r="13"></circle><circle cx="82" cy="98" r="11"></circle></g>
+          <g style="fill: #fff; opacity: .4"><ellipse cx="58" cy="66" rx="9" ry="4"></ellipse><ellipse cx="80" cy="52" rx="5" ry="2.4"></ellipse></g>
+          <circle cx="136" cy="128" r="34" style="fill: url(#toxD)"></circle>
+          <g style="filter: url(#gooD); fill: #FF5A6E"><circle cx="134" cy="132" r="18"></circle><circle cx="118" cy="150" r="11"></circle><circle cx="152" cy="114" r="10"></circle></g>
+          <g style="fill: #fff; opacity: .35"><ellipse cx="128" cy="124" rx="7" ry="3"></ellipse></g>
+          <g style="fill: #2EF2B4"><circle cx="104" cy="74" r="1.3"></circle><circle cx="110" cy="88" r="1"></circle><circle cx="30" cy="124" r="1.2"></circle></g>
+          <circle cx="100" cy="100" r="96" style="fill: url(#vigD)"></circle>
+          <circle cx="100" cy="100" r="96" style="fill: url(#glassD)"></circle>
+          <path d="M28 64 A78 78 0 0 1 96 16" style="fill: none; stroke: rgba(255,255,255,.7); stroke-width: 2.4; stroke-linecap: round"></path>
+        </svg>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 6px; align-items: center; text-align: center">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .12em; color: #2EF2B4">STEP 2 · SHINY</span>
+        <b style="font-size: 18px">Lit, glossy, alive</b>
+        <span style="font-size: 14px; color: #A3AEC4; line-height: 1.5; max-width: 320px">Density-based shading and specular glints on colonies, glow under cultures and toxins, glass rim and vignette.</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px">
+    <div style="border-radius: 18px; padding: 16px; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.09); display: flex; flex-direction: column; gap: 4px"><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #38C8FF">Canvas × DPR</span><span style="font-size: 13px; color: #A3AEC4; line-height: 1.45">~1100 px on iPhone instead of 720</span></div>
+    <div style="border-radius: 18px; padding: 16px; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.09); display: flex; flex-direction: column; gap: 4px"><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #38C8FF">WebGL shader pass</span><span style="font-size: 13px; color: #A3AEC4; line-height: 1.45">Cell grid in as a texture, smooth edges + light out</span></div>
+    <div style="border-radius: 18px; padding: 16px; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.09); display: flex; flex-direction: column; gap: 4px"><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #38C8FF">Tick interpolation</span><span style="font-size: 13px; color: #A3AEC4; line-height: 1.45">Blend between sim steps for 60 fps growth</span></div>
+    <div style="border-radius: 18px; padding: 16px; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.09); display: flex; flex-direction: column; gap: 4px"><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #38C8FF">@3x assets</span><span style="font-size: 13px; color: #A3AEC4; line-height: 1.45">Icons as SVG, germ photos and app icon at 3×</span></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

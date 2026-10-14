@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Agava refresh — components</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800&amp;family=Manrope:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#2EF2B4}a:hover{color:#7DFFD6}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="width: 1200px; height: 900px; box-sizing: border-box; padding: 48px 56px; background: radial-gradient(700px 500px at 20% 0%, #121C33 0%, #070B14 70%); color: #F2F5FA; font-family: Manrope, sans-serif; display: flex; flex-direction: column; gap: 28px">
+
+  <div style="display: flex; flex-direction: column; gap: 6px">
+    <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: .14em; color: #2EF2B4">KIT</span>
+    <h2 style="margin: 0; font-family: Unbounded, sans-serif; font-size: 32px; font-weight: 700">Components</h2>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; flex-grow: 1">
+
+    <!-- Buttons -->
+    <div style="border-radius: 24px; padding: 24px; background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02)); border: 1px solid rgba(255,255,255,.10); display: flex; flex-direction: column; gap: 14px">
+      <span style="font-size: 12px; font-weight: 700; color: #A3AEC4; letter-spacing: .08em; text-transform: uppercase">Buttons</span>
+      <button style="height: 56px; border: 0; border-radius: 999px; background: linear-gradient(180deg, #7DFFD6 0%, #2EF2B4 55%, #14C893 100%); color: #04241A; font-size: 17px; font-weight: 800; box-shadow: 0 10px 28px rgba(46,242,180,.35), inset 0 1px 0 rgba(255,255,255,.65), inset 0 -2px 0 rgba(0,80,55,.25); display: flex; align-items: center; justify-content: center; gap: 10px">
+        <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l13 8-13 8z" style="fill: #04241A"></path></svg>Start simulation</button>
+      <button style="height: 52px; border-radius: 999px; background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.04)); border: 1px solid rgba(255,255,255,.16); color: #F2F5FA; font-size: 16px; font-weight: 700; box-shadow: inset 0 1px 0 rgba(255,255,255,.18)">Go to lab</button>
+      <div style="display: flex; gap: 10px">
+        <button style="flex: 1 1 0; height: 48px; border: 0; border-radius: 999px; background: transparent; color: #A3AEC4; font-size: 15px; font-weight: 700">Skip</button>
+        <button style="flex: 1 1 0; height: 48px; border-radius: 999px; background: rgba(255,90,110,.12); border: 1px solid rgba(255,90,110,.35); color: #FF8C9A; font-size: 15px; font-weight: 700">Reset</button>
+      </div>
+      <div style="display: flex; gap: 10px; align-items: center">
+        <button aria-label="Pause" style="width: 48px; height: 48px; border-radius: 16px; background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.04)); border: 1px solid rgba(255,255,255,.16); display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M16 5v14" style="fill: none; stroke: #F2F5FA; stroke-width: 2.4; stroke-linecap: round"></path></svg></button>
+        <button aria-label="Random name" style="width: 48px; height: 48px; border-radius: 16px; background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.04)); border: 1px solid rgba(255,255,255,.16); display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4" style="fill: none; stroke: #F2F5FA; stroke-width: 2"></rect><circle cx="9" cy="9" r="1.4" style="fill: #F2F5FA"></circle><circle cx="15" cy="15" r="1.4" style="fill: #F2F5FA"></circle><circle cx="15" cy="9" r="1.4" style="fill: #F2F5FA"></circle><circle cx="9" cy="15" r="1.4" style="fill: #F2F5FA"></circle></svg></button>
+        <button aria-label="Fast forward" style="width: 48px; height: 48px; border-radius: 16px; background: rgba(139,123,255,.18); border: 1px solid rgba(139,123,255,.5); display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6l8 6-8 6zM12 6l8 6-8 6z" style="fill: #B9AFFF"></path></svg></button>
+      </div>
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #7884A0">Press: scale .96 + glow dims · 120 ms spring</span>
+    </div>
+
+    <!-- Trait rows -->
+    <div style="border-radius: 24px; padding: 24px; background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02)); border: 1px solid rgba(255,255,255,.10); display: flex; flex-direction: column; gap: 14px">
+      <span style="font-size: 12px; font-weight: 700; color: #A3AEC4; letter-spacing: .08em; text-transform: uppercase">Upgrade meter &amp; traits</span>
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <div style="display: flex; justify-content: space-between; align-items: baseline"><b style="font-size: 15px">Upgrade points</b><span style="font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 700; color: #2EF2B4">14 / 20</span></div>
+        <div style="height: 12px; border-radius: 999px; background: #131B2C; box-shadow: inset 0 1px 3px rgba(0,0,0,.6); overflow: hidden"><div style="width: 70%; height: 100%; border-radius: 999px; background: linear-gradient(90deg, #14C893, #2EF2B4 70%, #B8FFEA); box-shadow: 0 0 12px rgba(46,242,180,.7)"></div></div>
+      </div>
+      <div style="display: flex; flex-direction: column; border-radius: 18px; background: rgba(0,0,0,.25); border: 1px solid rgba(255,255,255,.06)">
+        <div style="display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,.06)">
+          <div style="width: 36px; height: 36px; border-radius: 12px; background: rgba(46,242,180,.14); display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12l6-6M12 12l6 6M12 12H4M15 6h3v3M15 18h3v-3" style="fill: none; stroke: #2EF2B4; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"></path></svg></div>
+          <b style="font-size: 15px; flex-grow: 1">Spread</b>
+          <div style="display: flex; gap: 4px"><span style="width: 14px; height: 8px; border-radius: 4px; background: #2EF2B4; box-shadow: 0 0 6px #2EF2B4"></span><span style="width: 14px; height: 8px; border-radius: 4px; background: #2EF2B4; box-shadow: 0 0 6px #2EF2B4"></span><span style="width: 14px; height: 8px; border-radius: 4px; background: #2EF2B4; box-shadow: 0 0 6px #2EF2B4"></span><span style="width: 14px; height: 8px; border-radius: 4px; background: #1C2740"></span><span style="width: 14px; height: 8px; border-radius: 4px; background: #1C2740"></span></div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,.06)">
+          <div style="width: 36px; height: 36px; border-radius: 12px; background: rgba(255,90,110,.14); display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19L19 5M14 5h5v5M5 5l14 14M5 14v5h5" style="fill: none; stroke: #FF8C9A; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"></path></svg></div>
+          <b style="font-size: 15px; flex-grow: 1">Combat</b>
+          <div style="display: flex; gap: 4px"><span style="width: 14px; height: 8px; border-radius: 4px; background: #2EF2B4; box-shadow: 0 0 6px #2EF2B4"></span><span style="width: 14px; height: 8px; border-radius: 4px; background: #2EF2B4; box-shadow: 0 0 6px #2EF2B4"></span><span style="width: 14px; height: 8px; border-radius: 4px; background: #1C2740"></span><span style="width: 14px; height: 8px; border-radius: 4px; background: #1C2740"></span><span style="width: 14px; height: 8px; border-radius: 4px; background: #1C2740"></span></div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; padding: 12px 14px">
+          <div style="width: 36px; height: 36px; border-radius: 12px; background: rgba(56,200,255,.14); display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v6c0 4-3 7-7 9-4-2-7-5-7-9V6z" style="fill: none; stroke: #7FDBFF; stroke-width: 2; stroke-linejoin: round"></path></svg></div>
+          <b style="font-size: 15px; flex-grow: 1">Endurance</b>
+          <div style="display: flex; gap: 4px"><span style="width: 14px; height: 8px; border-radius: 4px; background: #2EF2B4; box-shadow: 0 0 6px #2EF2B4"></span><span style="width: 14px; height: 8px; border-radius: 4px; background: #1C2740"></span><span style="width: 14px; height: 8px; border-radius: 4px; background: #1C2740"></span><span style="width: 14px; height: 8px; border-radius: 4px; background: #1C2740"></span><span style="width: 14px; height: 8px; border-radius: 4px; background: #1C2740"></span></div>
+        </div>
+      </div>
+      <div style="display: flex; padding: 4px; border-radius: 999px; background: #0C1220; border: 1px solid rgba(255,255,255,.08)">
+        <button style="flex: 1 1 0; height: 40px; border: 0; border-radius: 999px; background: linear-gradient(180deg, #A398FF, #8B7BFF); color: #120B3A; font-size: 14px; font-weight: 800; box-shadow: 0 4px 14px rgba(139,123,255,.45)">Traits</button>
+        <button style="flex: 1 1 0; height: 40px; border: 0; border-radius: 999px; background: transparent; color: #A3AEC4; font-size: 14px; font-weight: 700">Abilities</button>
+        <button style="flex: 1 1 0; height: 40px; border: 0; border-radius: 999px; background: transparent; color: #A3AEC4; font-size: 14px; font-weight: 700">Body</button>
+      </div>
+    </div>
+
+    <!-- Rewards & feedback -->
+    <div style="border-radius: 24px; padding: 24px; background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02)); border: 1px solid rgba(255,255,255,.10); display: flex; flex-direction: column; gap: 16px">
+      <span style="font-size: 12px; font-weight: 700; color: #A3AEC4; letter-spacing: .08em; text-transform: uppercase">Rewards &amp; feedback</span>
+      <div style="display: flex; justify-content: center; gap: 6px; align-items: flex-end; padding: 6px 0">
+        <svg width="56" height="56" viewBox="0 0 24 24" aria-hidden="true" style="filter: drop-shadow(0 0 10px rgba(255,201,61,.7))"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4 6.1 20.5l1.2-6.5L2.5 9.4l6.6-.9z" style="fill: #FFC93D; stroke: #FFE9A6; stroke-width: .8; stroke-linejoin: round"></path></svg>
+        <svg width="72" height="72" viewBox="0 0 24 24" aria-hidden="true" style="filter: drop-shadow(0 0 14px rgba(255,201,61,.8))"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4 6.1 20.5l1.2-6.5L2.5 9.4l6.6-.9z" style="fill: #FFC93D; stroke: #FFE9A6; stroke-width: .8; stroke-linejoin: round"></path></svg>
+        <svg width="56" height="56" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4 6.1 20.5l1.2-6.5L2.5 9.4l6.6-.9z" style="fill: #1C2740; stroke: rgba(255,255,255,.18); stroke-width: .8; stroke-linejoin: round"></path></svg>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; gap: 8px">
+        <span style="padding: 6px 12px; border-radius: 999px; background: rgba(46,242,180,.14); color: #7DFFD6; font-size: 13px; font-weight: 700">+3 points</span>
+        <span style="padding: 6px 12px; border-radius: 999px; background: rgba(139,123,255,.16); color: #C2BAFF; font-size: 13px; font-weight: 700">New ability</span>
+        <span style="padding: 6px 12px; border-radius: 999px; background: rgba(255,201,61,.14); color: #FFD970; font-size: 13px; font-weight: 700">Boss</span>
+        <span style="padding: 6px 12px; border-radius: 999px; background: rgba(255,90,110,.14); color: #FF8C9A; font-size: 13px; font-weight: 700">Antibiotic</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 18px; background: rgba(19,27,44,.85); border: 1px solid rgba(255,255,255,.12); box-shadow: 0 12px 30px rgba(0,0,0,.45)">
+        <div style="width: 32px; height: 32px; border-radius: 50%; background: rgba(255,90,110,.18); display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7v6M12 17h.01" style="fill: none; stroke: #FF8C9A; stroke-width: 2.4; stroke-linecap: round"></path></svg></div>
+        <div style="display: flex; flex-direction: column"><b style="font-size: 14px">Phage outbreak</b><span style="font-size: 13px; color: #A3AEC4">Upper left quadrant</span></div>
+      </div>
+      <div style="display: flex; align-items: center; justify-content: space-between">
+        <label for="cmp-haptics" style="font-size: 15px; font-weight: 700">Haptics</label>
+        <span style="width: 52px; height: 32px; border-radius: 999px; background: #2EF2B4; position: relative; box-shadow: 0 0 14px rgba(46,242,180,.45)"><span style="position: absolute; right: 3px; top: 3px; width: 26px; height: 26px; border-radius: 50%; background: #fff; box-shadow: 0 2px 6px rgba(0,0,0,.3)"></span></span>
+        <input id="cmp-haptics" type="checkbox" checked style="position: absolute; opacity: 0; width: 1px; height: 1px">
+      </div>
+    </div>
+
+    <!-- World cards -->
+    <div style="grid-column: 1 / -1; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px">
+      <div style="height: 150px; border-radius: 22px; padding: 16px; box-sizing: border-box; background: radial-gradient(160px 120px at 80% 10%, rgba(255,154,61,.55), transparent 70%), #131B2C; border: 1px solid rgba(255,154,61,.45); display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 0 30px rgba(255,154,61,.18)">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #FFC08A">WORLD 1 · 34/60 ★</span><b style="font-family: Unbounded, sans-serif; font-size: 18px">Skin</b></div>
+      <div style="height: 150px; border-radius: 22px; padding: 16px; box-sizing: border-box; background: radial-gradient(160px 120px at 80% 10%, rgba(255,210,63,.4), transparent 70%), #131B2C; border: 1px solid rgba(255,255,255,.10); display: flex; flex-direction: column; justify-content: space-between">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #A3AEC4">WORLD 2</span><b style="font-family: Unbounded, sans-serif; font-size: 18px">Mouth &amp; Gut</b></div>
+      <div style="height: 150px; border-radius: 22px; padding: 16px; box-sizing: border-box; background: radial-gradient(160px 120px at 80% 10%, rgba(56,200,255,.4), transparent 70%), #131B2C; border: 1px solid rgba(255,255,255,.10); display: flex; flex-direction: column; justify-content: space-between">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #A3AEC4">WORLD 3</span><b style="font-family: Unbounded, sans-serif; font-size: 18px">Water</b></div>
+      <div style="height: 150px; border-radius: 22px; padding: 16px; box-sizing: border-box; background: radial-gradient(160px 120px at 80% 10%, rgba(196,140,80,.4), transparent 70%), #131B2C; border: 1px solid rgba(255,255,255,.10); display: flex; flex-direction: column; justify-content: space-between">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #A3AEC4">WORLD 4</span><b style="font-family: Unbounded, sans-serif; font-size: 18px">Soil</b></div>
+      <div style="height: 150px; border-radius: 22px; padding: 16px; box-sizing: border-box; background: radial-gradient(160px 120px at 80% 10%, rgba(110,123,255,.45), transparent 70%), #131B2C; border: 1px solid rgba(255,255,255,.10); display: flex; flex-direction: column; justify-content: space-between">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #A3AEC4">WORLD 5</span><b style="font-family: Unbounded, sans-serif; font-size: 18px">Hospital &amp; Blood</b></div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1200,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Agava — lab</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800&amp;family=Manrope:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#2EF2B4}a:hover{color:#7DFFD6}
+button,input{font-family:inherit}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; position: relative; overflow: hidden; background: radial-gradient(380px 300px at 50% 18%, #142640 0%, #070B14 75%); color: #F2F5FA; font-family: Manrope, sans-serif; padding: 52px 16px 0; display: flex; flex-direction: column; gap: 16px">
+
+  <div style="display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; min-height: 44px">
+    <a href="Home.dc.html" style="color: #A3AEC4; text-decoration: none; font-size: 16px; font-weight: 600">Cancel</a>
+    <b style="font-family: Unbounded, sans-serif; font-size: 17px; font-weight: 700">Lab</b>
+    <span></span>
+  </div>
+
+  <div style="display: flex; gap: 14px; align-items: center; border-radius: 24px; padding: 14px; background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.02)); border: 1px solid rgba(255,255,255,.12)">
+    <div style="width: 104px; height: 104px; flex: none; border-radius: 50%; box-shadow: 0 0 40px rgba(46,242,180,.35), 0 0 0 1px rgba(255,255,255,.2)">
+      <svg viewBox="0 0 100 100" width="104" height="104" aria-hidden="true">
+        <defs>
+          <radialGradient id="agarL" cx="45%" cy="40%" r="65%"><stop offset="0" style="stop-color: #FFE1A0"></stop><stop offset=".6" style="stop-color: #F2A93B"></stop><stop offset="1" style="stop-color: #9A5412"></stop></radialGradient>
+          <radialGradient id="glassL" cx="32%" cy="22%" r="62%"><stop offset="0" style="stop-color: #fff; stop-opacity: .5"></stop><stop offset=".45" style="stop-color: #fff; stop-opacity: 0"></stop></radialGradient>
+          <filter id="gooL"><feGaussianBlur stdDeviation="2"></feGaussianBlur><feColorMatrix values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -8"></feColorMatrix></filter>
+        </defs>
+        <circle cx="50" cy="50" r="49" style="fill: url(#agarL)"></circle>
+        <g style="filter: url(#gooL); fill: #2EF2B4"><circle cx="50" cy="50" r="18"></circle><circle cx="64" cy="40" r="10"></circle><circle cx="36" cy="60" r="11"></circle><circle cx="58" cy="64" r="8"></circle><circle cx="38" cy="38" r="7"></circle></g>
+        <circle cx="50" cy="50" r="26" style="fill: none; stroke: rgba(46,242,180,.45); stroke-width: 2; stroke-dasharray: 2 3"></circle>
+        <ellipse cx="44" cy="42" rx="7" ry="3.5" style="fill: #fff; opacity: .4"></ellipse>
+        <circle cx="50" cy="50" r="49" style="fill: url(#glassL)"></circle>
+      </svg>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 8px; flex-grow: 1; min-width: 0">
+      <label for="lab-name" style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .12em; color: #7884A0">NAME</label>
+      <div style="display: flex; gap: 8px; align-items: center">
+        <input id="lab-name" type="text" value="Kocuria sudoris" style="flex-grow: 1; min-width: 0; height: 44px; border-radius: 14px; border: 1px solid rgba(255,255,255,.14); background: rgba(0,0,0,.3); color: #F2F5FA; font-size: 15px; font-weight: 700; padding: 0 12px; box-sizing: border-box">
+        <button aria-label="Random name" style="width: 44px; height: 44px; flex: none; border-radius: 14px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14); display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4" style="fill: none; stroke: #F2F5FA; stroke-width: 2"></rect><circle cx="9" cy="9" r="1.4" style="fill: #F2F5FA"></circle><circle cx="15" cy="15" r="1.4" style="fill: #F2F5FA"></circle><circle cx="15" cy="9" r="1.4" style="fill: #F2F5FA"></circle><circle cx="9" cy="15" r="1.4" style="fill: #F2F5FA"></circle></svg></button>
+      </div>
+      <div style="display: flex; gap: 6px">
+        <span style="width: 22px; height: 22px; border-radius: 50%; background: #2EF2B4; box-shadow: 0 0 0 2px #070B14, 0 0 0 4px #2EF2B4"></span>
+        <span style="width: 22px; height: 22px; border-radius: 50%; background: #38C8FF"></span>
+        <span style="width: 22px; height: 22px; border-radius: 50%; background: #FFD23F"></span>
+        <span style="width: 22px; height: 22px; border-radius: 50%; background: #C46BFF"></span>
+        <span style="width: 22px; height: 22px; border-radius: 50%; background: #FF6BC1"></span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <div style="display: flex; justify-content: space-between; align-items: baseline"><b style="font-size: 15px">Upgrade points</b><span style="font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 700; color: #2EF2B4">14 / 20</span></div>
+    <div style="height: 12px; border-radius: 999px; background: #131B2C; box-shadow: inset 0 1px 3px rgba(0,0,0,.6); overflow: hidden"><div style="width: 70%; height: 100%; border-radius: 999px; background: linear-gradient(90deg, #14C893, #2EF2B4 70%, #B8FFEA); box-shadow: 0 0 12px rgba(46,242,180,.7)"></div></div>
+  </div>
+
+  <div style="display: flex; padding: 4px; border-radius: 999px; background: #0C1220; border: 1px solid rgba(255,255,255,.08)">
+    <button style="flex: 1 1 0; height: 40px; border: 0; border-radius: 999px; background: linear-gradient(180deg, #A398FF, #8B7BFF); color: #120B3A; font-size: 14px; font-weight: 800; box-shadow: 0 4px 14px rgba(139,123,255,.45)">Traits</button>
+    <button style="flex: 1 1 0; height: 40px; border: 0; border-radius: 999px; background: transparent; color: #A3AEC4; font-size: 14px; font-weight: 700">Abilities</button>
+    <button style="flex: 1 1 0; height: 40px; border: 0; border-radius: 999px; background: transparent; color: #A3AEC4; font-size: 14px; font-weight: 700">Body</button>
+  </div>
+
+  <div style="display: flex; flex-direction: column; border-radius: 22px; background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02)); border: 1px solid rgba(255,255,255,.10)">
+    <sc-for list="{{traits}}" as="t" hint-placeholder-count="5">
+      <div style="display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,.06)">
+        <div style="width: 36px; height: 36px; border-radius: 12px; background: {{t.tint}}; display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 700; color: {{t.ink}}">{{t.abbr}}</div>
+        <div style="display: flex; flex-direction: column; flex-grow: 1; gap: 6px">
+          <b style="font-size: 15px">{{t.name}}</b>
+          <div style="display: flex; gap: 4px">
+            <sc-for list="{{t.pips}}" as="p" hint-placeholder-count="5"><span style="width: 18px; height: 6px; border-radius: 3px; background: {{p.bg}}; box-shadow: {{p.glow}}"></span></sc-for>
+          </div>
+        </div>
+        <button aria-label="Lower" style="width: 36px; height: 36px; border-radius: 12px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12); color: #F2F5FA; font-size: 18px; font-weight: 700">−</button>
+        <button aria-label="Raise" style="width: 36px; height: 36px; border-radius: 12px; background: rgba(46,242,180,.16); border: 1px solid rgba(46,242,180,.45); color: #7DFFD6; font-size: 18px; font-weight: 700">+</button>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; padding: 24px 16px 34px; background: linear-gradient(180deg, rgba(7,11,20,0), #070B14 40%)">
+    <button style="width: 100%; height: 56px; border: 0; border-radius: 999px; background: linear-gradient(180deg, #7DFFD6 0%, #2EF2B4 55%, #14C893 100%); color: #04241A; font-size: 17px; font-weight: 800; box-shadow: 0 10px 28px rgba(46,242,180,.38), inset 0 1px 0 rgba(255,255,255,.65)">Save bacterium</button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const mk = (name, abbr, lvl, tint, ink) => ({
+      name, abbr, tint, ink,
+      pips: [0, 1, 2, 3, 4].map((i) => i < lvl
+        ? { bg: '#2EF2B4', glow: '0 0 6px rgba(46,242,180,.8)' }
+        : { bg: '#1C2740', glow: 'none' })
+    });
+    return {
+      traits: [
+        mk('Spread', 'SP', 3, 'rgba(46,242,180,.14)', '#7DFFD6'),
+        mk('Combat', 'CB', 2, 'rgba(255,90,110,.14)', '#FF8C9A'),
+        mk('Endurance', 'EN', 1, 'rgba(56,200,255,.14)', '#7FDBFF'),
+        mk('Nutrition', 'NU', 2, 'rgba(255,201,61,.14)', '#FFD970'),
+        mk('Speed', 'SD', 1, 'rgba(139,123,255,.16)', '#C2BAFF')
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
