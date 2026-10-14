@@ -1294,5 +1294,16 @@ refreshMusicButtons();
 go('home');
 
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
-  navigator.serviceWorker.register('sw.js').catch(() => {});
+  const hadController = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((reg) => {
+    // beim Zurückkehren in die App nach einer neuen Version suchen
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) reg.update().catch(() => {}); });
+  }).catch(() => {});
+  // neue Version aktiv: einmal neu laden, aber nie mitten in einer Runde
+  let reloaded = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadController || reloaded || current === 'sim') return;
+    reloaded = true;
+    location.reload();
+  });
 }

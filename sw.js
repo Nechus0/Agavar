@@ -1,6 +1,6 @@
 // Service Worker: macht Agava offline spielbar.
 // Strategie: erst Netzwerk (immer aktuell), bei fehlender Verbindung aus dem Cache.
-const CACHE = 'agava-v32';
+const CACHE = 'agava-v33';
 const ASSETS = [
   './', 'index.html', 'css/style.css', 'manifest.webmanifest',
   'js/main.js', 'js/sim.js', 'js/genome.js', 'js/levels.js', 'js/storage.js',
@@ -22,8 +22,9 @@ self.addEventListener('activate', (e) => {
 
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET' || new URL(e.request.url).origin !== location.origin) return;
+  // immer beim Server nachfragen (no-cache), damit Updates sofort ankommen; offline aus dem Cache
   e.respondWith(
-    fetch(e.request)
+    fetch(e.request.url, { cache: 'no-cache', credentials: 'same-origin' })
       .then((res) => {
         if (res.ok) {
           const copy = res.clone();
