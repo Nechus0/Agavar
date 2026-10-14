@@ -57,6 +57,7 @@ function mutate(g, rng, lim, budget) {
     const t = rng.pick(COSTED.filter((x) => m[x.key] < x.max));
     if (!t) break;
     m[t.key]++;
+    if (cost(m) > budget) { m[t.key]--; break; }
   }
   return m;
 }
@@ -73,7 +74,7 @@ LEVELS.forEach((lv0, i) => {
   for (const c of casual) if (problems(c, lim, lv.budget).length) throw new Error('Zufallsgenom verletzt Regeln: ' + problems(c, lim, lv.budget));
   // „faul“: Punkte gleichmäßig verteilt, Muster nur geradeaus
   const lazy = { ...defaultGenome(), name: 'faul' };
-  for (let k = 0; k < lv.budget; k++) { const t = COSTED[k % COSTED.length]; if (lazy[t.key] < t.max) lazy[t.key]++; }
+  for (let k = 0, guard = 0; guard < 200; k++, guard++) { const t = COSTED[k % COSTED.length]; if (lazy[t.key] >= t.max) continue; lazy[t.key]++; if (cost(lazy) > lv.budget) { lazy[t.key]--; break; } }
   let lw = 0;
   for (let s = 0; s < 6; s++) lw += play(lazy, lv, 900 + s);
 

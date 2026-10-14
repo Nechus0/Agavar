@@ -52,7 +52,6 @@ export const ACHIEVEMENTS = [
   { key: 'comeback', name: 'Comeback', desc: 'Win after dropping below 20 % of all cells.', check: (c) => c.sim.winner === 1 && c.sim.players[0].lowShareAfterContact < 0.2 },
   { key: 'sitter', name: 'Couch Potato', desc: 'Win with the “Sit” movement.', check: (c) => c.sim.winner === 1 && moveFromProgram(c.genome.program)?.type === 'sitzen' },
   { key: 'pure', name: 'Purist', desc: 'Win from level 3 on without a special ability.', check: (c) => c.sim.winner === 1 && c.mode === 'level' && c.level >= 3 && c.genome.special === 'none' },
-  { key: 'crowd', name: 'Against All', desc: 'Win a free game against at least 4 opponents.', check: (c) => c.sim.winner === 1 && c.mode === 'free' && c.opponents >= 4 },
   { key: 'all_specials', name: 'Toolbox', desc: 'Unlock all three special abilities of the skin world.', check: (c) => ['capsule', 'biofilm', 'toxin'].every((k) => c.globalLimits.specials.has(k)) },
   { key: 'collector', name: 'Collector', desc: 'Discover every germ of the skin world.', check: (c) => c.atlasCount >= c.atlasTotal },
   { key: 'master', name: 'Wound Healer', desc: 'Beat the chapter boss in level 10.', check: (c) => c.sim.winner === 1 && c.mode === 'level' && c.level === 10 },

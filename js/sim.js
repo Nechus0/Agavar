@@ -22,8 +22,8 @@ const DY = [-1, -1, 0, 1, 1, 1, 0, -1];
 const T = {
   moveChance: [0.25, 0.4, 0.55, 0.75, 0.95, 0.98],
   maxAge: [50, 80, 115, 155, 200, 250],
-  efficiency: [0.5, 0.64, 0.78, 0.92, 1.06, 1.2],
-  chemo: [0, 0.03, 0.06, 0.09, 0.12, 0.15],
+  efficiency: [0.5, 0.64, 0.78, 0.9, 1.0, 1.08],
+  chemo: [0, 0.05, 0.1, 0.15, 0.2, 0.25],
   // Stoffwechsel: sparsam = weniger Verbrauch und effizienter, gefräßig = frisst schneller
   uptake: [2.0, 2.8, 3.6, 4.4, 5.2],
   basal: [0.22, 0.32, 0.43, 0.55, 0.68],

@@ -33,14 +33,11 @@ export const MOVES = [
   { key: 'schlange', name: 'Snake', sizes: ['small', 'medium', 'large'], turn: true,
     desc: 'Wriggles forward in S-curves – like a corkscrew. The colony moves as a wide band.',
     actions: (s) => [...rep('R', s + 2), 'M'] },
-  { key: 'acht', name: 'Eight', turn: true,
-    desc: 'Alternates a circle to the right and to the left – a figure eight. Stays very local.',
-    actions: () => [...rep('R', 8), 'M'] },
 ];
 export const MOVE_BY_KEY = Object.fromEntries(MOVES.map((m) => [m.key, m]));
 
 // Welche Bewegungsart wird durch welchen Schritt freigeschaltet?
-export const STEP_MOVES = { P: ['sitzen'], B: ['pendeln'], Z: ['taumeln'], D: ['ecken', 'treppe'], S: [], M: ['schlange', 'acht'] };
+export const STEP_MOVES = { P: ['sitzen'], B: ['pendeln'], Z: ['taumeln'], D: ['ecken', 'treppe'], S: [], M: ['schlange'] };
 
 export function actionsOf(move) {
   const m = MOVE_BY_KEY[move.type] || MOVES[0];

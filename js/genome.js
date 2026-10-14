@@ -91,15 +91,23 @@ export function defaultGenome() {
   };
 }
 
+// Steigende Kosten: Stufe 1–4 kostet 1 Punkt, 5–7 kosten 2, 8–10 kosten 3.
+// So lohnt es sich nicht mehr, alles in eine Eigenschaft zu stecken.
+export const stepCost = (level) => (level <= 4 ? 1 : level <= 7 ? 2 : 3);
+export const traitCost = (v) => { let c = 0; for (let k = 1; k <= v; k++) c += stepCost(k); return c; };
+// zweiter Platz für eine Spezialfähigkeit: kostet zusätzlich zur Fähigkeit selbst
+export const SLOT2_COST = 5;
+
 export function cost(g) {
   let c = 0;
-  for (const t of COSTED) c += g[t.key] | 0;
+  for (const t of COSTED) c += traitCost(g[t.key] | 0);
   c += (SPECIALS[g.special] || SPECIALS.none).cost;
+  if (g.bonusSpecial && g.bonusSpecial !== 'none') c += SLOT2_COST + SPECIALS[g.bonusSpecial].cost;
   return c;
 }
 
 export function maxCost() {
-  return COSTED.reduce((s, t) => s + t.max, 0) + Math.max(...Object.values(SPECIALS).map((x) => x.cost));
+  return COSTED.reduce((s, t) => s + traitCost(t.max), 0) + Math.max(...Object.values(SPECIALS).map((x) => x.cost));
 }
 
 const clampInt = (v, lo, hi) => Math.max(lo, Math.min(hi, Math.round(Number(v) || 0)));
@@ -124,8 +132,8 @@ export function normalize(raw) {
   if (raw.move && typeof raw.move.type === 'string') {
     g.move = { type: raw.move.type, size: clampInt(raw.move.size, 0, 5), dir: raw.move.dir === 'L' ? 'L' : 'R' };
   }
-  // nur für besondere Gegner: eine zweite Spezialfähigkeit (nicht im Editor wählbar)
-  if (SPECIAL_KEYS.includes(raw.bonusSpecial) && raw.bonusSpecial !== 'none') g.bonusSpecial = raw.bonusSpecial;
+  // zweite Spezialfähigkeit (Gegner haben sie umsonst, Spieler kaufen den zweiten Platz)
+  if (SPECIAL_KEYS.includes(raw.bonusSpecial) && raw.bonusSpecial !== 'none' && raw.bonusSpecial !== g.special) g.bonusSpecial = raw.bonusSpecial;
   if (typeof raw.id === 'string') g.id = raw.id;
   return g;
 }
@@ -145,13 +153,11 @@ export function randomGenome(rng, budget, limits = null) {
     const sp = rng.pick(specials);
     if (points >= SPECIALS[sp].cost * 2) { g.special = sp; points -= SPECIALS[sp].cost; }
   }
-  let guard = 200;
-  while (points > 0 && guard-- > 0) {
-    const open = COSTED.filter((t) => g[t.key] < t.max);
+  let guard = 300;
+  while (guard-- > 0) {
+    const open = COSTED.filter((t) => g[t.key] < t.max && cost(g) + stepCost(g[t.key] + 1) <= budget);
     if (!open.length) break;
-    const t = rng.pick(open);
-    g[t.key]++;
-    points--;
+    g[rng.pick(open).key]++;
   }
   g.division = rng.int(5);
   g.metabolism = rng.int(5);

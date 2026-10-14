@@ -25,34 +25,12 @@
         <p class="sub">Bacteria battle on the agar plate</p>
       </div>
       <div id="home-next"></div>
-      <div id="home-stats" class="stat-row"></div>
-      <div id="home-bact"></div>
-      <div class="tile-grid">
-        <button class="tile" id="home-career"><span class="ico md" data-icon="dish"></span><b>My bacteria</b><small>Careers, one per world</small></button>
-        <button class="tile" id="home-free"><span class="ico md" data-icon="dice"></span><b>Free play</b><small id="home-free-sub">Any budget, random foes</small></button>
-      </div>
-    </section>
-
-    <!-- Careers -->
-    <section class="screen" id="careers" hidden>
-      <header class="bar"><button class="back" data-go="home"><span class="ico" data-icon="back"></span>Home</button><h2>My bacteria</h2><span></span></header>
-      <div id="career-list" class="list-card"></div>
-      <button class="btn primary big" id="career-new"><span class="ico" data-icon="plus"></span>New bacterium</button>
-    </section>
-
-    <!-- One career -->
-    <section class="screen" id="career" hidden>
-      <header class="bar"><button class="back" data-go="careers"><span class="ico" data-icon="back"></span>Bacteria</button><h2 id="cr-title">Bacterium</h2><span></span></header>
-      <div class="card" id="cr-card"></div>
-      <div id="cr-world"></div>
-      <div id="cr-levels" class="level-grid"></div>
-      <div class="card" id="cr-next-worlds"></div>
-      <button class="btn ghost danger" id="cr-delete"><span class="ico" data-icon="trash"></span>Delete bacterium</button>
+      <section class="rs-section" id="home-world"></section>
     </section>
 
     <!-- Level details -->
     <section class="screen" id="level-detail" hidden>
-      <header class="bar"><button class="back" data-go="career"><span class="ico" data-icon="back"></span>Levels</button><h2 id="ld-title">Level</h2><span></span></header>
+      <header class="bar"><button class="back" data-go="home"><span class="ico" data-icon="back"></span>Home</button><h2 id="ld-title">Level</h2><span></span></header>
       <div class="intro" id="ld-intro"></div>
       <section class="rs-section"><h2>Opponents</h2><div class="card" id="ld-foes"></div></section>
       <section class="rs-section"><h2>Stars</h2><div class="card" id="ld-goals"></div></section>
@@ -61,58 +39,30 @@
       <div class="sticky-cta"><button class="btn primary big" id="ld-start"><span class="ico" data-icon="play"></span>Start simulation</button></div>
     </section>
 
-    <!-- Editor -->
-    <section class="screen" id="editor" hidden>
-      <header class="bar"><button class="back" id="ed-cancel">Cancel</button><h2 id="ed-title">Editor</h2><span class="bar-note" id="ed-world"></span></header>
+    <!-- Lab -->
+    <section class="screen" id="editor">
+      <header class="bar"><button class="back" id="ed-cancel">Cancel</button><h2 id="ed-title">Lab</h2><span class="bar-note" id="ed-world"></span></header>
       <p class="coach" id="ed-coach" hidden></p>
-      <div class="name-row">
+      <div class="identity">
+        <button class="color-dot" id="ed-color" aria-label="Colour"></button>
         <label class="name-field"><span>Name</span><input id="ed-name" type="text" maxlength="32" autocomplete="off" placeholder="e.g. Kocuria sudoris"></label>
         <button class="icon-btn big" id="ed-dice" aria-label="Random name"><span class="ico" data-icon="dice"></span></button>
       </div>
       <div class="card budget-card" id="ed-budget">
         <div class="plate-ring small-ring"><canvas id="ed-colony" class="plate" role="img" aria-label="Live preview of your colony"></canvas></div>
         <div class="budget-main">
-          <span class="small muted" id="ed-budget-label">Upgrade points</span>
+          <span class="small muted">Upgrade points</span>
           <b class="budget-num" id="ed-cost">0 / 20</b>
           <div class="meter"><div id="ed-meter"></div></div>
           <span class="small" id="ed-left"></span>
-          <span class="small muted" id="ed-colony-label">The colony</span>
         </div>
       </div>
-      <div id="ed-colors" class="swatches chip-row" role="radiogroup" aria-label="Colour"></div>
-      <nav class="seg tabs" id="ed-tabs" role="tablist">
-        <button data-tab="move" class="on" role="tab">Movement</button>
-        <button data-tab="body" role="tab">Body</button>
-        <button data-tab="traits" role="tab">Traits</button>
-        <button data-tab="special" role="tab">Special</button>
-      </nav>
-      <div class="pane" data-pane="move">
-        <div id="ed-moves" class="move-grid" role="radiogroup" aria-label="Movement pattern"></div>
-        <div class="card row-card"><span>Pattern size</span><div id="ed-move-opts"></div></div>
-        <div class="card path-card"><canvas id="ed-preview" class="path-preview" aria-hidden="true"></canvas><p class="small muted">One cell and its daughters follow this path.</p></div>
-      </div>
-      <div class="pane" data-pane="body" hidden>
-        <p class="small muted">Free · no points. Each end has its price.</p>
-        <div id="ed-free"></div>
-        <div id="ed-energy" class="energy"></div>
-      </div>
-      <div class="pane" data-pane="traits" hidden>
-        <div class="card list-card" id="ed-costed"></div>
-      </div>
-      <div class="pane" data-pane="special" hidden>
-        <p class="small muted">One ability · stronger ones cost more · beat a boss to unlock its ability</p>
-        <div class="card list-card" id="ed-specials" role="radiogroup" aria-label="Special ability"></div>
-      </div>
+      <section class="rs-section"><h2>Movement</h2><button class="slot-row" id="ed-move-row"></button></section>
+      <section class="rs-section"><h2>Abilities</h2><div class="slot-grid" id="ed-slots"></div></section>
+      <section class="rs-section"><div class="row between"><h2>Traits</h2><span class="small muted">Higher steps cost more</span></div><div class="list-card" id="ed-costed"></div></section>
+      <section class="rs-section"><div class="row between"><h2>Body</h2><span class="small muted">Free</span></div><div class="list-card" id="ed-free"></div><div id="ed-energy" class="energy"></div></section>
       <p class="small warn" id="ed-warn" hidden></p>
       <div class="sticky-cta"><button class="btn primary big" id="ed-save">Save bacterium</button></div>
-    </section>
-
-    <!-- Free play: settings -->
-    <section class="screen" id="setup" hidden>
-      <header class="bar"><button class="back" data-go="home"><span class="ico" data-icon="back"></span>Home</button><h2>Free play</h2><span></span></header>
-      <div class="card" id="su-me"></div>
-      <div class="card list-card" id="su-options"></div>
-      <button class="btn primary big" id="su-start"><span class="ico" data-icon="play"></span>Start simulation</button>
     </section>
 
     <!-- Simulation -->
@@ -150,7 +100,7 @@
         <div class="two-col" id="rs-more">
           <button class="btn" id="rs-upgrade" hidden><span class="ico" data-icon="flask"></span>Go to lab</button>
           <button class="btn" id="rs-rematch"><span class="ico" data-icon="restart"></span>Again</button>
-          <button class="btn" id="rs-new" hidden><span class="ico" data-icon="dice"></span>New opponents</button>
+          
         </div>
       </div>
       <hr class="divider">
@@ -169,12 +119,9 @@
     </section>
 
     <!-- Awards -->
-    <section class="screen" id="awards" hidden>
-      <header class="page-head"><h1>Awards</h1><p class="sub">Stars, achievements and titles across all your bacteria.</p></header>
-      <div id="aw-totals" class="stat-row"></div>
-      <div class="card" id="aw-stars"></div>
-      <section class="rs-section"><div class="row between"><h2>Achievements</h2><span class="small muted mono" id="ach-count"></span></div><div class="card list-card" id="ach-list"></div></section>
-      <div class="card" id="aw-titles"></div>
+    <section class="screen" id="awards">
+      <header class="page-head"><h1>Awards</h1><p class="sub" id="ach-count"></p></header>
+      <div class="list-card" id="ach-list"></div>
     </section>
 
     <!-- Settings -->
@@ -199,15 +146,13 @@
         <h3>What is it about?</h3>
         <p>You design a bacterium and put it on an agar plate with opponents. After that everything runs on its own – you can only watch (and fast-forward). Whoever is left at the end wins.</p>
         <h3>Career</h3>
-        <p>Every world gets its own bacterium. It starts with 12 upgrade points and the simplest movements. Every level has a special opponent – a real germ with a typical ability. Beat it and your bacterium gets 1 new upgrade point, and the ability is unlocked for good – also for the bacteria you create in later worlds. You can redistribute your points at any time.</p>
+        <p>Every world has exactly one bacterium of yours. It starts with 12 upgrade points and the simplest movements. Every level has a special opponent – a real germ with a typical ability. Beat it and your bacterium gets 1 new upgrade point, and the ability is unlocked for good – also for the bacteria you create in later worlds. You can redistribute your points at any time.</p>
         <h3>Traits</h3>
-        <p>Every trait has 10 steps and every step costs one point. Special abilities cost more the stronger they are. You will never have enough points for everything – choosing is the game.</p>
+        <p>Every trait has 10 steps. Steps 1–4 cost 1 point, 5–7 cost 2 and 8–10 cost 3 – so spreading is cheaper than maxing one trait. Special abilities cost more the stronger they are, and later you can buy a second ability slot. You will never have enough points for everything – choosing is the game.</p>
         <h3>Worlds</h3>
         <p>The career leads through real habitats, each with its own germs and its own look. You start on the <b>skin</b>: from harmless skin germs to an infected wound. Mouth &amp; gut, water, soil and finally the hospital and bloodstream follow.</p>
         <h3>Stars, atlas and achievements</h3>
         <p>Every level has three stars: for winning, for a fast win (under 12 h) and for covering 25 % of the plate at some point. All three give a bonus point. Every germ you beat goes into your atlas with a picture and a fact, and special feats earn achievements.</p>
-        <h3>Free play</h3>
-        <p>Here you set the point budget yourself and can spend all points right away. Special abilities and special movements are only available once you have unlocked them in a career.</p>
         <h3>What happens on the plate?</h3>
         <p>Every coloured pixel is a bacterial cell. Cells eat the medium below them (bright = lots of food, dark = eaten up), move according to their pattern, divide when they have enough energy, and die of hunger or old age. When a cell runs into an enemy, they fight: <b>attack</b> against <b>defense</b> plus a little luck.</p>
         <h3>Spotting special abilities</h3>
@@ -247,11 +192,10 @@
   <!-- Congratulations after a first win -->
   <div id="win-modal" class="modal" hidden>
     <div class="modal-box win-box" role="dialog" aria-modal="true" aria-labelledby="win-title">
-      <h2 id="win-title">Level cleared</h2>
+      <h2 id="win-title">New unlocks</h2>
       <p id="win-sub" class="muted center"></p>
       <div id="win-germ" class="win-germ"></div>
       <p id="win-fact" class="win-fact"></p>
-      <h3>Unlocked</h3>
       <div id="win-rewards" class="rewards"></div>
       <button class="btn primary big" id="win-ok">Continue</button>
     </div>
@@ -263,6 +207,16 @@
       <span class="grabber" aria-hidden="true"></span>
       <div id="gm-body"></div>
       <button class="btn big" id="gm-close">Close</button>
+    </div>
+  </div>
+
+  <!-- Bottom sheet for colour, movement and abilities in the lab -->
+  <div id="sheet" class="modal sheet" hidden>
+    <div class="modal-box sheet-box" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+      <span class="grabber" aria-hidden="true"></span>
+      <h2 id="sheet-title"></h2>
+      <div id="sheet-body"></div>
+      <button class="btn big" id="sheet-close">Done</button>
     </div>
   </div>
 

@@ -151,7 +151,7 @@ test('Bewegungsarten: alle Größen lassen sich mit allen Freischaltungen erzeug
 test('Bewegungsarten: am Anfang nur die einfachen, Sitzen erst nach Level 1', () => {
   const start = getLimits([]);
   for (const key of ['gerade', 'kreis', 'welle']) assert.ok(compile({ type: key, size: 0, dir: 'R' }, start).program, key);
-  for (const key of ['ecken', 'treppe', 'sitzen', 'pendeln', 'taumeln', 'schlange', 'acht']) assert.ok(compile({ type: key, size: 0, dir: 'R' }, start).locked, key);
+  for (const key of ['ecken', 'treppe', 'sitzen', 'pendeln', 'taumeln', 'schlange']) assert.ok(compile({ type: key, size: 0, dir: 'R' }, start).locked, key);
   assert.ok(compile({ type: 'sitzen', size: 0 }, getLimits([1])).program);
   // Ecken und Treppe nach Level 5 (Corynebacterium)
   assert.ok(compile({ type: 'ecken', size: 0, dir: 'R' }, getLimits([1, 2, 3, 4, 5])).program);

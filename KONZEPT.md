@@ -10,13 +10,15 @@ Man entwirft ein Bakterium und setzt es mit Gegnern auf eine runde Agarplatte. S
   - Start: 12 Ausbaupunkte, nur die einfachen Schritte, Muster mit höchstens 4 Schritten.
   - Jeder erste Level-Sieg: +1 Ausbaupunkt und die Fähigkeit des besiegten besonderen Gegners (am Ende einer Welt also rund 30 Punkte, plus Sternboni).
   - Punkte können jederzeit neu verteilt werden.
-- **Freies Spiel**:
+- **Freies Spiel** (vorerst ausgeblendet):
   - eigenes Bakterium, Budget frei einstellbar (10–60)
   - Spezialfähigkeiten und besondere Schritte nur, wenn sie in irgendeiner Karriere freigespielt wurden
   - Zufallsgegner nutzen dieselben Freischaltungen
 - Export/Import gibt es bewusst nicht.
 
 ## Eigenschaften
+
+Stufen 1–4 kosten je 1 Punkt, 5–7 je 2 und 8–10 je 3 (verteilen ist günstiger als eine Eigenschaft auszureizen).
 
 | Eigenschaft | Stufen | Kosten | Wirkung |
 |---|---|---|---|
@@ -29,6 +31,7 @@ Man entwirft ein Bakterium und setzt es mit Gegnern auf eine runde Agarplatte. S
 | Chemotaxis | 0–10 | 1/Stufe | Chance je Bewegung (3–12 %), gezielt zur nahrhaftesten Nachbarstelle zu laufen |
 | Angriff | 0–10 | 1/Stufe | Kampfwert beim Hineinlaufen in Gegner |
 | Abwehr | 0–10 | 1/Stufe | Kampfwert beim Verteidigen |
+| Zweiter Fähigkeitsplatz | ab Level 8 | 5 + Fähigkeit | zweite Spezialfähigkeit gleichzeitig |
 | Spezialfähigkeit | eine | 4–7 | Sporen 4, Kapsel 5, Photosynthese 5, Biofilm 6, Räuber 6, Toxine 7 (stärkere kosten mehr) |
 
 **Bewegungsarten:**

@@ -20,7 +20,7 @@ export const UNLOCKS = [
   { after: 5, steps: ['D', 'S'] },
   { after: 6, repeat: true, programMax: 6 },
   { after: 7, steps: ['M'] },
-  { after: 8, specials: ['biofilm'] },
+  { after: 8, specials: ['biofilm'], slots: 2 },
   { after: 9, specials: ['toxin'] },
   { after: 10, title: 'Wound Healer' },
   // later worlds (see docs/WORLDS.md): Photosynthesis in Water, Spores and Predator in Soil
@@ -30,13 +30,14 @@ export const UNLOCKS = [
 ];
 
 export function getLimits(won) {
-  const lim = { steps: new Set(), specials: new Set(['none']), programMax: 0, repeat: false };
+  const lim = { steps: new Set(), specials: new Set(['none']), programMax: 0, repeat: false, slots: 1 };
   for (const u of UNLOCKS) {
     if (u.after !== 0 && !won.includes(u.after)) continue;
     (u.steps || []).forEach((s) => lim.steps.add(s));
     (u.specials || []).forEach((s) => lim.specials.add(s));
     if (u.programMax) lim.programMax = Math.max(lim.programMax, u.programMax);
     if (u.repeat) lim.repeat = true;
+    if (u.slots) lim.slots = Math.max(lim.slots, u.slots);
   }
   lim.programMax = Math.min(MAX_PROGRAM, lim.programMax);
   return lim;
@@ -75,6 +76,7 @@ export function unlockLevelOf(kind, key) {
     if (kind === 'special' && (u.specials || []).includes(key)) return u.after;
     if (kind === 'program' && u.programMax >= key) return u.after;
     if (kind === 'repeat' && u.repeat) return u.after;
+    if (kind === 'slot' && u.slots) return u.after;
   }
   return 0;
 }
@@ -85,6 +87,7 @@ export function rewardsOf(level) {
   for (const u of UNLOCKS.filter((x) => x.after === level)) {
     for (const s of (u.steps || []).filter((x) => (STEP_MOVES[x] || []).length)) out.push({ type: 'move', key: STEP_MOVES[s][0], text: `Movement ${moveNames(s)}`, short: moveNames(s).replace(/[“”]/g, '') });
     for (const s of u.specials || []) out.push({ type: 'special', key: s, text: `Special ability “${SPECIALS[s].name}”`, short: SPECIALS[s].name });
+    if (u.slots) out.push({ type: 'slot', text: 'Second ability slot', short: '2nd ability slot' });
     if (u.repeat || u.programMax) out.push({ type: 'bigger', text: 'Bigger movement patterns (more sizes)', short: 'bigger patterns' });
     if (u.title) out.push({ type: 'title', text: `Title “${u.title}”`, short: u.title });
   }
@@ -98,6 +101,10 @@ export function problems(g, lim, budget) {
   if (c > budget) p.push(`${c} instead of max. ${budget} points`);
   for (const t of COSTED) if (g[t.key] > t.max) p.push(`${t.label} too high`);
   if (!lim.specials.has(g.special)) p.push(`${SPECIALS[g.special].name} still locked`);
+  if (g.bonusSpecial && g.bonusSpecial !== 'none') {
+    if ((lim.slots || 1) < 2) p.push('Second ability slot still locked');
+    else if (!lim.specials.has(g.bonusSpecial)) p.push(`${SPECIALS[g.bonusSpecial].name} still locked`);
+  }
   const steps = g.program.map(parseStep).filter(Boolean);
   const locked = [...new Set(steps.filter((x) => !lim.steps.has(x.s)).map((x) => x.s))];
   if (locked.length) p.push(`Movement ${locked.map(moveNames).join(', ')} still locked`);
