@@ -21,7 +21,7 @@ import * as store from './storage.js';
 import { meters, METER_INFO, counterTips } from './meters.js';
 import { play, setSoundEnabled } from './sound.js';
 import { WORLDS, EXPANSIONS, LEVELS_PER_WORLD, worldOfLevel } from './worlds.js';
-import { startMusic, stopMusic } from './music.js';
+import { startMusic, stopMusic, setIntensity } from './music.js';
 
 const $ = (sel) => document.querySelector(sel);
 const BREW_HOURS = 48; // eine Runde = 48 Stunden Brutzeit
@@ -101,11 +101,10 @@ document.addEventListener('click', (e) => {
   if (e.target.closest('.sound-toggle')) {
     store.updateSettings({ sound: store.getSettings().sound === false });
     refreshSoundButtons();
-    play('tap');
   } else if (e.target.closest('.music-toggle')) {
     store.updateSettings({ music: !musicOn() });
     refreshMusicButtons();
-    if (current === 'sim' && musicOn() && !run.paused && !run.sim.done) startMusic(); else stopMusic();
+    if (musicOn()) startMusic(); else stopMusic();
   }
 });
 
@@ -751,7 +750,6 @@ $('#ed-name').addEventListener('input', (e) => { ed.name = e.target.value; });
 $('#ed-dice').addEventListener('click', () => {
   ed.name = randomName(makeRng(randomSeed()), edCtx.world, takenNames(ed.id));
   $('#ed-name').value = ed.name;
-  play('tap');
 });
 $('#ed-cancel').addEventListener('click', () => go(edCtx.returnTo));
 $('#ed-save').addEventListener('click', () => {
@@ -871,6 +869,7 @@ function startMatch(cfg) {
   run.paused = false;
   run.acc = 0;
   run.last = 0;
+  run.fight = null;
   run.ev = { contact: false, dead: new Set(), leader: 0, leaderTick: -999, slow: false, sixH: false, peakPlate: 0, notice: 0 };
   const elKeys = elementsOf(cfg);
   $('#sim-elements').hidden = !elKeys.length;
@@ -945,6 +944,24 @@ function updateSimUi() {
       el('div', { class: `goal-chip ${big ? 'done' : ''}` }, el('span', { class: 'star', 'aria-hidden': 'true' }, '★'), '25 % plate'));
   }
   if (run.ev) checkEvents();
+  fightLevel();
+}
+
+// Wie heftig wird gerade gekämpft? Getötete Zellen pro Runde im Vergleich zum üblichen Grenzgeplänkel:
+// nur ein echter Anstieg lässt die Musik anziehen, danach beruhigt sie sich wieder
+function fightLevel() {
+  const sim = run.sim;
+  const kills = sim.players.reduce((a, p) => a + p.kills, 0);
+  const f = run.fight || (run.fight = { kills, tick: sim.tick, rate: 0, base: 0 });
+  const dt = sim.tick - f.tick;
+  if (dt >= 10) {
+    const rate = (kills - f.kills) / dt;
+    f.rate = f.rate * 0.6 + rate * 0.4;
+    f.base = f.base * 0.97 + f.rate * 0.03;
+    f.kills = kills; f.tick = sim.tick;
+  }
+  const surge = (f.rate - Math.max(0.8, f.base * 1.15)) / 3;
+  setIntensity(sim.done || run.paused ? 0 : Math.max(0, Math.min(1, surge)));
 }
 
 function simFrame(t) {
@@ -974,7 +991,7 @@ $('#sim-speed').addEventListener('click', (e) => {
 function openPause() {
   if (current !== 'sim' || run.sim.done) return;
   run.paused = true;
-  stopMusic();
+  setIntensity(0);
   const sim = run.sim;
   const total = sim.players.reduce((s, p) => s + p.count, 0) || 1;
   const lead = [...sim.players].sort((a, b) => b.count - a.count)[0];
@@ -998,7 +1015,7 @@ $('#pm-quit').addEventListener('click', () => {
   run.sim = null;
   go('level-detail');
 });
-onLeave.sim = () => { cancelAnimationFrame(run.raf); run.paused = true; stopMusic(); };
+onLeave.sim = () => { cancelAnimationFrame(run.raf); run.paused = true; setIntensity(0); };
 $('#resume-bar').addEventListener('click', resumeMatch);
 document.addEventListener('visibilitychange', () => {
   run.last = 0; demo.last = 0;
@@ -1292,6 +1309,8 @@ store.discover(store.globalWon().filter((n) => LEVELS[n - 1]).flatMap((n) => lev
 refreshSoundButtons();
 refreshMusicButtons();
 go('home');
+// Musik läuft durchgehend (startet hörbar nach der ersten Berührung)
+if (musicOn()) startMusic();
 
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
   const hadController = !!navigator.serviceWorker.controller;

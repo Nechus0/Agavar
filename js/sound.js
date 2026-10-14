@@ -19,9 +19,16 @@ function ac() {
 }
 
 // beim ersten Tippen irgendwo freischalten
-['touchstart', 'pointerdown', 'keydown'].forEach((ev) => window.addEventListener(ev, () => { if (enabled) ac(); }, { once: true, passive: true }));
+// bei jeder Berührung sicherstellen, dass der Ton läuft (iOS hält ihn sonst nach dem Wechseln der App an)
+['touchstart', 'pointerdown', 'keydown'].forEach((ev) => window.addEventListener(ev, () => { if (ctx && ctx.state !== 'running') ctx.resume(); else if (!ctx) ac(); }, { passive: true }));
+// App im Hintergrund: Ton anhalten, beim Zurückkommen weiterspielen
+document.addEventListener('visibilitychange', () => {
+  if (!ctx) return;
+  if (document.hidden) ctx.suspend().catch(() => {}); else ctx.resume().catch(() => {});
+});
 
-function tone(freq, start, dur, { type = 'sine', vol = 0.15, slide = 0 } = {}) {
+// weicher Ton: sanfter Einsatz, langes Ausklingen (keine harten Rechteck-Klicks)
+function tone(freq, start, dur, { type = 'sine', vol = 0.08, slide = 0, attack = 0.03 } = {}) {
   const a = ac();
   if (!a) return;
   const t0 = a.currentTime + start;
@@ -31,23 +38,23 @@ function tone(freq, start, dur, { type = 'sine', vol = 0.15, slide = 0 } = {}) {
   o.frequency.setValueAtTime(freq, t0);
   if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(30, freq + slide), t0 + dur);
   g.gain.setValueAtTime(0.0001, t0);
-  g.gain.exponentialRampToValueAtTime(vol, t0 + 0.015);
+  g.gain.linearRampToValueAtTime(vol, t0 + attack);
   g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
   o.connect(g).connect(a.destination);
   o.start(t0);
-  o.stop(t0 + dur + 0.02);
+  o.stop(t0 + dur + 0.05);
 }
 
+// leise, runde Klänge – keine Geräusche beim Tippen auf Knöpfe
 const SOUNDS = {
-  tap: () => tone(660, 0, 0.05, { type: 'triangle', vol: 0.05 }),
-  contact: () => { tone(140, 0, 0.25, { type: 'square', vol: 0.08, slide: -60 }); tone(90, 0.05, 0.3, { vol: 0.12 }); },
-  extinct: () => [523, 392, 262].forEach((f, k) => tone(f, k * 0.12, 0.18, { type: 'triangle', vol: 0.1 })),
-  lead: () => { tone(392, 0, 0.12, { type: 'triangle', vol: 0.1 }); tone(587, 0.1, 0.2, { type: 'triangle', vol: 0.1 }); },
-  alarm: () => [880, 660, 880].forEach((f, k) => tone(f, k * 0.14, 0.1, { type: 'square', vol: 0.05 })),
-  win: () => [523, 659, 784, 1047].forEach((f, k) => tone(f, k * 0.11, k === 3 ? 0.5 : 0.16, { type: 'triangle', vol: 0.13 })),
-  lose: () => [392, 349, 311, 262].forEach((f, k) => tone(f, k * 0.16, 0.25, { type: 'sine', vol: 0.12 })),
-  star: () => tone(1200, 0, 0.18, { type: 'sine', vol: 0.12, slide: 600 }),
-  unlock: () => [784, 988, 1175, 1568].forEach((f, k) => tone(f, k * 0.08, 0.25, { type: 'sine', vol: 0.09 })),
+  contact: () => { tone(98, 0, 0.6, { vol: 0.09, slide: -30, attack: 0.02 }); },
+  extinct: () => [587, 494, 392].forEach((f, k) => tone(f, k * 0.16, 0.6, { vol: 0.05 })),
+  lead: () => { tone(587, 0, 0.5, { vol: 0.05 }); tone(880, 0.14, 0.7, { vol: 0.04 }); },
+  alarm: () => { tone(740, 0, 0.7, { vol: 0.045 }); tone(587, 0.22, 0.9, { vol: 0.04 }); },
+  win: () => [587, 740, 880, 1175].forEach((f, k) => tone(f, k * 0.13, k === 3 ? 1.4 : 0.6, { vol: 0.06 })),
+  lose: () => [440, 392, 349, 294].forEach((f, k) => tone(f, k * 0.2, 0.8, { vol: 0.05 })),
+  star: () => tone(1175, 0, 0.6, { vol: 0.05, slide: 400 }),
+  unlock: () => [880, 1109, 1319, 1760].forEach((f, k) => tone(f, k * 0.1, 0.8, { vol: 0.04 })),
 };
 
 // shared audio context for the music player

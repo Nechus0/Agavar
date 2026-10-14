@@ -1,6 +1,6 @@
 // Service Worker: macht Agava offline spielbar.
 // Strategie: erst Netzwerk (immer aktuell), bei fehlender Verbindung aus dem Cache.
-const CACHE = 'agava-v33';
+const CACHE = 'agava-v34';
 const ASSETS = [
   './', 'index.html', 'css/style.css', 'manifest.webmanifest',
   'js/main.js', 'js/sim.js', 'js/genome.js', 'js/levels.js', 'js/storage.js',
