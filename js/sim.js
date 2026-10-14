@@ -131,6 +131,8 @@ export class Simulation {
       extinctAt: -1,
       // Statistik für die Auswertung nach dem Spiel
       died: { starve: 0, age: 0, fight: 0, toxin: 0, env: 0 },
+      // Wirkung der Elemente auf diese Kultur (für die Auswertung)
+      env: { abx: 0, phage: 0, immune: 0, sun: 0, acid: 0, salt: 0, heat: 0, drift: 0, honey: 0 },
       killedBy: new Array(opts.genomes.length + 1).fill(0), // killedBy[id] = von Spieler id getötete Zellen
       peakShare: 0, // höchster Anteil an allen lebenden Zellen
       peakPlate: 0, // höchster Anteil an der Plattenfläche
@@ -255,11 +257,19 @@ export class Simulation {
   }
 
   // cause: 'starve' | 'age' | 'fight' | 'toxin'; killer = Spieler-id bei Kampf/Toxin
-  _kill(i, cause = 'starve', killer = 0) {
+  _kill(i, cause = 'starve', killer = 0, src = '') {
     const victim = this.players[this.owner[i] - 1];
     if (victim) {
       victim.died[cause]++;
       if (killer) victim.killedBy[killer]++;
+      // wo ist die Zelle gestorben? – damit die Auswertung den Elementen ihre Wirkung zuschreiben kann
+      if (src) victim.env[src]++;
+      else if (this.envOn && (cause === 'starve' || cause === 'age')) {
+        if (this.light && this.light[i] > 0.5) victim.env.sun++;
+        if (cause === 'starve' && this.salt && this.salt[i] > 0.1) victim.env.salt++;
+        if (cause === 'age' && this.acid && this.acid[i] > 0.3) victim.env.acid++;
+        if (cause === 'age' && this.temp && this.temp[i] > 0.3) victim.env.heat++;
+      }
     }
     this.owner[i] = 0;
     this.spore[i] = 0;
@@ -356,7 +366,7 @@ export class Simulation {
       // Phagen: infizierte Zellen platzen nach kurzer Zeit und stecken Nachbarn derselben Kolonie an
       if (infected && infected[i]) {
         if (++infected[i] > 7) {
-          this._kill(i, 'env');
+          this._kill(i, 'env', 0, 'phage');
           lysis[i] = 16;
           this._infectAround(i, o, 3, 0.5);
         }
@@ -398,7 +408,7 @@ export class Simulation {
           let k = abx[i] * 0.06;
           if (this.shield[i]) k *= 0.3;
           if (slimy) k *= 0.25;
-          if (rng() < k) { this._kill(i, 'env'); continue; }
+          if (rng() < k) { this._kill(i, 'env', 0, 'abx'); continue; }
         }
       }
 
@@ -493,7 +503,7 @@ export class Simulation {
       // Strömung schiebt Zellen weiter, Biofilm klebt fest
       if (flow && cur === i && !(ph.biofilm && this.still[i] >= 2) && rng() < flow.p) {
         const j = this._neighbor(i, flow.d);
-        if (j >= 0 && !owner[j]) { this._move(i, j); cur = j; }
+        if (j >= 0 && !owner[j]) { this._move(i, j); cur = j; p.env.drift++; }
       }
       if (cur === i) { if (this.still[i] < 255) this.still[i]++; }
       if (energy[cur] <= 0) {
@@ -665,7 +675,7 @@ export class Simulation {
         if (x < 0 || y < 0 || x >= N || y >= N || Math.hypot(x - d.x, y - d.y) > d.r) continue;
         const i = y * N + x;
         if (!this.inPlate[i]) continue;
-        if (this.owner[i]) this._kill(i, 'env');
+        if (this.owner[i]) this._kill(i, 'env', 0, 'abx');
         this.wall[i] = 4; this.nutrient[i] = 0; this.nutrientMax[i] = 0;
       }
       if (tick > 0) this._notice('disc', { target: d.target || 0 });
@@ -704,7 +714,7 @@ export class Simulation {
         const i = y * N + x;
         const a = Math.atan2(y - m.y, x - m.x);
         if (!this.inPlate[i] || this.wall[i] || Math.hypot(x - m.x, y - m.y) > rad * (1 + 0.12 * Math.sin(a * 7 + m.x))) continue;
-        if (this.owner[i]) this._kill(i, 'env');
+        if (this.owner[i]) this._kill(i, 'env', 0, 'abx');
         this.wall[i] = 3; this.nutrient[i] = 0; this.nutrientMax[i] = 0;
       }
       paint(m.x, m.y, rad, rad * 1.8 + 3, 0.9);
@@ -721,6 +731,18 @@ export class Simulation {
     // Honigtropfen: erst angekündigt, dann landet frisches Futter
     for (const p of this.pulses) {
       if (tick === p.warn) this._notice('sugar-warn');
+      if (tick === p.at + 80) {
+        const cnt = new Uint32Array(this.players.length + 1);
+        for (let y = Math.max(0, Math.floor(p.y - p.r)); y <= Math.min(N - 1, p.y + p.r); y++) {
+          for (let x = Math.max(0, Math.floor(p.x - p.r)); x <= Math.min(N - 1, p.x + p.r); x++) {
+            const o = this.owner[y * N + x];
+            if (o && Math.hypot(x - p.x, y - p.y) <= p.r) cnt[o]++;
+          }
+        }
+        let best = 0;
+        for (let o = 1; o < cnt.length; o++) if (cnt[o] > (cnt[best] || 0)) best = o;
+        if (best) { this.players[best - 1].env.honey++; p.claimedBy = best; }
+      }
       if (tick !== p.at) continue;
       for (let y = Math.max(0, Math.floor(p.y - p.r)); y <= Math.min(N - 1, p.y + p.r); y++) {
         for (let x = Math.max(0, Math.floor(p.x - p.r)); x <= Math.min(N - 1, p.x + p.r); x++) {
@@ -770,7 +792,7 @@ export class Simulation {
           for (let x = Math.max(0, Math.floor(m.x - m.r)); x <= Math.min(N - 1, m.x + m.r); x++) {
             const i = y * N + x;
             if (!this.owner[i] || Math.hypot(x - m.x, y - m.y) > m.r || rng() > 0.1) continue;
-            if (this.shield[i]) this.shield[i] = 0; else this._kill(i, 'env');
+            if (this.shield[i]) this.shield[i] = 0; else this._kill(i, 'env', 0, 'immune');
           }
         }
       }

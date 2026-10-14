@@ -13,7 +13,7 @@ import {
   getLimits, unlockLevelOf, rewardsOf, problems, careerPoints, nextLevel, START_POINTS, POINTS_PER_WIN,
   STAR_GOALS, starMask, starCount,
 } from './progression.js';
-import { analyze, ACHIEVEMENTS } from './insights.js';
+import { analyze, ACHIEVEMENTS, deathBreakdown, plateReport } from './insights.js';
 import { SPECIAL_ICONS, TRAIT_ICONS, UI_ICONS, ACH_ICONS, ELEMENT_ICONS } from './icons.js';
 import { ELEMENTS, elementsOf } from './elements.js';
 import { MOVES, MOVE_BY_KEY, actionsOf, compile, moveFromProgram, describeMove, pathSvg } from './movement.js';
@@ -1089,8 +1089,7 @@ function showResult() {
   const hasNews = unlocks.points || unlocks.rewards.length || newAch.length || newGerms.length;
   $('#rs-rewards').hidden = true;
   // Details
-  fill($('#rs-analysis'), ...analyze(sim, run.genomes, mask).map((a) =>
-    el('div', { class: `insight kind-${a.kind}` }, el('span', { class: 'dot', 'aria-hidden': 'true' }), el('span', {}, a.text))));
+  renderSummary(sim, mask);
   const rc = $('#rs-plate');
   rc.width = sim.N; rc.height = sim.N;
   rc.getContext('2d').drawImage($('#plate'), 0, 0);
@@ -1140,6 +1139,31 @@ const rewardSub = (r) => ({
   title: 'Shown on your profile',
 }[r.type] || '');
 const winSection = (label, ...rows) => el('section', { class: 'win-section' }, el('h3', { class: 'win-label' }, label), el('div', { class: 'rewards' }, ...rows));
+
+// Auswertung: Kennzahlen, woran die eigenen Zellen starben, was die Platte bewirkt hat, Hinweise
+const DEATH_COLORS = { starve: 'var(--plate-full)', age: 'var(--text-secondary)', fight: 'var(--danger)', toxin: '#8ab83c', env: 'var(--selection)' };
+function renderSummary(sim, mask) {
+  const me = sim.players[0];
+  const fmt = (x) => x.toLocaleString('en-US');
+  const deaths = deathBreakdown(me);
+  const lost = deaths.reduce((a, d) => a + d.n, 0);
+  const tile = (value, label) => el('div', { class: 'sum-tile' }, el('b', {}, value), el('small', {}, label));
+  const block = (title, ...kids) => el('div', { class: 'sum-block' }, el('h3', { class: 'win-label' }, title), ...kids);
+  const plate = plateReport(sim);
+  const notes = analyze(sim, run.genomes, mask);
+  fill($('#rs-analysis'),
+    el('div', { class: 'sum-tiles' },
+      tile(`${Math.round(me.peakPlate * 100)} %`, 'of the plate at best'),
+      tile(fmt(me.peak), 'cells at most'),
+      tile(fmt(me.kills), 'enemies killed'),
+      tile(fmt(lost), 'cells died in total')),
+    lost ? block('How your cells died',
+      el('div', { class: 'death-bar', 'aria-hidden': 'true' }, deaths.map((d) => el('i', { style: `flex:${d.n};background:${DEATH_COLORS[d.key]}` }))),
+      el('div', { class: 'death-legend' }, deaths.map((d) => el('span', {}, el('i', { style: `background:${DEATH_COLORS[d.key]}` }), `${d.label} `, el('b', {}, `${Math.round((d.n / lost) * 100)} %`))))) : null,
+    plate.length ? block('The plate', ...plate.map((r) => el('div', { class: 'el-row' }, el('span', { class: 'el-ico' }, elIcon(r.type, 'md')), el('div', { class: 'main' }, el('b', {}, ELEMENTS[r.type].name), el('small', {}, r.text))))) : null,
+    notes.length ? block('Worth knowing', ...notes.map((a) =>
+      el('div', { class: `insight kind-${a.kind}` }, el('span', { class: 'dot', 'aria-hidden': 'true' }), el('span', {}, a.text)))) : null);
+}
 
 // Fenster mit allem, was in dieser Runde neu dazukam: besiegter Keim, Belohnungen, Erfolge
 function showUnlocks(u) {
