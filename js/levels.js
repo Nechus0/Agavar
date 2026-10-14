@@ -147,6 +147,7 @@ export const LEVELS = [
   },
   {
     name: 'Acid Mantle',
+    adapts: true,
     challenge: ['pure'],
     note: 'Cutibacterium has been turning skin oil into acid for days. One side of the plate is very sour – cells there grow old fast.',
     desc: 'Cutibacterium acnes makes the skin sour and does fine in it. Corynebacterium snaps through the oily skin.',
@@ -174,6 +175,7 @@ export const LEVELS = [
   },
   {
     name: 'Rinsing',
+    adapts: true,
     challenge: ['boss'],
     note: 'A cat bite is rinsed under the tap for minutes. The water keeps pushing everything downstream – and keeps bringing fresh food.',
     desc: 'Pasteurella multocida comes from a cat’s mouth and wears a thick capsule. Streptococcus agalactiae came along.',
@@ -192,6 +194,7 @@ export const LEVELS = [
   },
   {
     name: 'Pus & Phages',
+    adapts: true,
     challenge: ['lean', 36],
     note: 'The wound is badly infected. The immune system sends white blood cells, and the doctors try phage therapy – both go for the biggest colony.',
     desc: 'World finale: Pseudomonas aeruginosa with biofilm and toxins, the favourite target of phage therapy. Two old enemies return.',
@@ -214,5 +217,18 @@ LEVELS.forEach((lv, i) => {
 });
 
 // alle Gegner eines Levels als fertige Genome, der besondere Gegner zuerst
-export const levelOpponents = (lv) =>
-  [{ ...lv.boss, boss: true }, ...lv.opponents].map((o) => ({ ...normalize({ ...o, name: GERMS[o.germ].name }), germ: o.germ, boss: !!o.boss }));
+// Anpassungsfähige Gegner (lv.adapts): der besondere Gegner bringt ein Gegenmittel zu deiner Fähigkeit mit.
+// Kapsel -> Gift (geht durch), Biofilm -> Räuber (frisst sich durch), Gift -> Biofilm (hält es ab), keine -> Kapsel.
+export const ADAPT_COUNTER = { capsule: 'toxin', biofilm: 'predator', toxin: 'biofilm', predator: 'capsule', spores: 'toxin', photo: 'toxin', none: 'capsule' };
+export function adaptation(lv, player) {
+  if (!lv.adapts || !player) return null;
+  const mine = player.special || 'none';
+  const counter = ADAPT_COUNTER[mine];
+  if (!counter || lv.boss.special === counter || lv.boss.bonusSpecial === counter) return null;
+  return { against: mine, counter };
+}
+export const levelOpponents = (lv, player = null) => {
+  const ad = adaptation(lv, player);
+  return [{ ...lv.boss, boss: true, ...(ad ? { bonusSpecial: ad.counter } : {}) }, ...lv.opponents]
+    .map((o) => ({ ...normalize({ ...o, name: GERMS[o.germ].name }), germ: o.germ, boss: !!o.boss }));
+};

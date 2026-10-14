@@ -16,7 +16,7 @@ const budget = careerPoints(won) + Math.round(0.7 * (to - 1));
 const levels = LEVELS.slice(from - 1, to).map((lv, k) => ({ lv, n: from + k }));
 
 const play = (g, lv, seed) => {
-  const s = new Simulation({ genomes: [g, ...levelOpponents(lv)], ...lv.plate, seed }).run();
+  const s = new Simulation({ genomes: [g, ...levelOpponents(lv, g)], ...lv.plate, seed }).run();
   if (s.winner === 1) return 1;
   const total = s.players.reduce((a, p) => a + p.count, 0);
   return total ? 0.4 * (s.players[0].count / total) : 0;
@@ -59,7 +59,7 @@ console.log(`Allrounder (budget ${budget}): ${JSON.stringify({ p: best.program.j
 let total = 0;
 for (const { lv, n } of levels) {
   let w = 0;
-  for (let s = 0; s < 6; s++) { const sim = new Simulation({ genomes: [best, ...levelOpponents(lv)], ...lv.plate, seed: 900 + s }).run(); if (sim.winner === 1) w++; }
+  for (let s = 0; s < 6; s++) { const sim = new Simulation({ genomes: [best, ...levelOpponents(lv, best)], ...lv.plate, seed: 900 + s }).run(); if (sim.winner === 1) w++; }
   total += w;
   console.log(`  Level ${n} ${lv.name}: ${w}/6`);
 }

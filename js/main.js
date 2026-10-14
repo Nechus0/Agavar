@@ -7,7 +7,7 @@ import { Simulation, DISTRIBUTIONS, MAX_TICKS, energyProfile, phenotype, ROUNDS_
 import { PlateRenderer, drawHistory, GrowthAnimator } from './render.js';
 import { makeRng, randomSeed } from './rng.js';
 import { randomName } from './names.js';
-import { LEVELS, levelOpponents } from './levels.js';
+import { LEVELS, levelOpponents, adaptation } from './levels.js';
 import { GERMS, germSvg } from './germs.js';
 import {
   getLimits, unlockLevelOf, rewardsOf, problems, careerPoints, nextLevel, START_POINTS, POINTS_PER_WIN,
@@ -304,7 +304,7 @@ function playNext(b, n) {
   const probs = problems(b, limitsOf(b), ptsOf(b));
   if (probs.length) return openLevel(n);
   const lv = LEVELS[n - 1];
-  startMatch({ mode: 'level', level: n, careerId: b.id, player: b, opponents: levelOpponents(lv), ...lv.plate, seed: randomSeed() });
+  startMatch({ mode: 'level', level: n, careerId: b.id, player: b, opponents: levelOpponents(lv, normalize(b)), ...lv.plate, seed: randomSeed() });
 }
 
 // Lab in der Leiste: das Bakterium der aktuellen Welt (oder das erste anlegen)
@@ -344,7 +344,8 @@ onEnter['level-detail'] = () => {
   if (!b) return go('home');
   const n = openLevelNo;
   const lv = LEVELS[n - 1];
-  const [boss, ...others] = levelOpponents(lv);
+  const [boss, ...others] = levelOpponents(lv, normalize(b));
+  const ad = adaptation(lv, normalize(b));
   const won = b.career.won;
   const pl = lv.plate;
   $('#ld-title').textContent = `Level ${n}`;
@@ -368,6 +369,9 @@ onEnter['level-detail'] = () => {
   showNewElements(els);
   fill($('#ld-foes'),
     foeRow(boss), ...others.map(foeRow),
+    lv.adapts ? el('div', { class: 'tip adapt' }, ui('restart'), el('span', {}, ad
+      ? `This strain adapts to you: against your ${SPECIALS[ad.against].name.toLowerCase()} it brings ${SPECIALS[ad.counter].name.toLowerCase()}.`
+      : 'This strain adapts to your bacterium and brings a counter to your ability.')) : null,
     el('div', { class: 'tip' }, ui('bulb'), el('span', {}, counterTips(boss, 1)[0])));
   const mask = b.career.stars[n] || 0;
   fill($('#ld-goals'),
@@ -429,7 +433,7 @@ $('#ld-start').addEventListener('click', () => {
   if (!b) return;
   const lv = LEVELS[openLevelNo - 1];
   store.updateSettings({ lastCareer: b.id });
-  startMatch({ mode: 'level', level: openLevelNo, careerId: b.id, player: b, opponents: levelOpponents(lv), ...lv.plate, seed: randomSeed() });
+  startMatch({ mode: 'level', level: openLevelNo, careerId: b.id, player: b, opponents: levelOpponents(lv, normalize(b)), ...lv.plate, seed: randomSeed() });
 });
 
 // ---------- Lab ----------

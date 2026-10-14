@@ -14,7 +14,7 @@ const nRandom = Number(process.argv[3] || 12);
 const seeds = Number(process.argv[4] || 2);
 
 function sim(player, lv, seed) {
-  return new Simulation({ genomes: [player, ...levelOpponents(lv)], ...lv.plate, seed }).run();
+  return new Simulation({ genomes: [player, ...levelOpponents(lv, player)], ...lv.plate, seed }).run();
 }
 const play = (player, lv, seed) => (sim(player, lv, seed).winner === 1 ? 1 : 0);
 // stetige Bewertung für die Optimierung: Sieg = 1, sonst Anteil an allen lebenden Zellen (max. 0,5)
