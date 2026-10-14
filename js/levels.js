@@ -187,6 +187,15 @@ export const LEVELS = [
   },
 ];
 
+// Ab Level 11 hat der Spieler deutlich mehr Punkte (auch durch Sterne): die Gegner wachsen mit,
+// je Level etwas stärker (+1 bzw. +2 auf Tempo, Leben, Verwertung, Angriff und Abwehr; geprüft mit tools/levels-check.mjs).
+const TRAITS5 = ['speed', 'lifespan', 'efficiency', 'attack', 'defense'];
+LEVELS.forEach((lv, i) => {
+  if (i < 10) return;
+  const bump = [1, 1, 0, 1, 1, 1, 2, 2, 2, 2][i - 10] || 0;
+  for (const o of [lv.boss, ...lv.opponents]) for (const k of TRAITS5) o[k] = Math.min(10, o[k] + bump);
+});
+
 // alle Gegner eines Levels als fertige Genome, der besondere Gegner zuerst
 export const levelOpponents = (lv) =>
   [{ ...lv.boss, boss: true }, ...lv.opponents].map((o) => ({ ...normalize({ ...o, name: GERMS[o.germ].name }), germ: o.germ, boss: !!o.boss }));

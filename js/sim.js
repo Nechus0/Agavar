@@ -399,14 +399,14 @@ export class Simulation {
         // Sonne: trocknet aus, Schatten schützt, Schleim auch
         if (light) {
           lightHere = light[i];
-          energy[i] -= lightHere * 0.5 * (slimy || this.shield[i] ? 0.35 : 1);
+          energy[i] -= lightHere * 0.6 * (slimy ? 0.35 : this.shield[i] ? 0.7 : 1);
         }
         // Salz: zieht Wasser aus der Zelle
-        if (salt && salt[i] > 0.02) energy[i] -= salt[i] * 0.9;
+        if (salt && salt[i] > 0.02) energy[i] -= salt[i] * (slimy ? 1.2 : 2);
         // Antibiotikum: tötet im Hemmhof, Kapsel und Biofilm halten länger durch
         if (abx && abx[i] > 0.02) {
           let k = abx[i] * 0.06;
-          if (this.shield[i]) k *= 0.3;
+          if (this.shield[i]) k *= 0.6;
           if (slimy) k *= 0.25;
           if (rng() < k) { this._kill(i, 'env', 0, 'abx'); continue; }
         }
@@ -586,8 +586,8 @@ export class Simulation {
           this.salt = this.salt || new Float32Array(size);
           for (let k = 0; k < (e.count || 5); k++) {
             const rr = R * (0.03 + rng() * 0.02);
-            const [x0, y0] = freeSpot(0.15, 0.85, rr * 3.5 + 6);
-            const zone = rr * 3.4;
+            const [x0, y0] = freeSpot(0.15, 0.85, rr * 5 + 6);
+            const zone = rr * 5;
             for (let y = Math.floor(y0 - zone); y <= y0 + zone; y++) for (let x = Math.floor(x0 - zone); x <= x0 + zone; x++) {
               if (x < 0 || y < 0 || x >= N || y >= N) continue;
               const i = y * N + x, d = Math.hypot(x - x0, y - y0);
