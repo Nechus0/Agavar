@@ -451,7 +451,7 @@ function openEditor(b, ctx) {
   colony.sim = null;
   const coach = $('#ed-coach');
   coach.hidden = !!b;
-  coach.textContent = 'Your bacterium for this world: pick a movement, spend your points on traits, then save.';
+  coach.textContent = 'Your bacterium for this world: spend your points on traits, pick a movement, then save.';
   go('editor');
   renderEditor();
 }
@@ -727,7 +727,7 @@ function renderEditor() {
       el('div', { class: 'pips', 'aria-hidden': 'true' }, Array.from({ length: TRAIT_MAX }, (_, k) => el('i', { class: `${k < v ? 'on' : ''} ${k >= 4 ? (k >= 7 ? 'c3' : 'c2') : ''}` }))),
       el('span', { class: 'trait-effect' }, traitEffect(t.key, v)));
   }));
-  fill($('#ed-free'), ...FREE.map(freeRow), el('div', { class: 'stat-strip', id: 'ed-energy' }));
+  fill($('#ed-free'), ...FREE.map(freeRow));
   renderEnergy(energyProfile(normalize(ed)));
   renderBudget();
   colony.restart();
@@ -741,8 +741,8 @@ function renderBudget() {
   const over = c > budget;
   $('#ed-budget').classList.toggle('over', over);
   const left = $('#ed-left');
-  left.className = `small ${over ? 'over' : c < budget ? 'left' : 'muted'}`;
-  left.textContent = over ? `${c - budget} too many – take some away` : c < budget ? `${budget - c} ${budget - c === 1 ? 'point' : 'points'} left to spend` : 'All points spent';
+  left.className = `points-left ${over ? 'over' : c < budget ? 'left' : 'done'}`;
+  left.textContent = over ? `${c - budget} too many` : c < budget ? `${budget - c} left` : 'all spent';
 }
 
 $('#ed-move-row').addEventListener('click', moveSheet);
@@ -770,11 +770,11 @@ function fmtDuration(rounds) {
 }
 function renderEnergy(ep) {
   const net = perHour(ep.intake - ep.cost);
-  const stat = (value, label, bad = false) => el('div', { class: 'stat' }, el('b', { class: bad ? 'bad' : '' }, value), el('small', {}, label));
+  const row = (label, value, bad = false) => [el('dt', {}, label), el('dd', { class: bad ? 'bad' : '' }, value)];
   fill($('#ed-energy'),
-    stat(`${net >= 0 ? '+' : ''}${net}/h`, 'energy', net < 0),
-    stat(fmtDuration(ep.roundsToDivide), 'to divide'),
-    stat(fmtDuration(Math.min(ep.roundsWithoutFood, ep.maxAge)), 'without food'));
+    ...row('Energy', `${net >= 0 ? '+' : ''}${net} per hour`, net < 0),
+    ...row('Divides', `every ${fmtDuration(ep.roundsToDivide)}`),
+    ...row('Without food', `lasts ${fmtDuration(Math.min(ep.roundsWithoutFood, ep.maxAge))}`));
 }
 
 // ---------- Simulation ----------
