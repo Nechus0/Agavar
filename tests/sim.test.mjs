@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Simulation } from '../js/sim.js';
+import { Simulation, phenotype } from '../js/sim.js';
 import { defaultGenome, randomGenome, cost, normalize, maxCost, parseStep } from '../js/genome.js';
 import { LEVELS, levelOpponents } from '../js/levels.js';
 import { GERMS, germSvg } from '../js/germs.js';
@@ -274,4 +274,18 @@ test('Antibiotika-Plättchen und Immunzellen töten Zellen', () => {
   assert.ok(disc.players[0].died.env > 0);
   const imm = new Simulation({ ...opts([g], 2), elements: [{ type: 'immune', at: 100 }] }).run(800);
   assert.ok(imm.players[0].died.env > 0);
+});
+
+test('Unterhalt: mehr Ausbau und Fähigkeiten kosten mehr Grundenergie', () => {
+  const lean = phenotype({ ...defaultGenome(), speed: 2, efficiency: 2 });
+  const big = phenotype({ ...defaultGenome(), speed: 8, efficiency: 8, attack: 8, defense: 8, special: 'capsule' });
+  assert.ok(big.basal > lean.basal + 0.15);
+});
+
+test('Gegenspieler: Kapsel schützt nicht vor Antibiotika, ruhender Biofilm schon', () => {
+  const base = { ...defaultGenome(), efficiency: 6, lifespan: 4, program: ['P'] };
+  const run = (special) => new Simulation({ ...opts([{ ...base, special }, { ...base, color: '#cc5252' }], 5), elements: [{ type: 'disc', at: 0, halo: 0.75 }] }).run(600).players[0].env.abx;
+  const capsule = run('capsule'), biofilm = run('biofilm');
+  assert.ok(capsule > 0);
+  assert.ok(biofilm < capsule * 0.6, `biofilm ${biofilm} vs capsule ${capsule}`);
 });

@@ -58,15 +58,25 @@ function expandProgram(program) {
   return out.length ? out : [4];
 }
 
+// Unterhalt: jede Ausbaustufe und jede Fähigkeit kostet die Zelle Energie in jeder Runde.
+// Ein „Super-Bakterium“ mit allem lohnt sich darum nur, wo es viel Futter gibt – bei Knappheit gewinnt das schlanke.
+export const UPKEEP_PER_LEVEL = 0.006;
+export const UPKEEP_SPECIAL = { none: 0, capsule: 0.05, biofilm: 0.03, toxin: 0.05, predator: 0.03, photo: 0, spores: 0.02 };
+export function upkeepOf(g) {
+  const levels = ['speed', 'lifespan', 'efficiency', 'chemotaxis', 'attack', 'defense'].reduce((a, k) => a + (Number(g[k]) || 0), 0);
+  return levels * UPKEEP_PER_LEVEL + (UPKEEP_SPECIAL[g.special] || 0) + (g.bonusSpecial ? UPKEEP_SPECIAL[g.bonusSpecial] || 0 : 0);
+}
+
 export function phenotype(g) {
   const sp = new Set([g.special, g.bonusSpecial]);
   return {
     program: expandProgram(g.program),
-    moveChance: level(T.moveChance, g.speed),
+    // eine dicke Kapsel macht die Zelle schwerfälliger
+    moveChance: level(T.moveChance, g.speed) * (sp.has('capsule') ? 0.85 : 1),
     maxAge: Math.round(level(T.maxAge, g.lifespan)),
     efficiency: level(T.efficiency, g.efficiency),
     uptake: between(T.uptake, g.metabolism),
-    basal: between(T.basal, g.metabolism),
+    basal: between(T.basal, g.metabolism) + upkeepOf(g),
     divideAt: between(T.divideAt, g.division),
     attack: g.attack / 2,
     defense: g.defense / 2,
@@ -304,11 +314,12 @@ export class Simulation {
     return this.inPlate[j] && !(this.wall && this.wall[j]) ? j : -1;
   }
 
-  _defense(j) {
+  // Abwehr einer Zelle; Räuber fressen sich durch Schleimschichten (Biofilm hilft gegen sie nur wenig)
+  _defense(j, attacker) {
     const q = this.players[this.owner[j] - 1].ph;
     let d = q.defense + this.energy[j] / 50;
     if (this.spore[j]) d = q.defense + 3; // Sporenhülle
-    else if (q.biofilm && this.still[j] >= 2) d += 3.5; // Schleimschicht
+    else if (q.biofilm && this.still[j] >= 2) d += attacker && attacker.predator ? 1.2 : 3.5; // Schleimschicht
     return d;
   }
 
@@ -404,10 +415,10 @@ export class Simulation {
         // Salz: zieht Wasser aus der Zelle
         if (salt && salt[i] > 0.02) energy[i] -= salt[i] * (slimy ? 1.2 : 2);
         // Antibiotikum: tötet im Hemmhof, Kapsel und Biofilm halten länger durch
+        // Antibiotikum: Kapseln helfen nicht, nur ein ruhender Biofilm schützt
         if (abx && abx[i] > 0.02) {
-          let k = abx[i] * 0.06;
-          if (this.shield[i]) k *= 0.6;
-          if (slimy) k *= 0.25;
+          let k = abx[i] * 0.09;
+          if (slimy) k *= 0.2;
           if (rng() < k) { this._kill(i, 'env', 0, 'abx'); continue; }
         }
       }
@@ -432,9 +443,15 @@ export class Simulation {
       // Toxine: schwächen eine zufällige gegnerische Nachbarzelle (sichtbar als Wolke).
       if (ph.toxin && rng() < 0.35) {
         const j = this._neighbor(i, rng.int(8));
-        if (j >= 0) fog[j] = 8;
+        if (j >= 0) {
+          // sichtbare Giftwolke um die getroffene Stelle
+          fog[j] = 16;
+          for (let dd = 0; dd < 8; dd += 2) { const k2 = this._neighbor(j, dd); if (k2 >= 0 && fog[k2] < 9) fog[k2] = 9; }
+        }
         if (j >= 0 && owner[j] && owner[j] !== o && !this.spore[j]) {
-          energy[j] -= 9;
+          // Gift dringt durch Kapseln, aber Biofilm-Matten halten es zur Hälfte ab
+          const q = this.players[owner[j] - 1].ph;
+          energy[j] -= q.biofilm && this.still[j] >= 2 ? 4.5 : 9;
           energy[i] -= 0.3;
           if (this.contactTick < 0) this.contactTick = tick;
           if (energy[j] <= 0) { this._kill(j, 'toxin', o); p.kills++; }
@@ -483,7 +500,7 @@ export class Simulation {
             // Kampf
             if (this.contactTick < 0) this.contactTick = tick;
             const atk = ph.attack + (ph.predator ? 1 : 0) + rng() * 3;
-            const def = this._defense(j) + rng() * 3;
+            const def = this._defense(j, ph) + rng() * 3;
             if (atk > def + 0.5 && this.shield[j]) {
               this.shield[j] = 0; // Kapsel fängt den Angriff ab
               energy[i] -= 3;
@@ -512,7 +529,7 @@ export class Simulation {
       }
 
       // Teilung – nicht im Hemmhof: dort hält das Antibiotikum das Wachstum an, der Ring bleibt klar
-      if (energy[cur] >= ph.divideAt && !(abx && abx[cur] > 0.2)) {
+      if (energy[cur] >= ph.divideAt && !(abx && abx[cur] > 0.2) && !(salt && salt[cur] > 0.35)) {
         const start = rng.int(8);
         const first = this.dir[cur];
         let target = -1, td = 0;

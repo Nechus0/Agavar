@@ -8,7 +8,7 @@ export function hexToRgb(hex) {
 // Farbverlauf für den Nährboden: leergefressen (dunkel) bis satt (helles Agar-Gelb).
 const AGAR_LO = [48, 30, 14];
 const AGAR_HI = [192, 153, 60];
-const TOXIN = [190, 255, 60]; // giftgrüne Wolke
+const TOXIN = [168, 236, 52]; // giftgrüne Wolke
 const BITE = [255, 40, 60]; // rote Fraßspur
 // food colour table for a world theme ({ lo, hi } as RGB); default is classic agar
 function foodPalette(theme) {
@@ -26,10 +26,16 @@ export class PlateRenderer {
     this.canvas = canvas;
     this.food = foodPalette(theme);
     this.sim = sim;
-    canvas.width = sim.N;
-    canvas.height = sim.N;
+    // Weiche Darstellung: Agar, Zellen und Giftwolken werden je in ein kleines Raster gezeichnet
+    // (eine Zelle = ein Pixel) und dann geglättet hochskaliert – die Kolonien wirken fließend statt kantig.
+    // Die Simulation selbst bleibt unverändert.
+    const S = this.scale = Math.max(2, Math.ceil(720 / sim.N));
+    canvas.width = sim.N * S;
+    canvas.height = sim.N * S;
     this.ctx = canvas.getContext('2d');
-    this.img = this.ctx.createImageData(sim.N, sim.N);
+    const layer = () => { const c = document.createElement('canvas'); c.width = sim.N; c.height = sim.N; const x = c.getContext('2d'); return { c, x, img: x.createImageData(sim.N, sim.N) }; };
+    this.agar = layer(); this.cells = layer(); this.haze = layer();
+    this.img = this.agar.img;
     this.colors = sim.players.map((p) => hexToRgb(p.genome.color));
     // Smooth edge: pixels just outside the round plate borrow the food colour of the
     // nearest plate pixel, and CSS (border-radius: 50%) then cuts a clean circle.
@@ -96,11 +102,13 @@ export class PlateRenderer {
   }
 
   draw() {
-    const { sim, img, colors, food } = this;
-    const d = img.data;
+    const { sim, colors, food } = this;
+    const d = this.agar.img.data, cd = this.cells.img.data, hd = this.haze.img.data;
+    cd.fill(0); hd.fill(0);
     const { owner, energy, nutrient, inPlate, spore, still, fog, bite, shield, N } = sim;
     const biofilm = sim.players.map((p) => p.ph.biofilm);
     const photo = sim.players.map((p) => p.ph.photo);
+    const toxic = sim.players.map((p) => p.ph.toxin);
     const tick = sim.tick;
     const size = owner.length;
     const env = this.env, wall = sim.wall, abx = sim.abx, inf = sim.infected, lysis = sim.lysis;
@@ -113,54 +121,63 @@ export class PlateRenderer {
         continue;
       }
       if (wall && wall[i]) { this._wallColor(i, wall[i], tick, d, k); d[k + 3] = 255; continue; }
-      const o = owner[i];
-      if (o) {
-        const col = colors[o - 1];
-        if (inf && inf[i]) {
-          // von Phagen befallen: Zelle wird blass, kurz vor dem Platzen fast weiß
-          const t = 0.35 + inf[i] * 0.07;
-          d[k] = col[0] + (235 - col[0]) * t; d[k + 1] = col[1] + (235 - col[1]) * t; d[k + 2] = col[2] + (235 - col[2]) * t;
-        } else if (spore[i]) {
-          // Sporen: helle, fast weiße Punkte
-          d[k] = 150 + col[0] * 0.4; d[k + 1] = 150 + col[1] * 0.4; d[k + 2] = 150 + col[2] * 0.4;
-        } else if (biofilm[o - 1] && still[i] >= 2) {
-          // Biofilm: dunklere, gemusterte Matte
-          const f = ((i % N) + ((i / N) | 0)) & 1 ? 0.45 : 0.62;
-          d[k] = col[0] * f; d[k + 1] = col[1] * f; d[k + 2] = col[2] * f;
-        } else {
-          let f = 0.62 + 0.38 * Math.min(1, energy[i] / 70);
-          // Photosynthese: Zellen schimmern
-          if (photo[o - 1] && ((i * 7 + (tick >> 2)) % 5 === 0)) f = 1.25;
-          d[k] = Math.min(255, col[0] * f); d[k + 1] = Math.min(255, col[1] * f); d[k + 2] = Math.min(255, col[2] * f);
-          // Kapsel: heller Schleimrand
-          if (shield[i]) { d[k] += (255 - d[k]) * 0.3; d[k + 1] += (255 - d[k + 1]) * 0.3; d[k + 2] += (255 - d[k + 2]) * 0.3; }
+      // Nährboden (auch unter den Zellen, damit die geglätteten Ränder auf Agar auslaufen)
+      const v = Math.min(100, nutrient[i] | 0) * 3;
+      let r = food[v], g = food[v + 1], b = food[v + 2];
+      if (bite[i]) { const t = bite[i] / 14; r += (BITE[0] - r) * t; g += (BITE[1] - g) * t; b += (BITE[2] - b) * t; }
+      if (env) {
+        const m = env.mul[i], a3 = i * 3;
+        r = r * m + env.add[a3]; g = g * m + env.add[a3 + 1]; b = b * m + env.add[a3 + 2];
+        // Strömung: feine helle Streifen, die mitwandern
+        if (env.lane && env.lane[i] && ((env.along[i] - tick * 0.25) % 18 + 18) % 18 < 3) { r += (255 - r) * 0.16; g += (255 - g) * 0.16; b += (255 - b) * 0.16; }
+        // Hemmhof: klare, kühle Zone mit hellem Rand
+        if (abx && abx[i] > 0.01) {
+          const c = abx[i];
+          const w = c < 0.16 ? 0.55 : 0.32 * c;
+          r += (206 - r) * w; g += (222 - g) * w; b += (220 - b) * w;
         }
-        if (fog[i]) { const t = fog[i] / 20; d[k] += (TOXIN[0] - d[k]) * t; d[k + 1] += (TOXIN[1] - d[k + 1]) * t; d[k + 2] += (TOXIN[2] - d[k + 2]) * t; }
-        if (env && env.cmul[i] !== 1) { const m = env.cmul[i]; d[k] *= m; d[k + 1] *= m; d[k + 2] *= m; }
-      } else {
-        const v = Math.min(100, nutrient[i] | 0) * 3;
-        let r = food[v], g = food[v + 1], b = food[v + 2];
-        if (fog[i]) { const t = fog[i] / 12; r += (TOXIN[0] - r) * t; g += (TOXIN[1] - g) * t; b += (TOXIN[2] - b) * t; }
-        if (bite[i]) { const t = bite[i] / 14; r += (BITE[0] - r) * t; g += (BITE[1] - g) * t; b += (BITE[2] - b) * t; }
-        if (env) {
-          const m = env.mul[i], a3 = i * 3;
-          r = r * m + env.add[a3]; g = g * m + env.add[a3 + 1]; b = b * m + env.add[a3 + 2];
-          // Strömung: feine helle Streifen, die mitwandern
-          if (env.lane && env.lane[i] && ((env.along[i] - tick * 0.25) % 18 + 18) % 18 < 3) { r += (255 - r) * 0.16; g += (255 - g) * 0.16; b += (255 - b) * 0.16; }
-          // Hemmhof: klare, kühle Zone mit hellem Rand
-          if (abx && abx[i] > 0.01) {
-            const c = abx[i];
-            const w = c < 0.16 ? 0.5 : 0.3 * c;
-            r += (206 - r) * w; g += (222 - g) * w; b += (220 - b) * w;
-          }
-          if (lysis && lysis[i]) { const t = lysis[i] / 22; r += (240 - r) * t; g += (240 - g) * t; b += (230 - b) * t; }
-        }
-        d[k] = r; d[k + 1] = g; d[k + 2] = b;
+        if (lysis && lysis[i]) { const t = lysis[i] / 22; r += (240 - r) * t; g += (240 - g) * t; b += (230 - b) * t; }
       }
-      d[k + 3] = 255;
+      d[k] = r; d[k + 1] = g; d[k + 2] = b; d[k + 3] = 255;
+      // Giftwolke als eigene, weich überblendete Schicht
+      if (fog[i]) { hd[k] = TOXIN[0]; hd[k + 1] = TOXIN[1]; hd[k + 2] = TOXIN[2]; hd[k + 3] = Math.min(180, fog[i] * 10); }
+      const o = owner[i];
+      if (!o) continue;
+      const col = colors[o - 1];
+      let cr, cg, cb;
+      if (inf && inf[i]) {
+        // von Phagen befallen: Zelle wird blass, kurz vor dem Platzen fast weiß
+        const t = 0.35 + inf[i] * 0.07;
+        cr = col[0] + (235 - col[0]) * t; cg = col[1] + (235 - col[1]) * t; cb = col[2] + (235 - col[2]) * t;
+      } else if (spore[i]) {
+        cr = 150 + col[0] * 0.4; cg = 150 + col[1] * 0.4; cb = 150 + col[2] * 0.4;
+      } else if (biofilm[o - 1] && still[i] >= 2) {
+        // Biofilm: dunklere, gemusterte Matte
+        const f = ((i % N) + ((i / N) | 0)) & 1 ? 0.5 : 0.66;
+        cr = col[0] * f; cg = col[1] * f; cb = col[2] * f;
+      } else {
+        let f = 0.7 + 0.35 * Math.min(1, energy[i] / 70);
+        if (photo[o - 1] && ((i * 7 + (tick >> 2)) % 5 === 0)) f = 1.3;
+        cr = Math.min(255, col[0] * f); cg = Math.min(255, col[1] * f); cb = Math.min(255, col[2] * f);
+        if (shield[i]) { cr += (255 - cr) * 0.3; cg += (255 - cg) * 0.3; cb += (255 - cb) * 0.3; }
+      }
+      // Giftbildner: grünlicher Schimmer, damit man sieht, wer die Wolken macht
+      if (toxic[o - 1] && ((i * 13 + (tick >> 3)) % 7 === 0)) { cr += (TOXIN[0] - cr) * 0.5; cg += (TOXIN[1] - cg) * 0.5; cb += (TOXIN[2] - cb) * 0.5; }
+      if (env && env.cmul[i] !== 1) { const m = env.cmul[i]; cr *= m; cg *= m; cb *= m; }
+      cd[k] = cr; cd[k + 1] = cg; cd[k + 2] = cb; cd[k + 3] = 255;
     }
-    this.ctx.putImageData(img, 0, 0);
-    if (sim.envOn) this._overlay();
+    this.agar.x.putImageData(this.agar.img, 0, 0);
+    this.cells.x.putImageData(this.cells.img, 0, 0);
+    this.haze.x.putImageData(this.haze.img, 0, 0);
+    const ctx = this.ctx, W = this.canvas.width;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.clearRect(0, 0, W, W);
+    ctx.drawImage(this.agar.c, 0, 0, W, W);
+    ctx.drawImage(this.cells.c, 0, 0, W, W);
+    ctx.drawImage(this.haze.c, 0, 0, W, W);
+    if (sim.envOn) { ctx.setTransform(this.scale, 0, 0, this.scale, 0, 0); this._overlay(); ctx.setTransform(1, 0, 0, 1, 0, 0); }
   }
 
   // bewegte Elemente über dem Raster: Honig-Ankündigung, Tropfen-Welle, Immunzellen

@@ -3,7 +3,7 @@ import {
   COSTED, FREE, SPECIALS, SPECIAL_KEYS, PALETTE, TRAIT_MAX, SLOT2_COST, stepCost,
   defaultGenome, cost, normalize, randomGenome, specialsOf,
 } from './genome.js';
-import { Simulation, DISTRIBUTIONS, MAX_TICKS, energyProfile, phenotype, ROUNDS_PER_HOUR, between, FREE_TABLES } from './sim.js';
+import { Simulation, DISTRIBUTIONS, MAX_TICKS, energyProfile, phenotype, ROUNDS_PER_HOUR, between, FREE_TABLES, upkeepOf } from './sim.js';
 import { PlateRenderer, drawHistory, GrowthAnimator } from './render.js';
 import { makeRng, randomSeed } from './rng.js';
 import { randomName } from './names.js';
@@ -594,6 +594,15 @@ const SPECIAL_SHORT = {
   predator: 'Eats the enemies it kills and gains a lot of energy.',
   toxin: 'A poison cloud weakens enemy neighbours.',
 };
+// Stärken und Schwächen: es gibt keine Fähigkeit, die gegen alles hilft
+const SPECIAL_MATCH = {
+  spores: ['Survives hunger and old age', 'Sleeping spores do not grow or fight'],
+  capsule: ['Blocks one hit, phages and immune cells', 'Toxins and antibiotics go straight through · slower'],
+  photo: ['Energy without food, in the light', 'Little help in the shade'],
+  biofilm: ['Resting cells resist attacks, toxins, antibiotics, salt and currents', 'No protection while moving · predators bite through'],
+  predator: ['Feeds on the enemies it kills', 'Tough defenses and capsules stop it'],
+  toxin: ['Poisons crowds of enemies, even through capsules', 'Biofilm halves it · costs energy'],
+};
 const unlockText = (k) => { const lvl = unlockLevelOf('special', k); return lvl > LEVELS.length ? `World ${worldOfLevel(lvl).n}` : `Level ${lvl}`; };
 
 function abilitySheet(slot) {
@@ -621,6 +630,7 @@ function abilitySheet(slot) {
       },
       el('span', { class: 'sp-ico' }, specialIcon(k, 'md')),
       el('span', { class: 'main' }, el('b', {}, k === 'none' ? (slot === 2 ? 'Empty slot' : 'None') : sp.name), el('small', {}, SPECIAL_SHORT[k]),
+        SPECIAL_MATCH[k] ? el('small', { class: 'match' }, el('span', { class: 'pro' }, '+ ', SPECIAL_MATCH[k][0]), el('span', { class: 'con' }, '− ', SPECIAL_MATCH[k][1])) : null,
         open ? null : el('small', {}, ui('lock', 'xs'), ` ${unlockText(k)}`)),
       el('span', { class: 'cost' }, k === 'none' ? '0' : `${sp.cost + (slot === 2 ? SLOT2_COST : 0)} pts`));
     })));
@@ -774,6 +784,7 @@ function renderEnergy(ep) {
   const row = (label, value, bad = false) => [el('dt', {}, label), el('dd', { class: bad ? 'bad' : '' }, value)];
   fill($('#ed-energy'),
     ...row('Energy', `${net >= 0 ? '+' : ''}${net} per hour`, net < 0),
+    ...row('Upkeep', `${perHour(upkeepOf(normalize(ed)))} per hour`),
     ...row('Divides', `every ${fmtDuration(ep.roundsToDivide)}`),
     ...row('Without food', `lasts ${fmtDuration(Math.min(ep.roundsWithoutFood, ep.maxAge))}`));
 }
@@ -1094,7 +1105,7 @@ function showResult() {
   // Details
   renderSummary(sim, mask);
   const rc = $('#rs-plate');
-  rc.width = sim.N; rc.height = sim.N;
+  const pc = $('#plate'); rc.width = pc.width; rc.height = pc.height;
   rc.getContext('2d').drawImage($('#plate'), 0, 0);
   $('#rs-plate-note').textContent = `At ${fmtHours(h)} · dark agar = food eaten up`;
   drawHistory($('#rs-chart'), sim.history, run.genomes.map((g) => g.color));
