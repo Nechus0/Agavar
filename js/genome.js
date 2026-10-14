@@ -64,17 +64,19 @@ export const SPECIAL_KEYS = Object.keys(SPECIALS);
 
 // Kulturfarben des Design-Systems, jede mit eigenem Symbol (Farbe ist nie das einzige Merkmal).
 export const PALETTE = [
-  '#38a0b4', '#cc5252', '#cc8040', '#c0a030',
-  '#52a83e', '#5858c4', '#a040a0', '#c04878',
+  '#38C8FF', '#FF5A6E', '#FF9A3D', '#FFD23F',
+  '#2EF2B4', '#6E7BFF', '#C46BFF', '#FF6BC1',
 ];
 export const CULTURE_SYMBOLS = {
-  '#cc5252': '●', '#cc8040': '▲', '#c0a030': '■', '#52a83e': '◆',
-  '#38a0b4': '+', '#5858c4': '⬡', '#a040a0': '★', '#c04878': '‹',
+  '#FF5A6E': '●', '#FF9A3D': '▲', '#FFD23F': '■', '#2EF2B4': '◆',
+  '#38C8FF': '+', '#6E7BFF': '⬡', '#C46BFF': '★', '#FF6BC1': '‹',
 };
-// alte, grellere Farben früherer Versionen auf die Kulturfarben abbilden
+// ältere Farben früherer Versionen (grelle Erstfarben und die „Lab at night“-Kulturfarben) auf die neuen abbilden
 export const OLD_COLORS = {
-  '#3fa9f5': '#38a0b4', '#ff5d5d': '#cc5252', '#5ee06a': '#52a83e', '#ffd23f': '#c0a030',
-  '#c77dff': '#a040a0', '#ff9f43': '#cc8040', '#2ee6d6': '#5858c4', '#ff6ec7': '#c04878',
+  '#3fa9f5': '#38C8FF', '#ff5d5d': '#FF5A6E', '#5ee06a': '#2EF2B4', '#ffd23f': '#FFD23F',
+  '#c77dff': '#C46BFF', '#ff9f43': '#FF9A3D', '#2ee6d6': '#6E7BFF', '#ff6ec7': '#FF6BC1',
+  '#cc5252': '#FF5A6E', '#cc8040': '#FF9A3D', '#c0a030': '#FFD23F', '#52a83e': '#2EF2B4',
+  '#38a0b4': '#38C8FF', '#5858c4': '#6E7BFF', '#a040a0': '#C46BFF', '#c04878': '#FF6BC1',
 };
 export const symbolOf = (color) => CULTURE_SYMBOLS[color] || '●';
 
@@ -120,7 +122,7 @@ export function normalize(raw) {
   const g = { ...defaultGenome(), name: 'Bacterium' };
   if (!raw || typeof raw !== 'object') return g;
   if (typeof raw.name === 'string' && raw.name.trim()) g.name = raw.name.trim().slice(0, 32);
-  if (typeof raw.color === 'string' && /^#[0-9a-fA-F]{6}$/.test(raw.color)) g.color = OLD_COLORS[raw.color.toLowerCase()] || raw.color.toLowerCase();
+  if (typeof raw.color === 'string' && /^#[0-9a-fA-F]{6}$/.test(raw.color)) g.color = OLD_COLORS[raw.color.toLowerCase()] || PALETTE.find((c) => c.toLowerCase() === raw.color.toLowerCase()) || raw.color;
   if (Array.isArray(raw.program)) {
     const p = raw.program.map(parseStep).filter(Boolean).slice(0, MAX_PROGRAM).map((x) => stepEntry(x.s, x.n));
     g.program = p.length ? p : ['P'];

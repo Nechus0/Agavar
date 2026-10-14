@@ -60,7 +60,7 @@ function germPic(germ, color, cls = '') {
 }
 // Kulturfarbe immer zusammen mit ihrem Symbol (Farbe ist nie das einzige Merkmal)
 const culture = (color, cls = '') => el('span', { class: `culture ${cls}`, style: `background:${color}`, 'aria-hidden': 'true' });
-const COLOR_NAMES = { '#38a0b4': 'Teal', '#cc5252': 'Red', '#cc8040': 'Orange', '#c0a030': 'Amber', '#52a83e': 'Green', '#5858c4': 'Indigo', '#a040a0': 'Purple', '#c04878': 'Rose' };
+const COLOR_NAMES = { '#38C8FF': 'Cyan', '#FF5A6E': 'Coral', '#FF9A3D': 'Orange', '#FFD23F': 'Yellow', '#2EF2B4': 'Mint', '#6E7BFF': 'Indigo', '#C46BFF': 'Violet', '#FF6BC1': 'Pink' };
 const specialIcon = (key, cls = '') => icon(SPECIAL_ICONS[key], cls);
 
 // feste Symbole im HTML (data-icon) einsetzen
@@ -954,7 +954,7 @@ function updateSimUi() {
   sim.players.forEach((p, i) => {
     const pc = (p.count / total) * 100;
     bars[i].style.width = `${pc}%`;
-    rows[i].querySelector('.n').textContent = `${Math.round(pc)} %`;
+    rows[i].querySelector('.n').textContent = `${Math.round(pc)}%`;
     rows[i].classList.toggle('dead', p.count === 0);
   });
   const frac = Math.min(1, sim.tick / MAX_TICKS);

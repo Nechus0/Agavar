@@ -6,9 +6,9 @@ export function hexToRgb(hex) {
 }
 
 // Farbverlauf für den Nährboden: leergefressen (dunkel) bis satt (helles Agar-Gelb).
-const AGAR_LO = [48, 30, 14];
-const AGAR_HI = [192, 153, 60];
-const TOXIN = [168, 236, 52]; // giftgrüne Wolke
+const AGAR_LO = [52, 24, 6];
+const AGAR_HI = [245, 176, 74];
+const TOXIN = [255, 90, 110]; // Giftwolke: pulsierendes Korallenrot
 const BITE = [255, 40, 60]; // rote Fraßspur
 // food colour table for a world theme ({ lo, hi } as RGB); default is classic agar
 function foodPalette(theme) {
@@ -29,10 +29,9 @@ export class PlateRenderer {
     // Weiche Darstellung: Agar, Zellen und Giftwolken werden je in ein kleines Raster gezeichnet
     // (eine Zelle = ein Pixel) und dann geglättet hochskaliert – die Kolonien wirken fließend statt kantig.
     // Die Simulation selbst bleibt unverändert.
-    const S = this.scale = Math.max(2, Math.ceil(720 / sim.N));
-    canvas.width = sim.N * S;
-    canvas.height = sim.N * S;
+    // native Auflösung: so viele Bildpunkte wie das Gerät wirklich zeigt (höchstens 2048)
     this.ctx = canvas.getContext('2d');
+    this._fit();
     const layer = () => { const c = document.createElement('canvas'); c.width = sim.N; c.height = sim.N; const x = c.getContext('2d'); return { c, x, img: x.createImageData(sim.N, sim.N) }; };
     this.agar = layer(); this.cells = layer(); this.haze = layer();
     this.img = this.agar.img;
@@ -54,6 +53,42 @@ export class PlateRenderer {
       }
     }
     if (sim.envOn) this._prepareEnv();
+  }
+
+  _fit() {
+    const dpr = (typeof window !== 'undefined' && window.devicePixelRatio) || 1;
+    const css = this.canvas.clientWidth || 0;
+    const px = Math.max(this.sim.N * 2, Math.min(2048, Math.round((css || 360) * dpr)));
+    if (this.canvas.width !== px) { this.canvas.width = px; this.canvas.height = px; }
+    this.scale = px / this.sim.N;
+  }
+
+  // Licht: Leuchten unter den Kolonien, dunkler Rand, Glasglanz und ein heller Lichtbogen auf der Schale
+  _light(ctx, W) {
+    const g = this.glow || (this.glow = (() => { const c = document.createElement('canvas'); c.width = Math.max(8, this.sim.N >> 2); c.height = c.width; return { c, x: c.getContext('2d') }; })());
+    g.x.clearRect(0, 0, g.c.width, g.c.width);
+    g.x.imageSmoothingEnabled = true;
+    g.x.drawImage(this.cells.c, 0, 0, g.c.width, g.c.width);
+    ctx.save();
+    ctx.globalCompositeOperation = 'screen';
+    ctx.globalAlpha = 0.45;
+    ctx.drawImage(g.c, 0, 0, W, W);
+    ctx.restore();
+    const c = W / 2, R = W / 2;
+    let gr = ctx.createRadialGradient(c * 0.9, c * 0.8, R * 0.1, c, c, R);
+    gr.addColorStop(0, 'rgba(255, 230, 174, 0.10)');
+    gr.addColorStop(0.62, 'rgba(0, 0, 0, 0)');
+    gr.addColorStop(1, 'rgba(42, 18, 0, 0.62)');
+    ctx.fillStyle = gr; ctx.fillRect(0, 0, W, W);
+    gr = ctx.createRadialGradient(W * 0.3, W * 0.2, 0, W * 0.3, W * 0.2, W * 0.45);
+    gr.addColorStop(0, 'rgba(255, 255, 255, 0.30)');
+    gr.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    ctx.fillStyle = gr; ctx.fillRect(0, 0, W, W);
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.55)'; ctx.lineWidth = Math.max(2, W * 0.008);
+    ctx.beginPath(); ctx.arc(c, c, R * 0.9, Math.PI * 1.08, Math.PI * 1.36); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)'; ctx.lineWidth = Math.max(1, W / 360);
+    ctx.beginPath(); ctx.arc(c, c, R - ctx.lineWidth, 0, Math.PI * 2); ctx.stroke();
   }
 
   // feste Färbungen der Elemente (Säure, Wärme, Salz, Schatten) einmal vorberechnen:
@@ -112,6 +147,7 @@ export class PlateRenderer {
     const tick = sim.tick;
     const size = owner.length;
     const env = this.env, wall = sim.wall, abx = sim.abx, inf = sim.infected, lysis = sim.lysis;
+    const pulse = 9 + 3 * Math.sin(tick / 7); // Giftwolken pulsieren langsam
     for (let i = 0, k = 0; i < size; i++, k += 4) {
       if (!inPlate[i]) {
         const j = this.edge[i];
@@ -140,7 +176,7 @@ export class PlateRenderer {
       }
       d[k] = r; d[k + 1] = g; d[k + 2] = b; d[k + 3] = 255;
       // Giftwolke als eigene, weich überblendete Schicht
-      if (fog[i]) { hd[k] = TOXIN[0]; hd[k + 1] = TOXIN[1]; hd[k + 2] = TOXIN[2]; hd[k + 3] = Math.min(180, fog[i] * 10); }
+      if (fog[i]) { hd[k] = TOXIN[0]; hd[k + 1] = TOXIN[1]; hd[k + 2] = TOXIN[2]; hd[k + 3] = Math.min(190, fog[i] * pulse); }
       const o = owner[i];
       if (!o) continue;
       const col = colors[o - 1];
@@ -169,6 +205,7 @@ export class PlateRenderer {
     this.agar.x.putImageData(this.agar.img, 0, 0);
     this.cells.x.putImageData(this.cells.img, 0, 0);
     this.haze.x.putImageData(this.haze.img, 0, 0);
+    if (Math.abs((this.canvas.clientWidth || 0) * ((typeof window !== 'undefined' && window.devicePixelRatio) || 1) - this.canvas.width) > 64) this._fit();
     const ctx = this.ctx, W = this.canvas.width;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.imageSmoothingEnabled = true;
@@ -177,6 +214,7 @@ export class PlateRenderer {
     ctx.drawImage(this.agar.c, 0, 0, W, W);
     ctx.drawImage(this.cells.c, 0, 0, W, W);
     ctx.drawImage(this.haze.c, 0, 0, W, W);
+    this._light(ctx, W);
     if (sim.envOn) { ctx.setTransform(this.scale, 0, 0, this.scale, 0, 0); this._overlay(); ctx.setTransform(1, 0, 0, 1, 0, 0); }
   }
 
