@@ -207,16 +207,17 @@ export const LEVELS = [
   },
 ];
 
-// Ab Level 11 hat der Spieler deutlich mehr Punkte (auch durch Sterne): die Gegner wachsen mit,
-// je Level etwas stärker (+1 bzw. +2 auf Tempo, Leben, Verwertung, Angriff und Abwehr; geprüft mit tools/levels-check.mjs).
+// Stärke der Gegner je Level (+n auf Tempo, Leben, Verwertung, Angriff und Abwehr). Der Spieler bringt
+// durch Sterne zusätzliche Punkte mit; die Werte sind mit tools/tune-levels.mjs so gewählt, dass ein
+// gleichmäßig verteiltes „faules“ Bakterium meist verliert, ein durchdachtes aber gewinnt.
+export const LEVEL_POWER = [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 2, 2, 2, 1];
 const TRAITS5 = ['speed', 'lifespan', 'efficiency', 'attack', 'defense'];
+const powerOverride = typeof process !== 'undefined' && process.env && process.env.POWER_LEVEL ? [Number(process.env.POWER_LEVEL), Number(process.env.POWER)] : null;
 LEVELS.forEach((lv, i) => {
-  if (i < 10) return;
-  const bump = [1, 2, 1, 1, 1, 1, 2, 2, 2, 1][i - 10] || 0;
+  const bump = powerOverride && powerOverride[0] === i + 1 ? powerOverride[1] : LEVEL_POWER[i] || 0;
   for (const o of [lv.boss, ...lv.opponents]) for (const k of TRAITS5) o[k] = Math.min(10, o[k] + bump);
 });
 
-// alle Gegner eines Levels als fertige Genome, der besondere Gegner zuerst
 // Anpassungsfähige Gegner (lv.adapts): der besondere Gegner bringt ein Gegenmittel zu deiner Fähigkeit mit.
 // Kapsel -> Gift (geht durch), Biofilm -> Räuber (frisst sich durch), Gift -> Biofilm (hält es ab), keine -> Kapsel.
 export const ADAPT_COUNTER = { capsule: 'toxin', biofilm: 'predator', toxin: 'biofilm', predator: 'capsule', spores: 'toxin', photo: 'toxin', none: 'capsule' };
