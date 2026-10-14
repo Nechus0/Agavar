@@ -686,3 +686,30 @@ body.has-resume .sticky-cta { bottom: calc(112px + env(safe-area-inset-bottom));
 .death-legend span { display: inline-flex; align-items: center; gap: 6px; }
 .death-legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
 .death-legend b { color: var(--text-primary); font-weight: 600; }
+
+/* Simulation: everything on one screen, no scrolling; scoreboard on top, plate takes the rest */
+body.sim-open { overflow: hidden; }
+body.sim-open #app { min-height: 0; padding-bottom: 0; }
+#sim:not([hidden]) {
+  height: calc(100dvh - env(safe-area-inset-top) - var(--space-4) - env(safe-area-inset-bottom) - 80px);
+  gap: var(--space-3); overflow: hidden;
+}
+#sim .progress { margin-top: 0; flex: none; }
+#sim .shares { flex: none; }
+.scoreboard { display: grid; gap: var(--space-2); flex: none; }
+.legend-row.score { flex-direction: column; align-items: flex-start; gap: 0; background: var(--bg-surface); border-radius: var(--radius-md); padding: var(--space-2) var(--space-3); min-width: 0; color: var(--text-primary); }
+.legend-row.score .n { font-family: var(--mono); font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.score-name { display: flex; align-items: center; gap: 5px; min-width: 0; width: 100%; font-size: 12px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; }
+.score-name > span:not(.culture) { overflow: hidden; text-overflow: ellipsis; font-style: italic; }
+.score-name .ico { flex: none; }
+.legend-row.score.dead { opacity: .4; text-decoration: line-through; }
+.sim-plate-box { flex: 1 1 auto; min-height: 0; display: flex; align-items: center; justify-content: center; container-type: size; }
+.sim-plate-box .sim-ring { width: min(100cqw, 100cqh); height: min(100cqw, 100cqh); max-width: none; }
+.sim-plate-box .sim-ring .plate { width: 100%; height: 100%; }
+.sim-elements { display: flex; justify-content: center; flex-wrap: wrap; gap: var(--space-2); flex: none; margin-top: calc(-1 * var(--space-1)); }
+.el-chip { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text-secondary); }
+.el-chip .ico { color: var(--plate-full); }
+#sim .banner-slot { min-height: 32px; margin-top: 0; flex: none; }
+#sim .goal-row, #sim .speed { flex: none; }
+#sim .goal-chip { padding: 6px; }
+#sim .speed button { min-height: 40px; }

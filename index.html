@@ -81,7 +81,9 @@
       </header>
       <div class="progress" aria-hidden="true"><div id="clock-bar"></div><div id="clock-marks"></div></div>
       <div class="shares" id="sim-shares"></div>
-      <div class="plate-ring sim-ring"><canvas id="plate" class="plate" role="img" aria-label="Agar plate"></canvas></div>
+      <div id="sim-legend" class="scoreboard"></div>
+      <div class="sim-plate-box"><div class="plate-ring sim-ring"><canvas id="plate" class="plate" role="img" aria-label="Agar plate"></canvas></div></div>
+      <div id="sim-elements" class="sim-elements" hidden></div>
       <div class="banner-slot" role="status" aria-live="polite"><div id="sim-banner" class="banner"></div></div>
       <div id="sim-goals" class="goal-row"></div>
       <div class="seg speed" id="sim-speed" role="radiogroup" aria-label="Simulation speed">
@@ -89,8 +91,6 @@
         <button data-speed="5" role="radio">5×</button>
         <button data-speed="10" role="radio">10×</button>
       </div>
-      <div id="sim-legend" class="legend list card"></div>
-      <div id="sim-elements" class="legend list card" hidden></div>
     </section>
 
     <!-- Result -->

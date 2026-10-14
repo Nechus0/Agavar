@@ -68,7 +68,8 @@ LEVELS.forEach((lv0, i) => {
   if (only && only !== n) return;
   const won = Array.from({ length: n - 1 }, (_, k) => k + 1);
   const lim = getLimits(won);
-  lv = { ...lv, budget: careerPoints(won) };
+  // STARS=0.7: Anteil der bisherigen Level mit drei Sternen (Bonuspunkte wie im echten Spiel)
+  lv = { ...lv, budget: careerPoints(won) + Math.round((Number(process.env.STARS) || 0) * (n - 1)) };
   const rng = makeRng(1000 + n);
   const casual = Array.from({ length: nRandom }, () => randomGenome(rng, lv.budget, lim));
   for (const c of casual) if (problems(c, lim, lv.budget).length) throw new Error('Zufallsgenom verletzt Regeln: ' + problems(c, lim, lv.budget));

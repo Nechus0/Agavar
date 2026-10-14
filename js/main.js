@@ -124,6 +124,7 @@ const onEnter = {};
 
 function go(id) {
   const prev = current;
+  document.body.classList.toggle('sim-open', id === 'sim');
   if (onLeave[current]) onLeave[current]();
   document.querySelectorAll('.screen').forEach((s) => (s.hidden = s.id !== id));
   current = id;
@@ -873,7 +874,7 @@ function startMatch(cfg) {
   run.ev = { contact: false, dead: new Set(), leader: 0, leaderTick: -999, slow: false, sixH: false, peakPlate: 0, notice: 0 };
   const elKeys = elementsOf(cfg);
   $('#sim-elements').hidden = !elKeys.length;
-  fill($('#sim-elements'), ...elKeys.map((k) => el('div', { class: 'legend-row' }, elIcon(k, 'sm'), el('span', { class: 'legend-name plain' }, ELEMENTS[k].name))));
+  fill($('#sim-elements'), ...elKeys.map((k) => el('span', { class: 'el-chip' }, elIcon(k, 'xs'), ELEMENTS[k].name)));
   // geplante Ereignisse als Marken auf der Zeitleiste
   const marks = [];
   for (const p of run.sim.pulses || []) marks.push(p.at);
@@ -892,11 +893,11 @@ function startMatch(cfg) {
     $('#sim-sub').textContent = `${run.genomes.length - 1} ${run.genomes.length === 2 ? 'opponent' : 'opponents'}`;
   }
   fill($('#sim-shares'), ...run.genomes.map((g) => el('div', { style: `background:${g.color}` })));
-  fill($('#sim-legend'), ...run.genomes.map((g, i) => el('div', { class: 'legend-row', title: g.name },
-    culture(g.color, 'sm'),
-    el('span', { class: 'legend-name' }, i === 0 ? `${g.name} (you)` : g.name),
-    ...specialsOf(g).map((k) => specialIcon(k, 'xs')),
-    el('span', { class: 'n' }, '0 %'))));
+  // Anzeigetafel oben: Anteil jeder Kultur, groß und ohne Scrollen sichtbar
+  fill($('#sim-legend'), ...run.genomes.map((g, i) => el('div', { class: 'legend-row score', title: g.name },
+    el('b', { class: 'n' }, '0 %'),
+    el('span', { class: 'score-name' }, culture(g.color, 'sm'), el('span', {}, i === 0 ? 'You' : g.name.split(' ')[0])))));
+  $('#sim-legend').style.gridTemplateColumns = `repeat(${run.genomes.length}, minmax(0, 1fr))`;
   $('#sim-goals').hidden = cfg.mode !== 'level';
   setSpeed(run.speed);
   go('sim');
@@ -961,7 +962,9 @@ function fightLevel() {
     f.kills = kills; f.tick = sim.tick;
   }
   const surge = (f.rate - Math.max(0.8, f.base * 1.15)) / 3;
-  setIntensity(sim.done || run.paused ? 0 : Math.max(0, Math.min(1, surge)));
+  // sobald die Runde läuft, spielt die Musik mit Puls; je später und je heftiger gekämpft wird, desto mehr
+  const base = 0.32 + 0.2 * Math.min(1, sim.tick / MAX_TICKS);
+  setIntensity(sim.done || run.paused ? 0 : Math.max(base, Math.min(1, base + surge)));
 }
 
 function simFrame(t) {
