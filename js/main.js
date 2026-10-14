@@ -728,11 +728,6 @@ function renderEditor() {
     el('span', { class: 'main' }, el('b', {}, m.name), el('small', {}, describeMove(ed.move).replace(/ · (clockwise|counter-clockwise)/, '').split(' · ').slice(1).join(' · ') || 'Tap to change')),
     ui('chevron', 'sm'));
   fill($('#ed-slots'), slotTile(1), slotTile(2));
-  const muts = ed.mutations || [];
-  $('#ed-mut-group').hidden = !muts.length;
-  fill($('#ed-muts'), ...muts.filter((k) => MUTATIONS[k]).map((k) => el('div', { class: 'slot-row static' },
-    el('span', { class: 'sp-ico' }, ui('flask', 'sm')),
-    el('span', { class: 'main' }, el('b', {}, MUTATIONS[k].name), el('small', {}, MUTATIONS[k].text + (MUTATIONS[k].needs && !specialsOf(ed).includes(MUTATIONS[k].needs) ? ` (needs ${SPECIALS[MUTATIONS[k].needs].name.toLowerCase()})` : ''))))));
 
   const budget = edCtx.budget;
   const left = budget - cost(ed);
@@ -931,7 +926,7 @@ function startMatch(cfg) {
     el('span', { class: 'score-name' }, culture(g.color, 'sm'), el('span', {}, i === 0 ? 'You' : g.name.split(' ')[0])))));
   $('#sim-legend').style.gridTemplateColumns = `repeat(${run.genomes.length}, minmax(0, 1fr))`;
   $('#sim-goals').hidden = cfg.mode !== 'level';
-  setSpeed(run.speed);
+  setSpeed(1); // jede Runde beginnt mit 1×
   go('sim');
   updateSimUi();
   run.r.draw();
