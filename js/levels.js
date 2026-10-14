@@ -168,9 +168,9 @@ export const LEVELS = [
   },
   {
     name: 'Mouldy Plaster',
-    note: 'A plaster stayed on far too long and grew mould. Just like on Fleming’s famous plate, a clear ring spreads around it.',
+    note: 'A plaster stayed on far too long and grew mould. Just like on Fleming’s famous plate, a clear ring spreads around it – and after a day, more spores land.',
     desc: 'Staphylococcus aureus – the germ on Fleming’s plate when penicillin was discovered. Staphylococcus epidermidis builds biofilm beside it.',
-    plate: { size: 'gross', distribution: 'gleichmaessig', amount: 'viel', regen: 'normal', elements: [{ type: 'mould', at: 0, size: 0.24 }] },
+    plate: { size: 'gross', distribution: 'gleichmaessig', amount: 'viel', regen: 'normal', elements: [{ type: 'mould', at: 0, size: 0.24 }, { type: 'mould', at: 1500, size: 0.16 }] },
     boss: g('saureus', '#cc5252', ['F2', 'Z'], [5, 4, 5, 5, 6, 2, 2], 'capsule'),
     opponents: [g('sepidermidis', '#5858c4', ['F', 'P3'], [4, 4, 5, 5, 5, 3, 1], 'biofilm')],
   },

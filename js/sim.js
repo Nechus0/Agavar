@@ -511,8 +511,8 @@ export class Simulation {
         continue;
       }
 
-      // Teilung
-      if (energy[cur] >= ph.divideAt) {
+      // Teilung – nicht im Hemmhof: dort hält das Antibiotikum das Wachstum an, der Ring bleibt klar
+      if (energy[cur] >= ph.divideAt && !(abx && abx[cur] > 0.2)) {
         const start = rng.int(8);
         const first = this.dir[cur];
         let target = -1, td = 0;
@@ -613,7 +613,7 @@ export class Simulation {
         case 'disc': this.discs.push({ at: e.at || 0, where: e.where || 'center', life: e.life || 2400, r: R * 0.065, halo: R * (e.halo || 0.32), x: c, y: c, placed: false }); break;
         case 'mould': {
           const [x, y] = e.where === 'center' ? [c, c] : freeSpot(0.1, 0.5, R * 0.35);
-          this.moulds.push({ at: e.at || 0, x, y, r0: R * 0.04, max: R * (e.size || 0.2), grow: e.grow || 3000, placed: false });
+          this.moulds.push({ at: e.at || 0, x, y, r0: R * 0.04, max: R * (e.size || 0.2), grow: e.grow || 2200, placed: false });
           break;
         }
         case 'sugar': {
@@ -717,7 +717,7 @@ export class Simulation {
         if (this.owner[i]) this._kill(i, 'env', 0, 'abx');
         this.wall[i] = 3; this.nutrient[i] = 0; this.nutrientMax[i] = 0;
       }
-      paint(m.x, m.y, rad, rad * 1.8 + 3, 0.9);
+      paint(m.x, m.y, rad, rad * 2.3 + 4, 1);
     }
   }
 
