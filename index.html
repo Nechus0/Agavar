@@ -42,14 +42,7 @@
 
     <!-- Lab -->
     <section class="screen" id="editor">
-      <header class="bar ed-bar"><button class="back" id="ed-cancel">Cancel</button><h2 id="ed-title">Lab</h2><span></span>
-        <div class="points-bar" id="ed-budget">
-          <span class="points-label">Points</span>
-          <div class="meter"><div id="ed-meter"></div></div>
-          <b class="points-num" id="ed-cost">0 / 20</b>
-          <span class="points-left" id="ed-left"></span>
-        </div>
-      </header>
+      <header class="bar ed-bar"><button class="back" id="ed-cancel">Cancel</button><h2 id="ed-title">Lab</h2><span></span></header>
       <p class="coach" id="ed-coach" hidden></p>
       <div class="identity">
         <button class="color-dot" id="ed-color" aria-label="Colour"></button>
@@ -63,8 +56,16 @@
           <dl class="growth" id="ed-energy"></dl>
         </div>
       </div>
-      <section class="group"><div class="group-label"><span>Traits</span><span>Cost points · higher steps cost more</span></div><div class="list-card" id="ed-costed"></div></section>
-      <section class="group"><div class="group-label"><span>Abilities</span><span>Cost points</span></div><div class="list-card" id="ed-slots"></div></section>
+      <div class="spend">
+        <div class="card points-bar" id="ed-budget">
+          <span class="points-label">Upgrade points</span>
+          <div class="meter"><div id="ed-meter"></div></div>
+          <b class="points-num" id="ed-cost">0 / 20</b>
+          <span class="points-left" id="ed-left"></span>
+        </div>
+        <section class="group"><div class="group-label"><span>Traits</span><span>Higher steps cost more</span></div><div class="list-card" id="ed-costed"></div></section>
+        <section class="group"><div class="group-label"><span>Abilities</span><span>Cost points</span></div><div class="list-card" id="ed-slots"></div></section>
+      </div>
       <section class="group"><div class="group-label"><span>Movement</span><span>Free</span></div><div class="list-card"><button class="slot-row" id="ed-move-row"></button></div></section>
       <section class="group"><div class="group-label"><span>Body</span><span>Free</span></div><div class="list-card" id="ed-free"></div></section>
       <p class="small warn" id="ed-warn" hidden></p>
