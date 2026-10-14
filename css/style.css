@@ -729,3 +729,11 @@ body.sim-open #app { min-height: 0; padding-bottom: 0; }
 .mut-card:disabled:not(.on) { opacity: .45; }
 #win-ok:disabled { opacity: .5; }
 .slot-row.static { cursor: default; }
+
+/* Achievements as small chips in the win pop-up */
+.ach-chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.ach-chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: var(--radius-pill); background: rgba(255, 201, 61, .12); border: 1px solid rgba(255, 201, 61, .3); color: var(--tint-gold, #FFD970); font-size: 14px; font-weight: 600; }
+.mut-grid { grid-template-columns: 1fr; }
+.mut-card { flex-direction: row; text-align: left; min-height: 72px; padding: var(--space-3) var(--space-4); gap: var(--space-3); }
+.mut-card b { font-size: 16px; min-width: 110px; }
+.mut-card small { font-size: 13px; }

@@ -1120,7 +1120,7 @@ function showResult() {
     achievements: newAch,
     germs: newGerms,
     // neue Mutation zur Wahl nach jedem ersten Sieg
-    mutation: firstWin && me ? { id: me.id, choices: mutationChoices(me, cfg.level) } : null,
+    mutation: firstWin && me ? { id: me.id, choices: mutationChoices(me, cfg.level, upcomingElements(cfg.level)) } : null,
   };
   if (unlocks.mutation && !unlocks.mutation.choices.length) unlocks.mutation = null;
   const hasNews = unlocks.mutation || unlocks.points || unlocks.rewards.length || newAch.length || newGerms.length;
@@ -1202,61 +1202,74 @@ function renderSummary(sim, mask) {
       el('div', { class: `insight kind-${a.kind}` }, el('span', { class: 'dot', 'aria-hidden': 'true' }), el('span', {}, a.text)))) : null);
 }
 
+// Elemente der nächsten Level (für passende Mutationen)
+const upcomingElements = (level) => new Set(LEVELS.slice(level, level + 4).flatMap((lv) => elementsOf(lv.plate)));
+
 // Fenster mit allem, was in dieser Runde neu dazukam: besiegter Keim, Belohnungen, Erfolge
 function showUnlocks(u) {
   const lv = u.level ? LEVELS[u.level - 1] : null;
   const boss = lv ? lv.boss : null;
   const germ = boss ? GERMS[boss.germ] : null;
   const starsGot = starCount(u.mask);
+  const ok = $('#win-ok');
+  ok.disabled = false;
   $('#win-title').textContent = lv ? 'Level cleared' : 'New unlocks';
   fill($('#win-sub'), lv ? `Level ${u.level} · ${lv.name}` : '', u.mask ? el('span', { class: 'win-stars', 'aria-label': `${starsGot} of 3 stars` }, [0, 1, 2].map((k) => el('span', { class: k < starsGot ? 'on' : '' }, '★'))) : null);
+  // Schritt 1: kurz und knapp – besiegter Keim, Belohnungen, Erfolge als kleine Marken
   const sections = [];
   if (germ) {
-    const inAtlas = u.germs.includes(boss.germ);
     sections.push(el('section', { class: 'win-germ-card' },
       germPic(boss.germ, boss.color, 'win-germ'),
       el('div', { class: 'main' },
         el('span', { class: 'kind' }, 'Defeated'),
         el('b', { class: 'germ-name' }, germ.name),
-        el('p', {}, germ.fact),
-        inAtlas ? el('span', { class: 'atlas-tag' }, ui('atlas', 'xs'), 'Added to your atlas') : null)));
+        u.germs.includes(boss.germ) ? el('span', { class: 'atlas-tag' }, ui('atlas', 'xs'), 'Added to your atlas') : null)));
   }
   const rewards = [];
-  if (u.points) {
-    rewards.push(rewardRow(ui('plus'), 'Upgrade points', `+${u.points.gain} ${u.points.gain === 1 ? 'point' : 'points'}`,
-      `${u.points.before} → ${u.points.after} for ${u.points.name}${u.points.triple ? ' · includes 1 for three stars' : ''}`, 'gold'));
-  }
-  for (const r of u.rewards) rewards.push(rewardRow(r.type === 'move' ? icon(pathSvg(actionsOf({ type: r.key, size: 0, dir: 'R' })), 'md') : rewardIcon(r), REWARD_KIND[r.type] || 'Unlocked', r.short || r.text, rewardSub(r)));
+  if (u.points) rewards.push(rewardRow(ui('plus'), 'Upgrade points', `+${u.points.gain} (${u.points.before} → ${u.points.after})`, '', 'gold'));
+  for (const r of u.rewards) rewards.push(rewardRow(r.type === 'move' ? icon(pathSvg(actionsOf({ type: r.key, size: 0, dir: 'R' })), 'md') : rewardIcon(r), REWARD_KIND[r.type] || 'Unlocked', r.short || r.text, ''));
   const otherGerms = u.germs.filter((k) => !boss || k !== boss.germ);
-  if (otherGerms.length) rewards.push(rewardRow(ui('atlas'), 'New in your atlas', otherGerms.map((k) => GERMS[k].name).join(', '), 'Read about it in the Atlas'));
+  if (otherGerms.length) rewards.push(rewardRow(ui('atlas'), 'New in your atlas', otherGerms.map((k) => GERMS[k].name).join(', '), ''));
   if (rewards.length) sections.push(winSection('Rewards', ...rewards));
-  const ok = $('#win-ok');
-  ok.disabled = false;
-  if (u.mutation) {
-    ok.disabled = true;
-    const cards = u.mutation.choices.map((k) => el('button', {
-      class: 'mut-card', 'aria-pressed': 'false',
-      onclick: (e) => {
-        store.addMutation(u.mutation.id, k);
-        cards.forEach((c) => { c.classList.toggle('on', c === e.currentTarget); c.setAttribute('aria-pressed', String(c === e.currentTarget)); c.disabled = true; });
-        ok.disabled = false;
-        play('star');
-      },
-    }, el('span', { class: 'mut-ico' }, ui('flask', 'md')), el('b', {}, MUTATIONS[k].name), el('small', {}, MUTATIONS[k].text)));
-    sections.push(el('section', { class: 'win-section' }, el('h3', { class: 'win-label' }, 'Choose a mutation'), el('div', { class: 'mut-grid' }, cards),
-      el('p', { class: 'small muted' }, 'It stays with this bacterium for the whole world.')));
+  if (u.achievements.length) {
+    sections.push(el('section', { class: 'win-section' }, el('h3', { class: 'win-label' }, 'Achievements'),
+      el('div', { class: 'ach-chips' }, u.achievements.map((a) => el('span', { class: 'ach-chip', title: a.desc }, icon(ACH_ICONS[a.key], 'sm'), a.name)))));
   }
-  if (u.achievements.length) sections.push(winSection('Achievements', ...u.achievements.map((a) => rewardRow(icon(ACH_ICONS[a.key]), '', a.name, a.desc, 'gold'))));
   fill($('#win-body'), ...sections);
+  ok.textContent = u.mutation ? 'Choose a mutation' : 'Continue';
+  pendingMutation = u.mutation;
   $('#win-modal').hidden = false;
   $('#win-modal').scrollTop = 0;
   document.body.classList.add('modal-open');
   setTimeout(() => play('unlock'), 300);
 }
+
+let pendingMutation = null;
+// Schritt 2: eine von drei Mutationen wählen – eigenes, ruhiges Fenster
+function showMutationStep(m) {
+  const ok = $('#win-ok');
+  $('#win-title').textContent = 'Pick a mutation';
+  fill($('#win-sub'), 'It stays with this bacterium for the whole world.');
+  ok.textContent = 'Continue';
+  ok.disabled = true;
+  const cards = m.choices.map((k) => el('button', {
+    class: 'mut-card', 'aria-pressed': 'false',
+    onclick: (e) => {
+      store.addMutation(m.id, k);
+      cards.forEach((c) => { c.classList.toggle('on', c === e.currentTarget); c.setAttribute('aria-pressed', String(c === e.currentTarget)); c.disabled = true; });
+      ok.disabled = false;
+      play('star');
+    },
+  }, el('span', { class: 'mut-ico' }, ui('flask', 'md')), el('b', {}, MUTATIONS[k].name), el('small', {}, MUTATIONS[k].text)));
+  fill($('#win-body'), el('div', { class: 'mut-grid' }, cards));
+  $('#win-modal').scrollTop = 0;
+}
 function closeWin(e) {
   if ($('#win-ok').disabled) return; // erst eine Mutation wählen
   if (e && e.target.closest('.modal-box') && !e.target.closest('#win-ok')) return;
   if (e && e.type === 'touchend') e.preventDefault();
+  // nach dem ersten Schritt geht es zur Mutationswahl weiter
+  if (pendingMutation) { const m = pendingMutation; pendingMutation = null; showMutationStep(m); return; }
   $('#win-modal').hidden = true;
   document.body.classList.remove('modal-open');
 }

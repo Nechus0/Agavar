@@ -10,10 +10,10 @@ export const MUTATIONS = {
   keen_nose: { name: 'Keen nose', text: 'Smells food much better.' },
   big_brood: { name: 'Big brood', text: 'Divides 10 % sooner.' },
   fighter: { name: 'Fighter', text: '+1 attack.' },
-  salt_tolerant: { name: 'Salt tolerant', text: 'Salt drains 60 % less energy.' },
-  acid_proof: { name: 'Acid proof', text: 'Ages much less on sour ground.' },
-  sun_hardy: { name: 'Sun hardy', text: 'The sun drains 60 % less energy.' },
-  resistant: { name: 'Resistant', text: 'Antibiotics kill 40 % fewer cells.' },
+  salt_tolerant: { name: 'Salt tolerant', text: 'Salt drains 60 % less energy.', element: 'salt' },
+  acid_proof: { name: 'Acid proof', text: 'Ages much less on sour ground.', element: 'acid' },
+  sun_hardy: { name: 'Sun hardy', text: 'The sun drains 60 % less energy.', element: 'sun' },
+  resistant: { name: 'Resistant', text: 'Antibiotics kill 40 % fewer cells.', element: ['disc', 'mould'] },
   fast_capsule: { name: 'Quick slime', text: 'A lost capsule grows back twice as fast.', needs: 'capsule' },
   potent_toxin: { name: 'Potent toxin', text: 'Toxins hit harder.', needs: 'toxin' },
   deep_mat: { name: 'Deep mat', text: 'Biofilm forms sooner and holds better.', needs: 'biofilm' },
@@ -21,10 +21,12 @@ export const MUTATIONS = {
 export const MUTATION_KEYS = Object.keys(MUTATIONS);
 
 // drei Vorschläge für einen Sieg, fest für dieses Bakterium und Level (kein Neu-Würfeln durch Neuladen)
-export function mutationChoices(bacterium, level) {
+// Umwelt-Mutationen (Salz, Sonne …) nur, wenn diese Gefahr in den nächsten Leveln vorkommt
+export function mutationChoices(bacterium, level, upcoming = new Set()) {
   const own = new Set(bacterium.mutations || []);
   const has = new Set([bacterium.special, bacterium.bonusSpecial]);
-  const pool = MUTATION_KEYS.filter((k) => !own.has(k) && (!MUTATIONS[k].needs || has.has(MUTATIONS[k].needs)));
+  const relevant = (m) => !m.element || [].concat(m.element).some((e) => upcoming.has(e));
+  const pool = MUTATION_KEYS.filter((k) => !own.has(k) && (!MUTATIONS[k].needs || has.has(MUTATIONS[k].needs)) && relevant(MUTATIONS[k]));
   let s = 0;
   for (const ch of `${bacterium.id}:${level}`) s = (s * 31 + ch.charCodeAt(0)) >>> 0;
   const rnd = () => ((s = (s * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
