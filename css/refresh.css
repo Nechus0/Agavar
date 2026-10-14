@@ -164,3 +164,58 @@ body.has-nav .sticky-cta { bottom: calc(76px + env(safe-area-inset-bottom)); bac
 .legend-row.score .n { font-size: 18px; white-space: nowrap; letter-spacing: 0; }
 .sim-plate-box .sim-ring { box-shadow: 0 0 0 1px rgba(255, 255, 255, .26), 0 0 28px rgba(245, 181, 71, .22); }
 .win-stars span:not(.on) { color: rgba(255, 255, 255, .2); text-shadow: none; }
+.mut-box { gap: var(--space-4); } .mut-box h2 { font-size: 24px; }
+
+/* compact Lab rows */
+.trait.compact { display: grid; grid-template-columns: 22px 88px 1fr 40px 24px 40px; align-items: center; gap: 8px; padding: 8px 0; }
+.trait.compact .ico { color: var(--text-secondary); }
+.trait.compact b { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.trait.compact .pips { grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 2px; }
+.trait.compact .step-btn { width: 40px; height: 40px; font-size: 20px; border-radius: 12px; }
+.trait.compact .trait-val { width: auto; font-size: 15px; text-align: center; }
+.trait.compact.free { grid-template-columns: 22px 88px 1fr 66px; }
+.trait.compact.free .small { text-align: right; font-size: 13px; color: var(--text-secondary); }
+.trait.compact.free input[type=range] { width: 100%; margin: 0; }
+.growth { grid-template-columns: auto 1fr auto 1fr; gap: 3px 10px; font-size: 12px; }
+.growth dd { font-family: var(--mono); font-size: 12px; }
+.preview-card .small-ring { width: 96px; }
+
+/* compact level page */
+#level-detail { gap: var(--space-4); }
+#level-detail .intro .sub { font-size: 14px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; color: var(--text-secondary); }
+#level-detail .intro h1 { font-size: 24px; }
+#level-detail .rs-section { gap: var(--space-2); }
+#level-detail .rs-section > h2 { font-size: 15px; font-family: var(--mono); text-transform: uppercase; letter-spacing: .12em; color: var(--text-secondary); font-weight: 700; }
+#level-detail .card { padding: var(--space-4); gap: var(--space-3); }
+.lab-note { font-size: 13px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+.preview-ring { width: 104px; }
+.fact-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.fchip { display: inline-flex; align-items: center; gap: 4px; padding: 4px 9px; border-radius: var(--radius-pill); background: rgba(255, 255, 255, .06); border: 1px solid rgba(255, 255, 255, .1); font: inherit; font-size: 12px; color: var(--text-secondary); }
+.fchip.el { background: rgba(139, 123, 255, .14); border-color: rgba(139, 123, 255, .35); color: var(--tint-violet); cursor: pointer; }
+.foe-pic { width: 48px; height: 32px; }
+.foe-pic.big { width: 60px; height: 40px; }
+.foe-name { font-size: 15px; }
+.goal-stars .goal { padding: 8px 4px; }
+
+.ld-goals { display: flex; flex-direction: column; gap: 6px; margin-top: calc(-1 * var(--space-2)); }
+.ld-goals .goal-stars { display: flex; gap: 6px; flex-wrap: wrap; }
+.ld-goals .goal { flex-direction: row; gap: 4px; padding: 5px 10px; border-radius: var(--radius-pill); background: rgba(255, 255, 255, .05); border: 1px solid rgba(255, 255, 255, .1); font-size: 12px; min-width: 0; }
+.ld-goals .goal .star { font-size: 13px; }
+.ld-goals .reward-line { font-size: 12px; }
+#level-detail .glance .m-legend { font-size: 11px; }
+
+/* result: details folded away */
+details.more { display: flex; flex-direction: column; gap: var(--space-4); }
+details.more > summary { list-style: none; cursor: pointer; min-height: 48px; display: flex; align-items: center; justify-content: center; border-radius: var(--radius-pill); background: var(--glass); border: 1px solid var(--glass-line); color: var(--text-secondary); font-weight: 700; font-size: 15px; }
+details.more > summary::-webkit-details-marker { display: none; }
+details.more[open] > summary { margin-bottom: var(--space-4); }
+details.more > .rs-section + .rs-section { margin-top: var(--space-4); }
+#result { gap: var(--space-4); }
+
+/* result: tighter top */
+#result .star-col { padding: 8px 4px; }
+#result .star-col .state { display: none; }
+#result .big-star { font-size: 30px; }
+#result .star-col:nth-child(2) .big-star { font-size: 38px; }
+#result hr.divider { display: none; }
+#result > .rs-section:not(details .rs-section) > h2 { display: none; }

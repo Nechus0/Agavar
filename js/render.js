@@ -71,17 +71,17 @@ export class PlateRenderer {
     g.x.drawImage(this.cells.c, 0, 0, g.c.width, g.c.width);
     ctx.save();
     ctx.globalCompositeOperation = 'screen';
-    ctx.globalAlpha = 0.45;
+    ctx.globalAlpha = 0.18;
     ctx.drawImage(g.c, 0, 0, W, W);
     ctx.restore();
     const c = W / 2, R = W / 2;
     let gr = ctx.createRadialGradient(c * 0.9, c * 0.8, R * 0.1, c, c, R);
-    gr.addColorStop(0, 'rgba(255, 230, 174, 0.10)');
-    gr.addColorStop(0.62, 'rgba(0, 0, 0, 0)');
-    gr.addColorStop(1, 'rgba(42, 18, 0, 0.62)');
+    gr.addColorStop(0, 'rgba(0, 0, 0, 0)');
+    gr.addColorStop(0.78, 'rgba(0, 0, 0, 0)');
+    gr.addColorStop(1, 'rgba(42, 18, 0, 0.45)');
     ctx.fillStyle = gr; ctx.fillRect(0, 0, W, W);
     gr = ctx.createRadialGradient(W * 0.3, W * 0.2, 0, W * 0.3, W * 0.2, W * 0.45);
-    gr.addColorStop(0, 'rgba(255, 255, 255, 0.30)');
+    gr.addColorStop(0, 'rgba(255, 255, 255, 0.10)');
     gr.addColorStop(1, 'rgba(255, 255, 255, 0)');
     ctx.fillStyle = gr; ctx.fillRect(0, 0, W, W);
     ctx.lineCap = 'round';
@@ -179,6 +179,8 @@ export class PlateRenderer {
       if (fog[i]) { hd[k] = TOXIN[0]; hd[k + 1] = TOXIN[1]; hd[k + 2] = TOXIN[2]; hd[k + 3] = Math.min(190, fog[i] * pulse); }
       const o = owner[i];
       if (!o) continue;
+      // Agar unter Zellen abdunkeln: nach dem Glätten entsteht ein feiner dunkler Rand um jede Kolonie
+      d[k] *= 0.35; d[k + 1] *= 0.35; d[k + 2] *= 0.35;
       const col = colors[o - 1];
       let cr, cg, cb;
       if (inf && inf[i]) {
@@ -192,7 +194,7 @@ export class PlateRenderer {
         const f = ((i % N) + ((i / N) | 0)) & 1 ? 0.5 : 0.66;
         cr = col[0] * f; cg = col[1] * f; cb = col[2] * f;
       } else {
-        let f = 0.7 + 0.35 * Math.min(1, energy[i] / 70);
+        let f = 0.88 + 0.17 * Math.min(1, energy[i] / 70);
         if (photo[o - 1] && ((i * 7 + (tick >> 2)) % 5 === 0)) f = 1.3;
         cr = Math.min(255, col[0] * f); cg = Math.min(255, col[1] * f); cb = Math.min(255, col[2] * f);
         if (shield[i]) { cr += (255 - cr) * 0.3; cg += (255 - cg) * 0.3; cb += (255 - cb) * 0.3; }
@@ -212,7 +214,10 @@ export class PlateRenderer {
     ctx.imageSmoothingQuality = 'high';
     ctx.clearRect(0, 0, W, W);
     ctx.drawImage(this.agar.c, 0, 0, W, W);
+    // Zellen gestochen scharf (keine Glättung), damit Kämpfe und Gegner klar zu sehen sind
+    ctx.imageSmoothingEnabled = false;
     ctx.drawImage(this.cells.c, 0, 0, W, W);
+    ctx.imageSmoothingEnabled = true;
     ctx.drawImage(this.haze.c, 0, 0, W, W);
     this._light(ctx, W);
     if (sim.envOn) { ctx.setTransform(this.scale, 0, 0, this.scale, 0, 0); this._overlay(); ctx.setTransform(1, 0, 0, 1, 0, 0); }

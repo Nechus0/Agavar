@@ -360,25 +360,23 @@ onEnter['level-detail'] = () => {
       el('div', { class: 'plate-ring preview-ring' }, preview),
       el('div', { class: 'plate-facts' },
         lv.note ? el('p', { class: 'lab-note' }, lv.note) : null,
-        el('dl', { class: 'facts' },
-          el('dt', {}, 'Food'), el('dd', {}, LABELS.amountLong[pl.amount]),
-          el('dt', {}, 'Layout'), el('dd', {}, LABELS.distribution[pl.distribution]),
-          el('dt', {}, 'Regrowth'), el('dd', {}, LABELS.regen[pl.regen]),
-          el('dt', {}, 'Size'), el('dd', {}, LABELS.size[pl.size])))),
-    els.length ? el('div', { class: 'el-list' }, els.map(elementRow)) : null);
+        // kurze Fakten als kleine Marken; Elemente als Marken, Antippen zeigt die Erklärung
+        el('div', { class: 'fact-chips' },
+          el('span', { class: 'fchip' }, ui('food', 'xs'), LABELS.amountLong[pl.amount]),
+          el('span', { class: 'fchip' }, ui('dish', 'xs'), LABELS.distribution[pl.distribution]),
+          el('span', { class: 'fchip' }, ui('restart', 'xs'), `Regrowth ${LABELS.regen[pl.regen].toLowerCase()}`),
+          ...els.map((k) => el('button', { class: 'fchip el', onclick: () => openSheet(ELEMENTS[k].name, el('div', { class: 'el-intro' }, el('span', { class: 'el-ico big' }, elIcon(k, 'lg')), el('p', {}, ELEMENTS[k].effect))) }, elIcon(k, 'xs'), ELEMENTS[k].name))))));
   drawPreview(preview, lv, n);
   showNewElements(els);
   fill($('#ld-foes'),
     foeRow(boss), ...others.map(foeRow),
     lv.adapts ? el('div', { class: 'tip adapt' }, ui('restart'), el('span', {}, ad
       ? `This strain adapts to you: against your ${SPECIALS[ad.against].name.toLowerCase()} it brings ${SPECIALS[ad.counter].name.toLowerCase()}.`
-      : 'This strain adapts to your bacterium and brings a counter to your ability.')) : null,
-    el('div', { class: 'tip' }, ui('bulb'), el('span', {}, counterTips(boss, 1)[0])));
+      : 'This strain adapts to your bacterium and brings a counter to your ability.')) : null);
   const mask = b.career.stars[n] || 0;
   fill($('#ld-goals'),
     el('div', { class: 'goal-stars' }, STAR_GOALS.map((g) => el('div', { class: `goal ${mask & g.bit ? 'done' : ''}`, title: g.bit === 4 ? challengeOf(lv).text : g.text },
       el('span', { class: 'star', 'aria-hidden': 'true' }, '★'), el('span', {}, starLabel(g, lv))))),
-    el('p', { class: 'small muted challenge-line' }, `Challenge: ${challengeOf(lv).text}.`),
     won.includes(n) ? null : el('div', { class: 'reward-line' }, 'First win:',
       el('span', { class: 'plus' }, `+${POINTS_PER_WIN} point`),
       ...rewardsOf(n).map((r) => el('span', { class: 'rw' }, rewardIcon(r), r.short || r.text))));
@@ -389,7 +387,7 @@ onEnter['level-detail'] = () => {
   fill($('#ld-me'),
     el('div', { class: 'bact-head' }, culture(b.color), el('span', { class: 'name' }, b.name),
       el('button', { class: 'btn small', onclick: () => openEditor(b, careerCtx(b, 'level-detail')) }, ui('flask', 'sm'), 'Lab')),
-    el('div', { class: 'glance' }, el('h3', {}, 'At a glance'), meterBars(normalize(b), boss, boss.name.split(' ')[0])),
+    el('div', { class: 'glance' }, meterBars(normalize(b), boss, boss.name.split(' ')[0])),
     probs.length ? el('p', { class: 'small warn' }, probs.join(' · '), ' – fix it in the lab.')
       : el('p', { class: `small ${free > 0 ? 'free-pts' : 'muted'}` }, free > 0 ? `${free} upgrade ${free === 1 ? 'point' : 'points'} left to spend` : `Ready · ${cost(b)} / ${pts} points used`));
   $('#ld-start').disabled = probs.length > 0;
@@ -713,11 +711,9 @@ function freeRow(t) {
   slider.addEventListener('input', update);
   slider.addEventListener('change', update);
   const ends = t.key === 'division' ? ['Early', 'Late'] : t.key === 'size' ? ['Small', 'Large'] : ['Frugal', 'Greedy'];
-  return el('div', { class: 'trait' },
-    el('div', { class: 'trait-head' }, icon(TRAIT_ICONS[t.key]), el('b', {}, t.label), name),
-    slider,
-    el('div', { class: 'range-labels' }, el('span', {}, ends[0]), el('span', {}, ends[1])),
-    text);
+  // eine Zeile: Symbol, Name, Regler, aktueller Wert
+  return el('div', { class: 'trait compact free', title: t.hint },
+    icon(TRAIT_ICONS[t.key]), el('b', {}, t.label), slider, name);
 }
 
 function renderEditor() {
@@ -744,16 +740,16 @@ function renderEditor() {
     const v = ed[t.key];
     const next = stepCost(v + 1);
     const canInc = v < t.max && left >= next;
-    return el('div', { class: 'trait' },
-      el('div', { class: 'trait-head' }, icon(TRAIT_ICONS[t.key]), el('b', {}, t.label),
-        el('button', { class: 'step-btn', disabled: v <= 0, 'aria-label': `Lower ${t.label}`, onclick: () => { if (ed[t.key] > 0) { ed[t.key]--; renderEditor(); } } }, '−'),
-        el('span', { class: 'trait-val', 'aria-live': 'polite' }, String(v)),
-        el('button', {
-          class: 'step-btn', disabled: !canInc, 'aria-label': `Raise ${t.label} for ${next} ${next === 1 ? 'point' : 'points'}`,
-          onclick: () => { if (canInc) { ed[t.key]++; renderEditor(); } },
-        }, '+', next > 1 && v < t.max ? el('sup', {}, String(next)) : null)),
+    // eine Zeile pro Eigenschaft: Symbol, Name, Balken, Wert, −/+ (die Wirkung steht oben in den Gesamtwerten)
+    return el('div', { class: 'trait compact', title: t.hint },
+      icon(TRAIT_ICONS[t.key]), el('b', {}, t.label),
       el('div', { class: 'pips', 'aria-hidden': 'true' }, Array.from({ length: TRAIT_MAX }, (_, k) => el('i', { class: `${k < v ? 'on' : ''} ${k >= 4 ? (k >= 7 ? 'c3' : 'c2') : ''}` }))),
-      el('span', { class: 'trait-effect' }, traitEffect(t.key, v)));
+      el('button', { class: 'step-btn', disabled: v <= 0, 'aria-label': `Lower ${t.label}`, onclick: () => { if (ed[t.key] > 0) { ed[t.key]--; renderEditor(); } } }, '−'),
+      el('span', { class: 'trait-val', 'aria-live': 'polite' }, String(v)),
+      el('button', {
+        class: 'step-btn', disabled: !canInc, 'aria-label': `Raise ${t.label} for ${next} ${next === 1 ? 'point' : 'points'}`,
+        onclick: () => { if (canInc) { ed[t.key]++; renderEditor(); } },
+      }, '+', next > 1 && v < t.max ? el('sup', {}, String(next)) : null));
   }));
   fill($('#ed-free'), ...FREE.map(freeRow));
   renderEnergy(energyProfile(normalize(ed)));
@@ -796,14 +792,22 @@ function fmtDuration(rounds) {
   const min = Math.round((rounds * 60) / ROUNDS_PER_HOUR);
   return min < 60 ? `${Math.max(1, min)} min` : `${Math.floor(min / 60)} h ${String(min % 60).padStart(2, '0')} min`;
 }
+// Gesamtwerte des Bakteriums – mit Zellgröße, Mutationen und Unterhalt, so wie es auf der Platte spielt
 function renderEnergy(ep) {
+  const g = normalize(ed);
+  const ph = phenotype(g);
   const net = perHour(ep.intake - ep.cost);
-  const row = (label, value, bad = false) => [el('dt', {}, label), el('dd', { class: bad ? 'bad' : '' }, value)];
+  const stat = (label, value, bad = false) => [el('dt', {}, label), el('dd', { class: bad ? 'bad' : '' }, value)];
   fill($('#ed-energy'),
-    ...row('Energy', `${net >= 0 ? '+' : ''}${net} per hour`, net < 0),
-    ...row('Upkeep', `${perHour(upkeepOf(normalize(ed)))} per hour`),
-    ...row('Divides', `every ${fmtDuration(ep.roundsToDivide)}`),
-    ...row('Without food', `lasts ${fmtDuration(Math.min(ep.roundsWithoutFood, ep.maxAge))}`));
+    ...stat('Energy', `${net >= 0 ? '+' : ''}${net}/h`, net < 0),
+    ...stat('Divides', fmtDuration(ep.roundsToDivide)),
+    ...stat('No food', fmtDuration(Math.min(ep.roundsWithoutFood, ep.maxAge))),
+    ...stat('Lives', fmtDuration(ph.maxAge)),
+    ...stat('Moves', pct(ph.moveChance)),
+    ...stat('Smell', pct(ph.chemoChance)),
+    ...stat('Attack', pct(beatChance(ph.attack, 0))),
+    ...stat('Defense', pct(1 - beatChance(1, ph.defense))),
+    ...stat('Upkeep', `${perHour(upkeepOf(g))}/h`));
 }
 
 // ---------- Simulation ----------
@@ -1132,6 +1136,7 @@ function showResult() {
   rc.getContext('2d').drawImage($('#plate'), 0, 0);
   $('#rs-plate-note').textContent = `At ${fmtHours(h)} · dark agar = food eaten up`;
   drawHistory($('#rs-chart'), sim.history, run.genomes.map((g) => g.color));
+  $('#rs-more-details').open = false;
   const rows = sim.players.map((p, i) => {
     const g = run.genomes[i];
     const status = sim.winner === p.id ? 'Winner' : p.count === 0 ? `† ${Math.round((BREW_HOURS * p.extinctAt) / MAX_TICKS)} h` : 'Alive';
@@ -1245,12 +1250,9 @@ function showUnlocks(u) {
 }
 
 let pendingMutation = null;
-// Schritt 2: eine von drei Mutationen wählen – eigenes, ruhiges Fenster
+// Mutationswahl als eigenes Fenster
 function showMutationStep(m) {
-  const ok = $('#win-ok');
-  $('#win-title').textContent = 'Pick a mutation';
-  fill($('#win-sub'), 'It stays with this bacterium for the whole world.');
-  ok.textContent = 'Continue';
+  const ok = $('#mut-ok');
   ok.disabled = true;
   const cards = m.choices.map((k) => el('button', {
     class: 'mut-card', 'aria-pressed': 'false',
@@ -1261,22 +1263,31 @@ function showMutationStep(m) {
       play('star');
     },
   }, el('span', { class: 'mut-ico' }, ui('flask', 'md')), el('b', {}, MUTATIONS[k].name), el('small', {}, MUTATIONS[k].text)));
-  fill($('#win-body'), el('div', { class: 'mut-grid' }, cards));
-  $('#win-modal').scrollTop = 0;
+  fill($('#mut-cards'), ...cards);
+  $('#mut-modal').hidden = false;
+  document.body.classList.add('modal-open');
 }
+$('#mut-ok').addEventListener('click', () => {
+  if ($('#mut-ok').disabled) return;
+  $('#mut-modal').hidden = true;
+  document.body.classList.remove('modal-open');
+});
+
 function closeWin(e) {
   if ($('#win-ok').disabled) return; // erst eine Mutation wählen
   if (e && e.target.closest('.modal-box') && !e.target.closest('#win-ok')) return;
   if (e && e.type === 'touchend') e.preventDefault();
   // nach dem ersten Schritt geht es zur Mutationswahl weiter
-  if (pendingMutation) { const m = pendingMutation; pendingMutation = null; showMutationStep(m); return; }
   $('#win-modal').hidden = true;
   document.body.classList.remove('modal-open');
+  if (pendingMutation) { const m = pendingMutation; pendingMutation = null; setTimeout(() => showMutationStep(m), 250); }
 }
 $('#win-modal').addEventListener('click', closeWin);
 $('#win-ok').addEventListener('touchend', closeWin);
 
 $('#rs-back').addEventListener('click', () => go('home'));
+// Diagramm erst zeichnen, wenn die Details aufgeklappt sind (vorher hat es keine Breite)
+$('#rs-more-details').addEventListener('toggle', () => { if ($('#rs-more-details').open && run.sim) drawHistory($('#rs-chart'), run.sim.history, run.genomes.map((g) => g.color)); });
 $('#rs-rematch').addEventListener('click', () => {
   const b = store.getBacterium(run.cfg.careerId);
   if (!b) return go('home');
