@@ -368,7 +368,7 @@ export class Simulation {
         if (++infected[i] > 7) {
           this._kill(i, 'env', 0, 'phage');
           lysis[i] = 16;
-          this._infectAround(i, o, 3, 0.5);
+          this._infectAround(i, o, 4, 0.5);
         }
         continue;
       }
@@ -628,7 +628,7 @@ export class Simulation {
           this.immuneAt = e.at ?? 700;
           for (let k = 0; k < (e.count || 2); k++) {
             const a = rng() * Math.PI * 2;
-            this.immune.push({ x: c + Math.cos(a) * R * 0.9, y: c + Math.sin(a) * R * 0.9, r: R * 0.075, tx: c, ty: c, on: false, wob: rng() * 6 });
+            this.immune.push({ x: c + Math.cos(a) * R * 0.9, y: c + Math.sin(a) * R * 0.9, r: R * 0.11, tx: c, ty: c, on: false, wob: rng() * 6 });
           }
           break;
         }
@@ -767,7 +767,7 @@ export class Simulation {
         }
         if (seed >= 0) {
           this.infected[seed] = 1;
-          this._infectAround(seed, l.id, 3, 1);
+          this._infectAround(seed, l.id, 7, 1);
           this._notice('phage', { target: l.id });
         }
       }
@@ -777,13 +777,13 @@ export class Simulation {
       if (tick === this.immuneAt) this._notice('immune');
       if (tick % 15 === 0 || tick === this.immuneAt) {
         const l = this._leader();
-        if (l) this.immune.forEach((m, k) => { m.tx = l.x + Math.cos(k * 2.4 + tick / 200) * this.R * 0.12; m.ty = l.y + Math.sin(k * 2.4 + tick / 200) * this.R * 0.12; });
+        if (l) this.immune.forEach((m, k) => { m.tx = l.x + Math.cos(k * Math.PI + tick / 200) * this.R * 0.25; m.ty = l.y + Math.sin(k * Math.PI + tick / 200) * this.R * 0.25; });
       }
       const c = (N - 1) / 2;
       for (const m of this.immune) {
         m.on = true;
         const dx = m.tx - m.x, dy = m.ty - m.y, d = Math.hypot(dx, dy) || 1;
-        const sp = 0.2;
+        const sp = 0.26;
         m.x += (dx / d) * sp + Math.cos(tick / 23 + m.wob) * 0.08;
         m.y += (dy / d) * sp + Math.sin(tick / 29 + m.wob) * 0.08;
         const off = Math.hypot(m.x - c, m.y - c), lim = this.R - m.r * 0.5;
@@ -791,8 +791,8 @@ export class Simulation {
         for (let y = Math.max(0, Math.floor(m.y - m.r)); y <= Math.min(N - 1, m.y + m.r); y++) {
           for (let x = Math.max(0, Math.floor(m.x - m.r)); x <= Math.min(N - 1, m.x + m.r); x++) {
             const i = y * N + x;
-            if (!this.owner[i] || Math.hypot(x - m.x, y - m.y) > m.r || rng() > 0.1) continue;
-            if (this.shield[i]) this.shield[i] = 0; else this._kill(i, 'env', 0, 'immune');
+            if (!this.owner[i] || Math.hypot(x - m.x, y - m.y) > m.r || rng() > 0.14) continue;
+            if (this.shield[i]) this.shield[i] = 0; else { this._kill(i, 'env', 0, 'immune'); this.bite[i] = 14; }
           }
         }
       }

@@ -178,7 +178,7 @@ export const LEVELS = [
     name: 'Pus & Phages',
     note: 'The wound is badly infected. The immune system sends white blood cells, and the doctors try phage therapy – both go for the biggest colony.',
     desc: 'World finale: Pseudomonas aeruginosa with biofilm and toxins, the favourite target of phage therapy. Two old enemies return.',
-    plate: { size: 'gross', distribution: 'schnitt', amount: 'normal', regen: 'normal', elements: [{ type: 'immune', at: 600, count: 2 }, { type: 'phage', at: [1400, 2600] }] },
+    plate: { size: 'gross', distribution: 'schnitt', amount: 'normal', regen: 'normal', elements: [{ type: 'immune', at: 600, count: 2 }, { type: 'phage', at: [900, 1800, 2700] }] },
     boss: g('paeruginosa', '#38a0b4', ['F3', 'Z'], [5, 4, 5, 5, 5, 1, 2], 'toxin', { bonusSpecial: 'biofilm' }),
     opponents: [
       g('saureus', '#cc5252', ['F2', 'Z'], [4, 3, 5, 5, 5, 1, 2], 'capsule'),

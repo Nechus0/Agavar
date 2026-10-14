@@ -186,20 +186,24 @@ export class PlateRenderer {
       if (!m.on) continue;
       const pulse = 1 + 0.06 * Math.sin(tick / 6 + m.wob);
       const r = m.r * pulse;
-      ctx.fillStyle = 'rgba(236, 240, 250, 0.28)';
-      ctx.strokeStyle = 'rgba(250, 250, 255, 0.85)';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      for (let a = 0; a <= 24; a++) {
-        const t = (a / 24) * Math.PI * 2;
-        const rr = r * (1 + 0.1 * Math.sin(t * 3 + tick / 9 + m.wob));
-        const x = m.x + 0.5 + Math.cos(t) * rr, y = m.y + 0.5 + Math.sin(t) * rr;
-        if (a === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-      }
-      ctx.closePath(); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = 'rgba(150, 140, 210, 0.75)';
-      ctx.beginPath(); ctx.arc(m.x + 0.5 - r * 0.25, m.y + 0.5, r * 0.28, 0, Math.PI * 2); ctx.fill();
-      ctx.beginPath(); ctx.arc(m.x + 0.5 + r * 0.25, m.y + 0.5 + r * 0.1, r * 0.24, 0, Math.PI * 2); ctx.fill();
+      const cx = m.x + 0.5, cy = m.y + 0.5;
+      const blob = (rr) => {
+        ctx.beginPath();
+        for (let a = 0; a <= 28; a++) {
+          const t = (a / 28) * Math.PI * 2;
+          const k = rr * (1 + 0.1 * Math.sin(t * 3 + tick / 9 + m.wob));
+          const x = cx + Math.cos(t) * k, y = cy + Math.sin(t) * k;
+          if (a === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+      };
+      // dunkler Schatten, damit die Zelle sich vom bunten Untergrund abhebt
+      blob(r + 1.5); ctx.fillStyle = 'rgba(10, 12, 10, 0.55)'; ctx.fill();
+      blob(r); ctx.fillStyle = 'rgba(240, 244, 255, 0.55)'; ctx.fill();
+      ctx.lineWidth = 1.2; ctx.strokeStyle = 'rgba(255, 255, 255, 0.95)'; ctx.stroke();
+      // gelappter Zellkern wie bei einem weißen Blutkörperchen
+      ctx.fillStyle = 'rgba(120, 100, 210, 0.95)';
+      for (const [dx, dy, rr] of [[-0.3, -0.05, 0.26], [0.05, 0.22, 0.22], [0.3, -0.1, 0.22]]) { ctx.beginPath(); ctx.arc(cx + dx * r, cy + dy * r, rr * r, 0, Math.PI * 2); ctx.fill(); }
     }
   }
 }
