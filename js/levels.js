@@ -209,10 +209,10 @@ export const LEVELS = [
 ];
 
 // Stärke der Gegner je Level in Ausbaustufen, reihum verteilt auf Abwehr, Verwertung, Angriff, Tempo, Leben
-// (5 = +1 auf alle fünf). Der Spieler bringt durch Sterne zusätzliche Punkte mit; die Werte sind mit
-// tools/tune-levels.mjs so gewählt, dass ein gleichmäßig verteiltes „faules“ Bakterium meist verliert,
-// ein durchdachtes aber gewinnt.
-export const LEVEL_POWER = [0, 4, 10, 11, 10, 8, 8, 12, 21, 11, 14, 15, 20, 12, 22, 18, 21, 22, 30, 28];
+// (5 = +1 auf alle fünf). Abgestimmt mit tools/tune-levels.mjs auf einen Spieler mit ALLEN Sternen davor
+// (1 Punkt je Stern): dann knapp schaffbar, ein „faules“ Bakterium verliert meist. Fehlen viele Sterne
+// (SHARE=0.3–0.6), gewinnt auch ein durchdachtes Bakterium kaum noch.
+export const LEVEL_POWER = [0, 4, 10, 11, 10, 8, 8, 12, 21, 11, 14, 15, 20, 9, 22, 18, 21, 22, 30, 28];
 const TRAITS5 = ['defense', 'efficiency', 'attack', 'speed', 'lifespan'];
 const powerOverride = typeof process !== 'undefined' && process.env && process.env.POWER_LEVEL ? [Number(process.env.POWER_LEVEL), Number(process.env.POWER)] : null;
 LEVELS.forEach((lv, i) => {
