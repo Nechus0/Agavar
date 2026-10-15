@@ -1,7 +1,7 @@
 // Ruhige Hintergrundmusik, live mit WebAudio erzeugt (keine Audiodateien).
 // Grundschicht: weiche Flächen, tiefer Bass und vereinzelte Glockentöne – läuft durchgehend in der ganzen App.
 // Kampfschicht: Puls-Bass, Arpeggio und leise Trommeln – wird nur bei Kämpfen auf der Platte eingeblendet.
-import { audioContext } from './sound.js';
+import { audioContext, output } from './sound.js';
 
 const BPM = 72;
 const STEP = 60 / BPM / 4; // eine Sechzehntel in Sekunden
@@ -37,7 +37,7 @@ function setup(a) {
   if (master) return;
   master = a.createGain();
   master.gain.value = 0.0001;
-  master.connect(a.destination);
+  master.connect(output());
   // Hall für alles
   verb = a.createConvolver();
   verb.buffer = impulse(a, 3.2);

@@ -11,7 +11,7 @@ import { LEVELS, levelOpponents, adaptation } from './levels.js';
 import { GERMS, germSvg } from './germs.js';
 import {
   getLimits, unlockLevelOf, rewardsOf, problems, careerPoints, nextLevel, START_POINTS, POINTS_PER_WIN,
-  STAR_GOALS, starMask, starCount, challengeOf,
+  STAR_GOALS, starMask, starCount, challengeOf, fastHours, fastTicks,
 } from './progression.js';
 import { analyze, ACHIEVEMENTS, deathBreakdown, plateReport } from './insights.js';
 import { SPECIAL_ICONS, TRAIT_ICONS, UI_ICONS, ACH_ICONS, ELEMENT_ICONS } from './icons.js';
@@ -410,10 +410,12 @@ function elementRow(k) {
 
 // Neues Element: einmalig ein Info-Blatt mit Bild, Name und Wirkung
 function showNewElements(keys) {
+  // schon gesehen: gemerkt oder in einem bereits gewonnenen Level vorgekommen (ältere Spielstände)
   const seen = new Set(store.getSettings().seenElements || []);
+  for (const b of store.getBacteria()) for (const l of b.career.won) for (const k of elementsOf(LEVELS[l - 1]?.plate || {})) seen.add(k);
   const fresh = keys.filter((k) => !seen.has(k));
   if (!fresh.length) return;
-  store.updateSettings({ seenElements: [...seen, ...fresh] });
+  store.updateSettings({ seenElements: [...new Set([...seen, ...fresh])] });
   setTimeout(() => {
     if (current !== 'level-detail') return;
     openSheet('New on the plate', ...fresh.map((k) => el('div', { class: 'el-intro' },
@@ -424,7 +426,7 @@ function showNewElements(keys) {
   }, 350);
 }
 
-const starLabel = (g, lv) => ({ 1: 'Win', 2: 'Under 12 h', 4: challengeOf(lv).short }[g.bit]);
+const starLabel = (g, lv) => ({ 1: 'Win', 2: `Under ${fastHours(lv)} h`, 4: challengeOf(lv).short }[g.bit]);
 
 $('#ld-start').addEventListener('click', () => {
   const b = curCareer();
@@ -970,15 +972,15 @@ function updateSimUi() {
   // Sterne live: Sieg offen, „unter 12 h“ verfällt, „25 % Platte“ leuchtet auf
   if (run.cfg.mode === 'level') {
     const me = sim.players[0];
-    const fastLost = sim.tick > 1000;
     const lv = LEVELS[run.cfg.level - 1];
+    const fastLost = sim.tick > fastTicks(lv);
     const ch = challengeOf(lv);
     const chOk = ch.ok(sim, run.genomes[0]);
     const chLost = (ch.fixed && !chOk) || (ch.failed && ch.failed(sim)) || (sim.done && !(sim.winner === 1 && chOk));
     const won = sim.done && sim.winner === 1;
     fill($('#sim-goals'),
       el('div', { class: `goal-chip ${won ? 'done' : sim.done ? 'lost' : ''}` }, el('span', { class: 'star', 'aria-hidden': 'true' }, '★'), 'Win'),
-      el('div', { class: `goal-chip ${won && !fastLost ? 'done' : fastLost ? 'lost' : ''}` }, el('span', { class: 'star', 'aria-hidden': 'true' }, '★'), 'Under 12 h'),
+      el('div', { class: `goal-chip ${won && !fastLost ? 'done' : fastLost ? 'lost' : ''}` }, el('span', { class: 'star', 'aria-hidden': 'true' }, '★'), `Under ${fastHours(lv)} h`),
       el('div', { class: `goal-chip ${chLost ? 'lost' : chOk && !ch.fixed ? 'done' : ''}`, title: ch.text }, el('span', { class: 'star', 'aria-hidden': 'true' }, '★'), ch.progress && !chOk ? ch.progress(sim) : ch.short));
   }
   if (run.ev) checkEvents();

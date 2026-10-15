@@ -58,6 +58,9 @@ export const STAR_GOALS = [
   { bit: 4, icon: '🧫', short: 'Challenge', text: 'The level challenge (see the level page)' },
 ];
 export const FAST_TICKS = 1000; // 12 h von 48 h
+// Zeitstern je Level: auf großen Platten dauert jeder Sieg länger, dort gilt lv.fast (Stunden)
+export const fastHours = (level) => (level && level.fast) || 12;
+export const fastTicks = (level) => Math.round((fastHours(level) * FAST_TICKS) / 12);
 export const BIG_PLATE = 0.25;
 export const starCount = (mask) => ((mask & 1) + ((mask >> 1) & 1) + ((mask >> 2) & 1));
 
@@ -69,9 +72,9 @@ export function challengeOf(level) {
   switch (kind) {
     case 'lean': return { kind, short: `≤ ${n} points`, text: `Win with a bacterium that uses at most ${n} points`, ok: (sim, g) => sumPts(g) <= n, fixed: true };
     case 'pure': return { kind, short: 'No ability', text: 'Win without a special ability', ok: (sim, g) => g.special === 'none' && (!g.bonusSpecial || g.bonusSpecial === 'none'), fixed: true };
-    case 'hunter': return { kind, short: `${n.toLocaleString('en-US')} kills`, text: `Kill ${n.toLocaleString('en-US')} enemy cells and win`, ok: (sim) => sim.players[0].kills >= n, progress: (sim) => `${Math.min(n, sim.players[0].kills).toLocaleString('en-US')} / ${n.toLocaleString('en-US')} kills` };
+    case 'hunter': return { kind, short: `${n.toLocaleString('en-US')} kills`, text: `Kill ${n.toLocaleString('en-US')} enemy cells and win`, ok: (sim) => sim.players[0].kills >= n, progress: (sim) => `${Math.min(n, sim.players[0].kills)}/${n} kills` };
     case 'boss': return { kind, short: 'Wipe out boss', text: 'Wipe out the boss completely and win', ok: (sim) => sim.players[1] && sim.players[1].count === 0 };
-    case 'honey': return { kind, short: `${n} honey drops`, text: `Claim at least ${n} honey drops and win`, ok: (sim) => sim.players[0].env.honey >= n, progress: (sim) => `${sim.players[0].env.honey} / ${n} drops` };
+    case 'honey': return { kind, short: `${n} honey drops`, text: `Claim at least ${n} honey drops and win`, ok: (sim) => sim.players[0].env.honey >= n, progress: (sim) => `${sim.players[0].env.honey}/${n} drops` };
     case 'clean': return { kind, short: `Plate < ${n}`, text: `Lose fewer than ${n} cells to the plate itself and win`, ok: (sim) => (sim.players[0].died.env || 0) < n, failed: (sim) => (sim.players[0].died.env || 0) >= n };
     default: return { kind: 'plate', short: '25 % plate', text: 'Cover 25 % of the plate at some point (and win)', ok: (sim) => sim.players[0].peakPlate >= BIG_PLATE };
   }
@@ -79,7 +82,7 @@ export function challengeOf(level) {
 export function starMask(sim, level = null, genome = null) {
   if (sim.winner !== 1) return 0;
   let m = 1;
-  if (sim.tick <= FAST_TICKS) m |= 2;
+  if (sim.tick <= fastTicks(level)) m |= 2;
   const ch = challengeOf(level);
   if (ch.ok(sim, genome || sim.players[0].genome)) m |= 4;
   return m;

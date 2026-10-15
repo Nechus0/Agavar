@@ -21,11 +21,32 @@ function ac() {
 // beim ersten Tippen irgendwo freischalten
 // bei jeder Berührung sicherstellen, dass der Ton läuft (iOS hält ihn sonst nach dem Wechseln der App an)
 ['touchstart', 'pointerdown', 'keydown'].forEach((ev) => window.addEventListener(ev, () => { if (ctx && ctx.state !== 'running') ctx.resume(); else if (!ctx) ac(); }, { passive: true }));
-// App im Hintergrund: Ton anhalten, beim Zurückkommen weiterspielen
-document.addEventListener('visibilitychange', () => {
-  if (!ctx) return;
-  if (document.hidden) ctx.suspend().catch(() => {}); else ctx.resume().catch(() => {});
-});
+// App im Hintergrund: erst ganz kurz ausblenden, dann anhalten – hartes Abschneiden knackt.
+// Beim Zurückkommen wieder einblenden. Alle Töne laufen über diesen Ausgang.
+let out = null, hideTimer = 0;
+export function output() {
+  const a = ac();
+  if (!a) return null;
+  if (!out) { out = a.createGain(); out.connect(a.destination); }
+  return out;
+}
+function background(hidden) {
+  if (!ctx || !out) { if (ctx && hidden) ctx.suspend().catch(() => {}); return; }
+  const t = ctx.currentTime;
+  clearTimeout(hideTimer);
+  out.gain.cancelScheduledValues(t);
+  out.gain.setValueAtTime(out.gain.value, t);
+  if (hidden) {
+    out.gain.linearRampToValueAtTime(0, t + 0.12);
+    hideTimer = setTimeout(() => ctx.suspend().catch(() => {}), 160);
+  } else {
+    out.gain.setValueAtTime(0, t);
+    ctx.resume().then(() => { const n = ctx.currentTime; out.gain.cancelScheduledValues(n); out.gain.setValueAtTime(0, n); out.gain.linearRampToValueAtTime(1, n + 0.6); }).catch(() => {});
+  }
+}
+document.addEventListener('visibilitychange', () => background(document.hidden));
+window.addEventListener('pagehide', () => background(true));
+window.addEventListener('pageshow', () => { if (!document.hidden) background(false); });
 
 // weicher Ton: sanfter Einsatz, langes Ausklingen (keine harten Rechteck-Klicks)
 function tone(freq, start, dur, { type = 'sine', vol = 0.08, slide = 0, attack = 0.03 } = {}) {
@@ -40,7 +61,7 @@ function tone(freq, start, dur, { type = 'sine', vol = 0.08, slide = 0, attack =
   g.gain.setValueAtTime(0.0001, t0);
   g.gain.linearRampToValueAtTime(vol, t0 + attack);
   g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-  o.connect(g).connect(a.destination);
+  o.connect(g).connect(output());
   o.start(t0);
   o.stop(t0 + dur + 0.05);
 }

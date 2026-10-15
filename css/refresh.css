@@ -323,3 +323,7 @@ body.has-resume #home:not([hidden]) { height: calc(100dvh - env(safe-area-inset-
   #level-detail .card { padding: 8px 12px; gap: 6px; }
   #level-detail .tip.adapt { padding: 2px 8px; }
 }
+
+/* Sternchips in der Simulation: immer einzeilig, feste Höhe – sonst springt die Platte, wenn Zähler wachsen */
+#sim .goal-chip { height: 30px; white-space: nowrap; overflow: hidden; min-width: 0; font-variant-numeric: tabular-nums; }
+#sim .goal-chip > :last-child { overflow: hidden; text-overflow: ellipsis; }
