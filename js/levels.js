@@ -43,6 +43,7 @@ export const LEVELS = [
   },
   {
     name: 'The Sore',
+    fast: 16, // Siege dauern hier meist länger
     challenge: ['pure'],
     note: 'A scratched sore: blood and plasma pooled in a few large patches. Between them the skin is almost bare.',
     desc: 'Streptococcus pyogenes hides in a slime capsule – every attack must hit twice. Pink Kocuria grabs the free spots.',
@@ -60,7 +61,7 @@ export const LEVELS = [
   },
   {
     name: 'Sweaty Feet',
-    challenge: ['lean', 16],
+    challenge: ['lean', 21],
     note: 'Thick, dry skin between the toes. Hardly any food – every spot is precious and gone fast.',
     desc: 'Little air, little food between the toes. Brevibacterium makes feet smell, Kytococcus eats pits into the soles.',
     plate: { size: 'mittel', distribution: 'poren', amount: 'wenig', regen: 'normal' },
@@ -112,7 +113,7 @@ export const LEVELS = [
   // ---------- World 1, part 2: the plate itself fights back ----------
   {
     name: 'Gravel Graze',
-    challenge: ['lean', 24],
+    challenge: ['lean', 35],
     note: 'You fell off your bike. Grit and little stones are stuck in the graze – they block the way, and blood pooled in patches between them.',
     desc: 'Staphylococcus lugdunensis looks like a harmless skin germ, but in a graze it turns nasty. Pink Kocuria is already there.',
     plate: { size: 'mittel', distribution: 'flecken', amount: 'normal', regen: 'normal', elements: [{ type: 'stones', count: 7 }] },
@@ -138,7 +139,7 @@ export const LEVELS = [
   },
   {
     name: 'Salt Crust',
-    challenge: ['lean', 26],
+    challenge: ['lean', 40],
     note: 'After a long run the sweat has dried. Salt crystals crust the skin and little else is left – except around the crystals, where moisture keeps drawing food out.',
     desc: 'Brevibacterium loves salt – it is also used to make smelly cheese. Cutibacterium waits deep in the pores.',
     plate: { size: 'mittel', distribution: 'poren', amount: 'wenig', regen: 'langsam', elements: [{ type: 'salt', count: 6 }] },
@@ -158,7 +159,7 @@ export const LEVELS = [
   },
   {
     name: 'Honey Dressing',
-    challenge: ['honey', 3],
+    challenge: ['honey', 2], // der 3. Tropfen käme erst nach 16 h – nicht zusammen mit „unter 12 h“
     note: 'An old ulcer, cleaned out and almost empty – food only trickles back slowly. But the nurse drips medical honey on it every few hours.',
     desc: 'Finegoldia magna hides deep in ulcers and smells its way to food. Streptococcus pyogenes joins the race.',
     plate: { size: 'mittel', distribution: 'gleichmaessig', amount: 'normal', regen: 'langsam', elements: [{ type: 'sugar', first: 320, every: 520, amount: 90 }] },
@@ -198,7 +199,7 @@ export const LEVELS = [
   {
     name: 'Pus & Phages',
     adapts: true,
-    challenge: ['lean', 36],
+    challenge: ['lean', 56],
     note: 'The wound is badly infected. The immune system sends white blood cells, and the doctors try phage therapy – both go for the biggest colony.',
     desc: 'World finale: Pseudomonas aeruginosa with biofilm and toxins, the favourite target of phage therapy. Two old enemies return.',
     plate: { size: 'gross', distribution: 'schnitt', amount: 'normal', regen: 'normal', elements: [{ type: 'immune', at: 600, count: 2 }, { type: 'phage', at: [900, 1800, 2700] }] },
