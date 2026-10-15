@@ -709,7 +709,7 @@ body.sim-open #app { min-height: 0; padding-bottom: 0; }
 .sim-elements { display: flex; justify-content: center; flex-wrap: wrap; gap: var(--space-2); flex: none; margin-top: calc(-1 * var(--space-1)); }
 .el-chip { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text-secondary); }
 .el-chip .ico { color: var(--plate-full); }
-#sim .banner-slot { min-height: 32px; margin-top: 0; flex: none; }
+#sim .banner-slot { height: 40px; min-height: 0; margin-top: 0; flex: none; overflow: hidden; } /* feste Höhe: zweizeilige Meldungen verschieben die Platte nicht */
 #sim .goal-row, #sim .speed { flex: none; }
 #sim .goal-chip { padding: 6px; }
 #sim .speed button { min-height: 40px; }
