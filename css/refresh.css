@@ -219,3 +219,57 @@ details.more > .rs-section + .rs-section { margin-top: var(--space-4); }
 #result .star-col:nth-child(2) .big-star { font-size: 38px; }
 #result hr.divider { display: none; }
 #result > .rs-section:not(details .rs-section) > h2 { display: none; }
+
+/* ---------- Ohne Scrollen: Startseite und Labor passen auf einen Handy-Bildschirm ---------- */
+#home:not([hidden]) {
+  height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 116px);
+  min-height: 560px; gap: 12px;
+}
+body.has-resume #home:not([hidden]) { height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 152px); }
+#home .hero { flex: 1 1 0; min-height: 0; padding: 0; gap: 6px; justify-content: center; }
+#home .hero-ring { width: auto; height: min(236px, calc(100% - 44px)); aspect-ratio: 1; margin: 0; flex: none; }
+#home .hero h1 { font-size: 26px; line-height: 1; }
+#home .next-card { gap: 10px; padding: 14px 16px; }
+#home .next-card h2 { font-size: 19px; }
+#home .next-card .btn.big { min-height: 50px; }
+#home #home-world { gap: 0; flex: none; }
+#home .level-card { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; }
+#home .level-card h2 { font-size: 15px; }
+#home .star-grid { gap: 6px; }
+#home .star-cell { min-height: 42px; padding: 4px 2px; gap: 0; }
+#home .star-cell span { font-size: 9px; }
+
+/* Labor: Speichern oben, drei Reiter, kompakte Zeilen */
+.ed-bar .save-top { min-height: 34px; padding: 0 16px; font-size: 15px; border-radius: var(--radius-pill); justify-self: end; box-shadow: 0 4px 14px rgba(46, 242, 180, .35), inset 0 1px 0 rgba(255, 255, 255, .6); }
+#editor { gap: 10px; }
+#editor .identity { gap: 8px; }
+#editor .identity .color-dot, #editor .icon-btn.big { width: 44px; height: 44px; min-height: 44px; }
+#editor .name-field { padding: 4px 12px; }
+#editor .preview-card { padding: 10px 12px; gap: 12px; }
+#editor .preview-card .small-ring { width: 76px; }
+#editor .growth { gap: 1px 8px; font-size: 11.5px; }
+#editor .spend { gap: 10px; }
+#editor .points-bar { padding: 8px 14px; }
+.ed-tabs { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); }
+.ed-tabs button { min-height: 36px; font-size: 13px; }
+#editor .group { gap: 6px; }
+#editor .trait.compact, #ed-costed .trait, #ed-free .trait { padding: 5px 0; }
+#editor .trait.compact .step-btn { width: 36px; height: 36px; }
+#editor .slot-row { min-height: 56px; padding-top: 6px; padding-bottom: 6px; }
+@media (max-height: 760px) {
+  #home:not([hidden]) { min-height: 480px; gap: 8px; }
+  #home .star-cell { min-height: 36px; }
+  #home .next-card { gap: 6px; padding: 10px 14px; }
+  #home .next-card .btn.big { min-height: 44px; }
+  #editor { gap: 6px; }
+  #editor .preview-main > .small { display: none; }
+  #editor .preview-card { padding: 6px 10px; }
+  #editor .preview-card .small-ring { width: 58px; }
+  #editor .identity .color-dot, #editor .icon-btn.big { width: 38px; height: 38px; min-height: 38px; }
+  #editor .name-field { padding: 2px 10px; }
+  #editor .spend { gap: 6px; }
+  #editor .points-bar { padding: 5px 12px; }
+  .ed-tabs button { min-height: 32px; }
+  #editor .trait.compact, #ed-costed .trait, #ed-free .trait { padding: 2px 0; }
+  #editor .trait.compact .step-btn { width: 32px; height: 32px; }
+}

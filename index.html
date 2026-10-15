@@ -26,7 +26,6 @@
       <div class="hero">
         <div class="plate-ring hero-ring"><canvas id="hero-plate" class="plate" aria-hidden="true"></canvas></div>
         <h1>Agava</h1>
-        <p class="sub">Bacteria battle on the agar plate</p>
       </div>
       <div id="home-next"></div>
       <section class="rs-section" id="home-world"></section>
@@ -46,7 +45,7 @@
 
     <!-- Lab -->
     <section class="screen" id="editor">
-      <header class="bar ed-bar"><button class="back" id="ed-cancel">Cancel</button><h2 id="ed-title">Lab</h2><span></span></header>
+      <header class="bar ed-bar"><button class="back" id="ed-cancel">Cancel</button><h2 id="ed-title">Lab</h2><button class="btn primary save-top" id="ed-save">Save</button></header>
       <p class="coach" id="ed-coach" hidden></p>
       <div class="identity">
         <button class="color-dot" id="ed-color" aria-label="Colour"></button>
@@ -67,13 +66,17 @@
           <b class="points-num" id="ed-cost">0 / 20</b>
           <span class="points-left" id="ed-left"></span>
         </div>
-        <section class="group"><div class="group-label"><span>Traits</span><span>Higher steps cost more</span></div><div class="list-card" id="ed-costed"></div></section>
-        <section class="group"><div class="group-label"><span>Abilities</span><span>Cost points</span></div><div class="list-card" id="ed-slots"></div></section>
+        <div class="seg ed-tabs" id="ed-tabs" role="tablist" aria-label="Lab sections">
+          <button role="tab" data-pane="traits" class="on" aria-selected="true">Traits</button>
+          <button role="tab" data-pane="ability" aria-selected="false">Ability · Move</button>
+          <button role="tab" data-pane="body" aria-selected="false">Body</button>
+        </div>
+        <section class="group" data-pane="traits"><div class="list-card" id="ed-costed"></div></section>
+        <section class="group" data-pane="ability" hidden><div class="group-label"><span>Abilities</span><span>Cost points</span></div><div class="list-card" id="ed-slots"></div></section>
       </div>
-      <section class="group"><div class="group-label"><span>Movement</span><span>Free</span></div><div class="list-card"><button class="slot-row" id="ed-move-row"></button></div></section>
-      <section class="group"><div class="group-label"><span>Body</span><span>Free</span></div><div class="list-card" id="ed-free"></div></section>
+      <section class="group" data-pane="ability" hidden><div class="group-label"><span>Movement</span><span>Free</span></div><div class="list-card"><button class="slot-row" id="ed-move-row"></button></div></section>
+      <section class="group" data-pane="body" hidden><div class="group-label"><span>Body</span><span>Free</span></div><div class="list-card" id="ed-free"></div></section>
       <p class="small warn" id="ed-warn" hidden></p>
-      <div class="sticky-cta"><button class="btn primary big" id="ed-save">Save bacterium</button></div>
     </section>
 
     <!-- Simulation -->

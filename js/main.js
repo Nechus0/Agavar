@@ -282,8 +282,9 @@ function renderHome() {
   const won = b ? b.career.won : [];
   const nxt = b ? nextLevel(won, LEVELS.length) : 0;
   fill($('#home-world'),
-    el('div', { class: 'row between' }, el('h2', {}, `${world.name} levels`), el('span', { class: 'small muted mono' }, `★ ${b ? Object.values(b.career.stars).reduce((a, m) => a + starCount(m), 0) : 0} / ${LEVELS_PER_WORLD * 3}`)),
-    el('div', { class: 'card' }, el('div', { class: 'star-grid' }, Array.from({ length: LEVELS_PER_WORLD }, (_, i) => {
+    el('div', { class: 'card level-card' },
+      el('div', { class: 'row between' }, el('h2', {}, `${world.name} levels`), el('span', { class: 'small muted mono' }, `★ ${b ? Object.values(b.career.stars).reduce((a, m) => a + starCount(m), 0) : 0} / ${LEVELS_PER_WORLD * 3}`)),
+      el('div', { class: 'star-grid' }, Array.from({ length: LEVELS_PER_WORLD }, (_, i) => {
       const lvn = i + 1, m = b ? b.career.stars[lvn] || 0 : 0;
       const exists = lvn <= LEVELS.length, isWon = won.includes(lvn), open = b && exists && (isWon || lvn === nxt);
       return el('button', {
@@ -296,8 +297,7 @@ function renderHome() {
           openLevel(lvn);
         },
       }, el('b', {}, String(lvn)), el('span', { 'aria-hidden': 'true' }, [1, 2, 4].map((bit) => el('i', { class: m & bit ? 'on' : '' }, '★'))));
-    })),
-    el('p', { class: 'small muted' }, '★ Win · ★ Under 12 h · ★ the level challenge. All three in a level give +1 upgrade point.')));
+    }))));
 }
 
 function playNext(b, n) {
@@ -441,8 +441,16 @@ $('#ld-start').addEventListener('click', () => {
 let ed = null;
 let edCtx = null;
 
+// Labor in drei Reitern statt einer langen Liste – alles passt ohne Scrollen auf den Bildschirm
+function showLabPane(name) {
+  document.querySelectorAll('#ed-tabs [data-pane]').forEach((t) => { t.classList.toggle('on', t.dataset.pane === name); t.setAttribute('aria-selected', String(t.dataset.pane === name)); });
+  document.querySelectorAll('#editor section[data-pane]').forEach((p) => { p.hidden = p.dataset.pane !== name; });
+}
+document.querySelectorAll('#ed-tabs [data-pane]').forEach((t) => t.addEventListener('click', () => showLabPane(t.dataset.pane)));
+
 function openEditor(b, ctx) {
   edCtx = ctx;
+  showLabPane('traits');
   ed = b ? normalize(JSON.parse(JSON.stringify(b))) : defaultGenome();
   if (b && b.id) ed.id = b.id;
   if (!b) {
