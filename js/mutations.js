@@ -6,7 +6,7 @@ export const MUTATIONS = {
   thrifty: { name: 'Thrifty', text: 'Burns 12 % less energy just staying alive.' },
   sprinter: { name: 'Sprinter', text: 'Moves 12 % more often.' },
   long_life: { name: 'Long life', text: 'Cells live 20 % longer.' },
-  sweet_tooth: { name: 'Sweet tooth', text: 'Eats 25 % faster on rich food (honey, fresh patches).' },
+  sweet_tooth: { name: 'Sweet tooth', text: 'Eats 25 % faster on rich food (honey, fresh patches).', element: 'sugar' },
   keen_nose: { name: 'Keen nose', text: 'Smells food much better.' },
   big_brood: { name: 'Big brood', text: 'Divides 10 % sooner.' },
   fighter: { name: 'Fighter', text: '+1 attack.' },
@@ -21,11 +21,11 @@ export const MUTATIONS = {
 export const MUTATION_KEYS = Object.keys(MUTATIONS);
 
 // drei Vorschläge für einen Sieg, fest für dieses Bakterium und Level (kein Neu-Würfeln durch Neuladen)
-// Umwelt-Mutationen (Salz, Sonne …) nur, wenn diese Gefahr in den nächsten Leveln vorkommt
-export function mutationChoices(bacterium, level, upcoming = new Set()) {
+// Umwelt-Mutationen (Salz, Sonne …) erst, wenn diese Gefahr schon auf einer Platte vorkam
+export function mutationChoices(bacterium, level, seen = new Set()) {
   const own = new Set(bacterium.mutations || []);
   const has = new Set([bacterium.special, bacterium.bonusSpecial]);
-  const relevant = (m) => !m.element || [].concat(m.element).some((e) => upcoming.has(e));
+  const relevant = (m) => !m.element || [].concat(m.element).some((e) => seen.has(e));
   const pool = MUTATION_KEYS.filter((k) => !own.has(k) && (!MUTATIONS[k].needs || has.has(MUTATIONS[k].needs)) && relevant(MUTATIONS[k]));
   let s = 0;
   for (const ch of `${bacterium.id}:${level}`) s = (s * 31 + ch.charCodeAt(0)) >>> 0;

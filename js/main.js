@@ -1119,7 +1119,7 @@ function showResult() {
     achievements: newAch,
     germs: newGerms,
     // neue Mutation zur Wahl nach jedem ersten Sieg
-    mutation: firstWin && me ? { id: me.id, choices: mutationChoices(me, cfg.level, upcomingElements(cfg.level)) } : null,
+    mutation: firstWin && me ? { id: me.id, choices: mutationChoices(me, cfg.level, seenElements(cfg.level)) } : null,
   };
   if (unlocks.mutation && !unlocks.mutation.choices.length) unlocks.mutation = null;
   const hasNews = unlocks.mutation || unlocks.points || unlocks.rewards.length || newAch.length || newGerms.length;
@@ -1203,7 +1203,8 @@ function renderSummary(sim, mask) {
 }
 
 // Elemente der nächsten Level (für passende Mutationen)
-const upcomingElements = (level) => new Set(LEVELS.slice(level, level + 4).flatMap((lv) => elementsOf(lv.plate)));
+// Gefahren, die bis einschließlich dieses Levels schon vorkamen
+const seenElements = (level) => new Set(LEVELS.slice(0, level).flatMap((lv) => elementsOf(lv.plate)));
 
 // Fenster mit allem, was in dieser Runde neu dazukam: besiegter Keim, Belohnungen, Erfolge
 function showUnlocks(u) {
