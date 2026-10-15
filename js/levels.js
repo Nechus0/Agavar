@@ -79,7 +79,7 @@ export const LEVELS = [
   },
   {
     name: 'The Catheter',
-    challenge: ['hunter', 800],
+    challenge: ['hunter', 150], // schnelle Siege (~7 h) bringen 100–250 Kills – mehr passt nicht zu „unter 12 h“
     note: 'The tube runs straight through the skin. A rich stripe of fluid along it, dry skin on both sides – on a large plate.',
     desc: 'Your first opponent returns: on a plastic tube in the skin, Staphylococcus epidermidis builds a tough biofilm. Staphylococcus hominis helps.',
     plate: { size: 'gross', distribution: 'schnitt', amount: 'normal', regen: 'normal' },
@@ -113,7 +113,7 @@ export const LEVELS = [
   // ---------- World 1, part 2: the plate itself fights back ----------
   {
     name: 'Gravel Graze',
-    challenge: ['lean', 35],
+    challenge: ['plate'],
     note: 'You fell off your bike. Grit and little stones are stuck in the graze – they block the way, and blood pooled in patches between them.',
     desc: 'Staphylococcus lugdunensis looks like a harmless skin germ, but in a graze it turns nasty. Pink Kocuria is already there.',
     plate: { size: 'mittel', distribution: 'flecken', amount: 'normal', regen: 'normal', elements: [{ type: 'stones', count: 7 }] },
@@ -139,7 +139,7 @@ export const LEVELS = [
   },
   {
     name: 'Salt Crust',
-    challenge: ['lean', 40],
+    challenge: ['lean', 45],
     note: 'After a long run the sweat has dried. Salt crystals crust the skin and little else is left – except around the crystals, where moisture keeps drawing food out.',
     desc: 'Brevibacterium loves salt – it is also used to make smelly cheese. Cutibacterium waits deep in the pores.',
     plate: { size: 'mittel', distribution: 'poren', amount: 'wenig', regen: 'langsam', elements: [{ type: 'salt', count: 6 }] },
@@ -159,7 +159,7 @@ export const LEVELS = [
   },
   {
     name: 'Honey Dressing',
-    challenge: ['honey', 2], // der 3. Tropfen käme erst nach 16 h – nicht zusammen mit „unter 12 h“
+    challenge: ['honey', 1], // schnelle Siege kommen vor dem 2. Tropfen (~10 h) – sonst nicht mit „unter 12 h“ vereinbar
     note: 'An old ulcer, cleaned out and almost empty – food only trickles back slowly. But the nurse drips medical honey on it every few hours.',
     desc: 'Finegoldia magna hides deep in ulcers and smells its way to food. Streptococcus pyogenes joins the race.',
     plate: { size: 'mittel', distribution: 'gleichmaessig', amount: 'normal', regen: 'langsam', elements: [{ type: 'sugar', first: 320, every: 520, amount: 90 }] },
