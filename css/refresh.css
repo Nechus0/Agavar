@@ -273,3 +273,53 @@ body.has-resume #home:not([hidden]) { height: calc(100dvh - env(safe-area-inset-
   #editor .trait.compact, #ed-costed .trait, #ed-free .trait { padding: 2px 0; }
   #editor .trait.compact .step-btn { width: 32px; height: 32px; }
 }
+
+/* ---------- Level-Seite ohne Scrollen ---------- */
+#level-detail { gap: 10px; }
+#level-detail .intro { gap: 2px; }
+#level-detail .intro h1 { font-size: 22px; }
+#level-detail .intro .sub { font-size: 13px; -webkit-line-clamp: 1; }
+#level-detail .ld-goals { gap: 4px; }
+#level-detail .goal-stars .goal { padding: 4px 8px; font-size: 13px; }
+#level-detail .card { padding: 10px 14px; gap: 8px; }
+#level-detail .plate-top { gap: 12px; align-items: center; }
+#level-detail .preview-ring { width: 84px; }
+#level-detail .plate-facts { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+#level-detail .lab-note { background: none; border: 0; padding: 0; text-align: left; font: inherit; font-size: 13px; font-style: italic; line-height: 1.35; -webkit-line-clamp: 3; cursor: pointer; }
+.lab-note.full { -webkit-line-clamp: unset; display: block; font-size: 15px; }
+.fact-line { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-secondary); }
+#level-detail .fchip { padding: 3px 8px; }
+#level-detail .foe { gap: 10px; }
+#level-detail .foe + .foe { padding-top: 6px; }
+#level-detail .foe-pic, #level-detail .foe-pic.big { width: 40px; height: 28px; }
+#level-detail .foe-main { gap: 0; }
+#level-detail .foe-name { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#level-detail .foe-tags { flex-wrap: nowrap; overflow: hidden; gap: 6px; font-size: 12px; white-space: nowrap; }
+#level-detail .tip.adapt { padding: 4px 8px; font-size: 12px; }
+#level-detail .glance { gap: 4px; padding-top: 6px; }
+#level-detail .meters { gap: 3px; }
+#level-detail .m-row { font-size: 12px; gap: 8px; }
+#level-detail .bact-head .btn.small { min-height: 32px; }
+#level-detail .sticky-cta .btn.big { min-height: 50px; }
+@media (max-height: 760px) {
+  #level-detail { gap: 6px; }
+  #level-detail .intro .sub { display: none; }
+  #level-detail .preview-ring { width: 64px; }
+  #level-detail .lab-note { -webkit-line-clamp: 2; }
+  #level-detail .m-legend { display: none; }
+}
+#level-detail .glance { border-top: 0; padding-top: 0; }
+#level-detail .m-legend { font-size: 11px; }
+#level-detail .m-bars { gap: 2px; }
+#level-detail .m-bar { height: 5px; }
+@media (max-height: 760px) {
+  #level-detail .glance .meters { display: none; }
+  #level-detail .ld-goals .reward-line { font-size: 11px; }
+  #level-detail .foe-tags { font-size: 11px; }
+}
+@media (max-height: 760px) {
+  #level-detail .glance { display: none; }
+  #level-detail .foe + .foe { padding-top: 3px; }
+  #level-detail .card { padding: 8px 12px; gap: 6px; }
+  #level-detail .tip.adapt { padding: 2px 8px; }
+}

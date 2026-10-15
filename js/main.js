@@ -359,20 +359,19 @@ onEnter['level-detail'] = () => {
     el('div', { class: 'plate-top' },
       el('div', { class: 'plate-ring preview-ring' }, preview),
       el('div', { class: 'plate-facts' },
-        lv.note ? el('p', { class: 'lab-note' }, lv.note) : null,
-        // kurze Fakten als kleine Marken; Elemente als Marken, Antippen zeigt die Erklärung
-        el('div', { class: 'fact-chips' },
-          el('span', { class: 'fchip' }, ui('food', 'xs'), LABELS.amountLong[pl.amount]),
-          el('span', { class: 'fchip' }, ui('dish', 'xs'), LABELS.distribution[pl.distribution]),
-          el('span', { class: 'fchip' }, ui('restart', 'xs'), `Regrowth ${LABELS.regen[pl.regen].toLowerCase()}`),
-          ...els.map((k) => el('button', { class: 'fchip el', onclick: () => openSheet(ELEMENTS[k].name, el('div', { class: 'el-intro' }, el('span', { class: 'el-ico big' }, elIcon(k, 'lg')), el('p', {}, ELEMENTS[k].effect))) }, elIcon(k, 'xs'), ELEMENTS[k].name))))));
+        // Labornotiz gekürzt – Antippen zeigt sie ganz
+        lv.note ? el('button', { class: 'lab-note', onclick: () => openSheet(lv.name, el('p', { class: 'lab-note full' }, lv.note), el('p', { class: 'small muted' }, lv.desc)) }, lv.note) : null,
+        // Grundfakten in einer Zeile; Elemente als Marken, Antippen zeigt die Erklärung
+        el('div', { class: 'fact-line' }, ui('food', 'xs'), `${LABELS.amountLong[pl.amount]} · ${LABELS.distribution[pl.distribution].toLowerCase()} · regrowth ${LABELS.regen[pl.regen].toLowerCase()}`),
+        els.length ? el('div', { class: 'fact-chips' },
+          ...els.map((k) => el('button', { class: 'fchip el', onclick: () => openSheet(ELEMENTS[k].name, el('div', { class: 'el-intro' }, el('span', { class: 'el-ico big' }, elIcon(k, 'lg')), el('p', {}, ELEMENTS[k].effect))) }, elIcon(k, 'xs'), ELEMENTS[k].name))) : null)));
   drawPreview(preview, lv, n);
   showNewElements(els);
   fill($('#ld-foes'),
     foeRow(boss), ...others.map(foeRow),
     lv.adapts ? el('div', { class: 'tip adapt' }, ui('restart'), el('span', {}, ad
-      ? `This strain adapts to you: against your ${SPECIALS[ad.against].name.toLowerCase()} it brings ${SPECIALS[ad.counter].name.toLowerCase()}.`
-      : 'This strain adapts to your bacterium and brings a counter to your ability.')) : null);
+      ? `Adapts: brings ${SPECIALS[ad.counter].name.toLowerCase()} against your ${SPECIALS[ad.against].name.toLowerCase()}`
+      : 'Adapts: brings a counter to your ability')) : null);
   const mask = b.career.stars[n] || 0;
   fill($('#ld-goals'),
     el('div', { class: 'goal-stars' }, STAR_GOALS.map((g) => el('div', { class: `goal ${mask & g.bit ? 'done' : ''}`, title: g.bit === 4 ? challengeOf(lv).text : g.text },
