@@ -11,7 +11,7 @@ import { LEVELS, levelOpponents, adaptation } from './levels.js';
 import { GERMS, germSvg } from './germs.js';
 import {
   getLimits, unlockLevelOf, rewardsOf, problems, careerPoints, nextLevel, START_POINTS, POINTS_PER_WIN,
-  STAR_GOALS, starMask, starCount, challengeOf, fastHours, fastTicks,
+  STAR_GOALS, starMask, starCount, challengeOf, fastHours, fastTicks, fastLabel, fastText, leadTicks, ledAt,
 } from './progression.js';
 import { analyze, ACHIEVEMENTS, deathBreakdown, plateReport } from './insights.js';
 import { SPECIAL_ICONS, TRAIT_ICONS, UI_ICONS, ACH_ICONS, ELEMENT_ICONS } from './icons.js';
@@ -374,7 +374,7 @@ onEnter['level-detail'] = () => {
       : 'Adapts: brings a counter to your ability')) : null);
   const mask = b.career.stars[n] || 0;
   fill($('#ld-goals'),
-    el('div', { class: 'goal-stars' }, STAR_GOALS.map((g) => el('div', { class: `goal ${mask & g.bit ? 'done' : ''}`, title: g.bit === 4 ? challengeOf(lv).text : g.text },
+    el('div', { class: 'goal-stars' }, STAR_GOALS.map((g) => el('div', { class: `goal ${mask & g.bit ? 'done' : ''}`, title: g.bit === 4 ? challengeOf(lv).text : g.bit === 2 ? fastText(lv) : g.text },
       el('span', { class: 'star', 'aria-hidden': 'true' }, '★'), el('span', {}, starLabel(g, lv))))),
     el('div', { class: 'reward-line' }, won.includes(n) ? '' : 'First win:',
       el('span', { class: 'plus' }, '+1 point per ★'),
@@ -426,7 +426,7 @@ function showNewElements(keys) {
   }, 350);
 }
 
-const starLabel = (g, lv) => ({ 1: 'Win', 2: `Under ${fastHours(lv)} h`, 4: challengeOf(lv).short }[g.bit]);
+const starLabel = (g, lv) => ({ 1: 'Win', 2: fastLabel(lv), 4: challengeOf(lv).short }[g.bit]);
 
 $('#ld-start').addEventListener('click', () => {
   const b = curCareer();
@@ -973,14 +973,15 @@ function updateSimUi() {
   if (run.cfg.mode === 'level') {
     const me = sim.players[0];
     const lv = LEVELS[run.cfg.level - 1];
-    const fastLost = sim.tick > fastTicks(lv);
+    const lt = leadTicks(lv);
+    const fastLost = lt ? ledAt(sim, lt) === false : sim.tick > fastTicks(lv);
     const ch = challengeOf(lv);
     const chOk = ch.ok(sim, run.genomes[0]);
     const chLost = (ch.fixed && !chOk) || (ch.failed && ch.failed(sim)) || (sim.done && !(sim.winner === 1 && chOk));
     const won = sim.done && sim.winner === 1;
     fill($('#sim-goals'),
       el('div', { class: `goal-chip ${won ? 'done' : sim.done ? 'lost' : ''}` }, el('span', { class: 'star', 'aria-hidden': 'true' }, '★'), 'Win'),
-      el('div', { class: `goal-chip ${won && !fastLost ? 'done' : fastLost ? 'lost' : ''}` }, el('span', { class: 'star', 'aria-hidden': 'true' }, '★'), `Under ${fastHours(lv)} h`),
+      el('div', { class: `goal-chip ${won && !fastLost ? 'done' : fastLost ? 'lost' : ''}` }, el('span', { class: 'star', 'aria-hidden': 'true' }, '★'), fastLabel(lv)),
       el('div', { class: `goal-chip ${chLost ? 'lost' : chOk && !ch.fixed ? 'done' : ''}`, title: ch.text }, el('span', { class: 'star', 'aria-hidden': 'true' }, '★'), ch.progress && !chOk ? ch.progress(sim) : ch.short));
   }
   if (run.ev) checkEvents();
@@ -1109,7 +1110,7 @@ function showResult() {
     const all = store.getBacterium(cfg.careerId)?.career.stars[cfg.level] || mask;
     fill(sb, ...STAR_GOALS.map((g) => {
       const got = mask & g.bit, old = all & g.bit;
-      return el('div', { class: 'star-col', title: g.text },
+      return el('div', { class: 'star-col', title: g.bit === 2 ? fastText(LEVELS[cfg.level - 1]) : g.text },
         el('span', { class: `big-star ${got ? 'got' : old ? 'old' : ''} ${newStars & g.bit ? 'new' : ''}`, 'aria-hidden': 'true' }, '★'),
         el('small', {}, starLabel(g, LEVELS[cfg.level - 1])),
         el('span', { class: 'state' }, got ? (newStars & g.bit ? 'New' : 'Earned') : old ? 'Earned before' : 'Missed'));

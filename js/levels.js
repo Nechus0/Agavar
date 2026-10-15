@@ -121,7 +121,7 @@ export const LEVELS = [
   },
   {
     name: 'Antiseptic Cream',
-    challenge: ['clean', 300],
+    challenge: ['clean', 1700],
     note: 'A dab of antiseptic cream sits in the middle of the cut. Nothing grows close to it – but the cream wears off. And whoever spreads the most gets the next dab.',
     desc: 'Corynebacterium jeikeium shrugs off almost every drug and hides in a tough biofilm. Staphylococcus epidermidis is back as well.',
     plate: { size: 'mittel', distribution: 'gleichmaessig', amount: 'normal', regen: 'normal', elements: [{ type: 'disc', at: 0, where: 'center' }, { type: 'disc', at: 2000, where: 'leader', halo: 0.22 }] },
@@ -168,6 +168,7 @@ export const LEVELS = [
   {
     name: 'Fever',
     challenge: ['hunter', 1500],
+    lead: 24, // große, zähe Platte: früh gewinnt hier kaum jemand – zweiter Stern: mit 24 h vorne liegen
     note: 'The body fights back with fever. One side of the wound burns hot, the other is cooled by an ice pack.',
     desc: 'Streptococcus pyogenes causes scarlet fever and loves the heat. Staphylococcus hominis spreads in wide arcs.',
     plate: { size: 'gross', distribution: 'flecken', amount: 'normal', regen: 'normal', elements: [{ type: 'heat' }] },
@@ -186,7 +187,8 @@ export const LEVELS = [
   },
   {
     name: 'Mouldy Plaster',
-    challenge: ['clean', 500],
+    lead: 24, // der Schimmel wächst ständig nach – zweiter Stern: mit 24 h vorne liegen
+    challenge: ['plate'],
     note: 'A plaster stayed on far too long and grew mould. Just like on Fleming’s famous plate, a clear ring spreads around it – and after a day, more spores land.',
     desc: 'Staphylococcus aureus – the germ on Fleming’s plate when penicillin was discovered. Staphylococcus epidermidis builds biofilm beside it.',
     plate: { size: 'gross', distribution: 'gleichmaessig', amount: 'viel', regen: 'normal', elements: [{ type: 'mould', at: 0, size: 0.24 }, { type: 'mould', at: 1500, size: 0.16 }] },

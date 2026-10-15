@@ -61,6 +61,21 @@ export const FAST_TICKS = 1000; // 12 h von 48 h
 // Zeitstern je Level: auf großen Platten dauert jeder Sieg länger, dort gilt lv.fast (Stunden)
 export const fastHours = (level) => (level && level.fast) || 12;
 export const fastTicks = (level) => Math.round((fastHours(level) * FAST_TICKS) / 12);
+// Große, zähe Platten (lv.lead = Stunden): dort endet kaum ein Kampf früh – der zweite Stern heißt dann
+// „zu diesem Zeitpunkt vorne liegen“ (und gewinnen)
+export const leadTicks = (level) => (level && level.lead ? Math.round((level.lead * FAST_TICKS) / 12) : 0);
+export function ledAt(sim, ticks) {
+  const h = sim.history || [];
+  if (!h.length || sim.tick < ticks) return null; // noch offen
+  const row = h[Math.max(0, Math.min(h.length - 1, Math.round(ticks / 5) - 1))];
+  return row[0] > 0 && row[0] === Math.max(...row);
+}
+export const fastLabel = (level) => (level && level.lead ? `Lead at ${level.lead} h` : `Under ${fastHours(level)} h`);
+export const fastText = (level) => (level && level.lead ? `Be the biggest colony at ${level.lead} h of incubation` : `Win in under ${fastHours(level)} h of incubation`);
+export function fastOk(sim, level) {
+  const lt = leadTicks(level);
+  return lt ? ledAt(sim, lt) === true : sim.tick <= fastTicks(level);
+}
 export const BIG_PLATE = 0.25;
 export const starCount = (mask) => ((mask & 1) + ((mask >> 1) & 1) + ((mask >> 2) & 1));
 
@@ -82,7 +97,7 @@ export function challengeOf(level) {
 export function starMask(sim, level = null, genome = null) {
   if (sim.winner !== 1) return 0;
   let m = 1;
-  if (sim.tick <= fastTicks(level)) m |= 2;
+  if (fastOk(sim, level)) m |= 2;
   const ch = challengeOf(level);
   if (ch.ok(sim, genome || sim.players[0].genome)) m |= 4;
   return m;

@@ -1,6 +1,6 @@
 // Auswertung nach dem Spiel („woran lag es?“) und Erfolge.
 import { moveFromProgram } from './movement.js';
-import { challengeOf, fastHours } from './progression.js';
+import { challengeOf, fastHours, fastText } from './progression.js';
 
 const pct = (x) => `${Math.round(x * 100)} %`;
 
@@ -32,7 +32,7 @@ export function analyze(sim, genomes, mask = 0, level = null) {
   }
 
   if (won && mask) {
-    if (!(mask & 2)) out.push({ kind: 'tip', text: `Missing star: win in under ${fastHours(level)} h. This time it took ${Math.round((48 * sim.tick) / 4000)} h.` });
+    if (!(mask & 2)) out.push({ kind: 'tip', text: level && level.lead ? `Missing star: ${fastText(level).toLowerCase()}.` : `Missing star: win in under ${fastHours(level)} h. This time it took ${Math.round((48 * sim.tick) / 4000)} h.` });
     if (!(mask & 4)) out.push({ kind: 'tip', text: `Missing star: ${challengeOf(level).text.replace(/ and win$| \(and win\)$/, '').toLowerCase()}.` });
   }
   return out.slice(0, 4);
