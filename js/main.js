@@ -16,7 +16,7 @@ import {
 import { analyze, ACHIEVEMENTS, deathBreakdown, plateReport } from './insights.js';
 import { SPECIAL_ICONS, TRAIT_ICONS, UI_ICONS, ACH_ICONS, ELEMENT_ICONS } from './icons.js';
 import { ELEMENTS, elementsOf } from './elements.js';
-import { MUTATIONS, mutationChoices } from './mutations.js';
+import { MUTATIONS, mutationChoices, mutationName, rankOf } from './mutations.js';
 import { MOVES, MOVE_BY_KEY, actionsOf, compile, moveFromProgram, describeMove, pathSvg } from './movement.js';
 import * as store from './storage.js';
 import { meters, METER_INFO, counterTips } from './meters.js';
@@ -1250,6 +1250,7 @@ let pendingMutation = null;
 function showMutationStep(m) {
   const ok = $('#mut-ok');
   ok.disabled = true;
+  const me = store.getBacterium(m.id) || {};
   const cards = m.choices.map((k) => el('button', {
     class: 'mut-card', 'aria-pressed': 'false',
     onclick: (e) => {
@@ -1258,7 +1259,7 @@ function showMutationStep(m) {
       ok.disabled = false;
       play('star');
     },
-  }, el('span', { class: 'mut-ico' }, ui('flask', 'md')), el('b', {}, MUTATIONS[k].name), el('small', {}, MUTATIONS[k].text)));
+  }, el('span', { class: 'mut-ico' }, ui('flask', 'md')), el('b', {}, mutationName(k, rankOf(me, k) + 1)), el('small', {}, (rankOf(me, k) ? 'Stronger: ' : '') + MUTATIONS[k].text)));
   fill($('#mut-cards'), ...cards);
   $('#mut-modal').hidden = false;
   document.body.classList.add('modal-open');

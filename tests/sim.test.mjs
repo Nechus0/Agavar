@@ -296,3 +296,16 @@ test('Zellgröße und Mutationen verändern den Phänotyp', () => {
   const thrifty = phenotype({ ...defaultGenome(), mutations: ['thrifty'] });
   assert.ok(thrifty.basal < phenotype(defaultGenome()).basal);
 });
+
+test('always three mutations to choose from, general ones stack up to rank IV', async () => {
+  const { mutationChoices, maxRank } = await import('../js/mutations.js');
+  const b = { id: 'x', special: 'none', mutations: [] };
+  for (let lv = 1; lv <= 20; lv++) {
+    const c = mutationChoices(b, lv, new Set());
+    assert.equal(c.length, 3);
+    b.mutations.push(c[0]);
+  }
+  for (const k of new Set(b.mutations)) assert.ok(b.mutations.filter((x) => x === k).length <= maxRank(k));
+  const one = phenotype({ ...defaultGenome(), mutations: ['fighter'] }), two = phenotype({ ...defaultGenome(), mutations: ['fighter', 'fighter'] });
+  assert.ok(two.attack > one.attack);
+});

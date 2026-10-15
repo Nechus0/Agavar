@@ -73,7 +73,9 @@ const sizeFactor = (g) => Math.max(-1, Math.min(1, ((g.size ?? 2) - 2) / 2));
 
 export function phenotype(g) {
   const sp = new Set([g.special, g.bonusSpecial]);
-  const mu = new Set(g.mutations || []);
+  const list = g.mutations || [];
+  const mu = new Set(list);
+  const n = (k) => list.filter((x) => x === k).length; // Stufe I–IV
   const z = sizeFactor(g);
   const ph = phenotypeBase(g, sp);
   // Zellgröße
@@ -83,14 +85,14 @@ export function phenotype(g) {
   ph.defense += z < 0 ? 0.8 * z : 1.2 * z;
   ph.moveChance *= z > 0 ? 1 - 0.15 * z : 1;
   ph.maxAge = Math.round(ph.maxAge * (z < 0 ? 1 + 0.12 * z : 1));
-  // Mutationen
-  if (mu.has('thick_wall')) { ph.defense += 0.5; ph.moveChance *= 0.94; }
-  if (mu.has('thrifty')) ph.basal *= 0.88;
-  if (mu.has('sprinter')) ph.moveChance = Math.min(1, ph.moveChance * 1.12);
-  if (mu.has('long_life')) ph.maxAge = Math.round(ph.maxAge * 1.2);
-  if (mu.has('keen_nose')) ph.chemoChance += 0.08;
-  if (mu.has('big_brood')) ph.divideAt *= 0.9;
-  if (mu.has('fighter')) ph.attack += 0.5;
+  // Mutationen (allgemeine stapeln sich bis Stufe IV)
+  if (n('thick_wall')) { ph.defense += 0.5 * n('thick_wall'); ph.moveChance *= 0.94 ** n('thick_wall'); }
+  ph.basal *= 0.88 ** n('thrifty');
+  ph.moveChance = Math.min(1, ph.moveChance * 1.12 ** n('sprinter'));
+  ph.maxAge = Math.round(ph.maxAge * 1.2 ** n('long_life'));
+  ph.chemoChance += 0.08 * n('keen_nose');
+  ph.divideAt *= 0.9 ** n('big_brood');
+  ph.attack += 0.5 * n('fighter');
   ph.sweet = mu.has('sweet_tooth');
   ph.saltTol = mu.has('salt_tolerant') ? 0.4 : 1;
   ph.acidTol = mu.has('acid_proof') ? 0.35 : 1;

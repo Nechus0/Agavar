@@ -86,7 +86,7 @@ export function deleteBacterium(id) {
 export function addMutation(id, key) {
   const b = getBacterium(id);
   if (!b) return;
-  b.mutations = [...new Set([...(b.mutations || []), key])];
+  b.mutations = [...(b.mutations || []), key];
   save();
 }
 

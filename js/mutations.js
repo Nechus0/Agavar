@@ -19,18 +19,24 @@ export const MUTATIONS = {
   deep_mat: { name: 'Deep mat', text: 'Biofilm forms sooner and holds better.', needs: 'biofilm' },
 };
 export const MUTATION_KEYS = Object.keys(MUTATIONS);
+// allgemeine Mutationen lassen sich bis zu viermal nehmen (I–IV) – so gibt es immer drei zur Wahl
+export const maxRank = (k) => (MUTATIONS[k].element || MUTATIONS[k].needs || k === 'sweet_tooth' ? 1 : 4);
+export const rankOf = (bacterium, k) => (bacterium.mutations || []).filter((x) => x === k).length;
+const ROMAN = ['', '', ' II', ' III', ' IV'];
+export const mutationName = (k, rank = 1) => MUTATIONS[k].name + ROMAN[rank];
 
 // drei Vorschläge für einen Sieg, fest für dieses Bakterium und Level (kein Neu-Würfeln durch Neuladen)
 // Umwelt-Mutationen (Salz, Sonne …) erst, wenn diese Gefahr schon auf einer Platte vorkam
 export function mutationChoices(bacterium, level, seen = new Set()) {
-  const own = new Set(bacterium.mutations || []);
   const has = new Set([bacterium.special, bacterium.bonusSpecial]);
   const relevant = (m) => !m.element || [].concat(m.element).some((e) => seen.has(e));
-  const pool = MUTATION_KEYS.filter((k) => !own.has(k) && (!MUTATIONS[k].needs || has.has(MUTATIONS[k].needs)) && relevant(MUTATIONS[k]));
+  const open = MUTATION_KEYS.filter((k) => rankOf(bacterium, k) < maxRank(k) && (!MUTATIONS[k].needs || has.has(MUTATIONS[k].needs)) && relevant(MUTATIONS[k]));
+  // neue Mutationen zuerst, Verstärkungen schon vorhandener füllen auf drei auf
+  const fresh = open.filter((k) => !rankOf(bacterium, k)), again = open.filter((k) => rankOf(bacterium, k));
   let s = 0;
   for (const ch of `${bacterium.id}:${level}`) s = (s * 31 + ch.charCodeAt(0)) >>> 0;
   const rnd = () => ((s = (s * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
   const out = [];
-  while (out.length < 3 && pool.length) out.push(pool.splice(Math.floor(rnd() * pool.length), 1)[0]);
+  for (const pool of [fresh, again]) while (out.length < 3 && pool.length) out.push(pool.splice(Math.floor(rnd() * pool.length), 1)[0]);
   return out;
 }

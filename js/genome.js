@@ -143,7 +143,7 @@ export function normalize(raw) {
   }
   // zweite Spezialfähigkeit (Gegner haben sie umsonst, Spieler kaufen den zweiten Platz)
   if (SPECIAL_KEYS.includes(raw.bonusSpecial) && raw.bonusSpecial !== 'none' && raw.bonusSpecial !== g.special) g.bonusSpecial = raw.bonusSpecial;
-  if (Array.isArray(raw.mutations)) g.mutations = [...new Set(raw.mutations.filter((k) => typeof k === 'string'))].slice(0, 40);
+  if (Array.isArray(raw.mutations)) g.mutations = raw.mutations.filter((k) => typeof k === 'string').slice(0, 40);
   if (typeof raw.id === 'string') g.id = raw.id;
   return g;
 }
