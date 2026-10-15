@@ -327,3 +327,38 @@ body.has-resume #home:not([hidden]) { height: calc(100dvh - env(safe-area-inset-
 /* Sternchips in der Simulation: immer einzeilig, feste Höhe – sonst springt die Platte, wenn Zähler wachsen */
 #sim .goal-chip { height: 30px; white-space: nowrap; overflow: hidden; min-width: 0; font-variant-numeric: tabular-nums; }
 #sim .goal-chip > :last-child { overflow: hidden; text-overflow: ellipsis; }
+
+/* ---------- Atlas und Auszeichnungen im Stil der übrigen Seiten ---------- */
+.tab-bar .bar-count { justify-self: start; font-size: 13px; color: var(--text-secondary); padding: 4px 10px; border-radius: var(--radius-pill); background: rgba(255, 255, 255, .06); border: 1px solid rgba(255, 255, 255, .1); }
+#atlas, #awards { gap: 12px; }
+.world-seg { display: grid; grid-auto-flow: column; grid-auto-columns: auto; grid-template-columns: none; }
+.world-seg button { min-height: 36px; font-size: 13px; padding: 0 10px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
+.world-seg button.locked { color: var(--text-disabled); }
+#atlas .habitat { margin: 0 4px; line-height: 1.4; }
+#atlas .germ-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+#atlas .germ-card { padding: 8px; gap: 4px; border-radius: var(--radius-lg); background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.02)); border: 1px solid var(--glass-line); box-shadow: var(--glass-hi); align-items: center; text-align: center; }
+#atlas .germ-card .pic { height: 48px; width: 100%; background: rgba(255, 255, 255, .05); }
+#atlas .germ-card .pic .germ-pic { width: 64px; height: 42px; }
+#atlas .germ-card b { font-size: 12px; min-height: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+#atlas .germ-card small { font-size: 11px; }
+#atlas .germ-card.unknown { opacity: .55; }
+#awards .list-card { padding: 0 14px; }
+#awards .ach-row { padding: 8px 0; gap: 10px; }
+#awards .ach-badge { width: 36px; height: 36px; }
+#awards .ach-row .main b { font-size: 14px; }
+#awards .ach-row .main small { font-size: 12px; line-height: 1.3; }
+#awards .ach-row.got .ach-badge { background: linear-gradient(180deg, #FFD970, #FFC93D); box-shadow: 0 0 12px rgba(255, 201, 61, .45); }
+#atlas .germ-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+#atlas .germ-card { position: relative; padding: 6px 4px; }
+#atlas .germ-card .pic { height: 40px; }
+#atlas .germ-card .pic .germ-pic { width: 54px; height: 36px; }
+#atlas .germ-card b { font-size: 11px; }
+#atlas .habitat { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 12px; }
+#atlas .boss-dot { position: absolute; top: 5px; right: 6px; width: 7px; height: 7px; border-radius: 50%; background: var(--warning); box-shadow: 0 0 6px rgba(255, 201, 61, .7); }
+.corner-btn { width: 40px; height: 40px; top: calc(env(safe-area-inset-top) + 8px); }
+@media (max-height: 760px) {
+  #awards .ach-row { padding: 4px 0; }
+  #awards { gap: 6px; }
+  #awards .ach-badge { width: 30px; height: 30px; }
+  #awards .ach-row .main small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+}

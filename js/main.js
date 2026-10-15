@@ -1318,19 +1318,18 @@ let atlasWorld = 1;
 onEnter.atlas = () => {
   const found = new Set(store.getAtlas());
   const list = atlasGerms();
+  // Welten als Reiter wie im Labor: gesperrte nur mit Schloss, die gewählte mit Namen
   fill($('#atlas-worlds'), ...WORLDS.map((w) => el('button', {
-    class: `chip ${atlasWorld === w.n ? 'on' : ''} ${w.playable ? '' : 'locked'}`, role: 'tab', 'aria-selected': String(atlasWorld === w.n),
+    class: `${atlasWorld === w.n ? 'on' : ''} ${w.playable ? '' : 'locked'}`, role: 'tab', 'aria-selected': String(atlasWorld === w.n), 'aria-label': w.name,
     onclick: () => { atlasWorld = w.n; onEnter.atlas(); },
-  }, w.playable ? null : ui('lock', 'xs'), w.name)));
+  }, w.playable ? null : ui('lock', 'xs'), w.playable || atlasWorld === w.n ? w.name.split(' ')[0] : null)));
   const w = WORLDS.find((x) => x.n === atlasWorld);
   const germs = list.filter((g) => GERMS[g.germ].world === w.n);
   const waiting = Object.entries(GERMS).filter(([k, x]) => x.world === w.n && !list.find((g) => g.germ === k));
   const known = germs.filter((g) => found.has(g.germ)).length;
   const totalHere = w.playable ? germs.length : waiting.length;
-  fill($('#atlas-progress'),
-    el('div', { class: 'row between' }, el('b', {}, w.name), el('span', { class: 'mono' }, String(known), el('span', { class: 'muted' }, ` / ${totalHere}`))),
-    el('div', { class: 'meter' }, el('div', { style: `width:${totalHere ? (known / totalHere) * 100 : 0}%` })),
-    el('p', { class: 'small muted' }, w.playable ? w.habitat : `Coming soon · ${waiting.length} germs are waiting here.`));
+  $('#atlas-count').textContent = `${known}/${totalHere}`;
+  $('#atlas-progress').textContent = w.playable ? `${w.name} · ${w.habitat}` : `${w.name} · coming soon · ${waiting.length} germs are waiting here.`;
   const card = (g) => {
     const isKnown = found.has(g.germ);
     const germ = GERMS[g.germ];
@@ -1339,11 +1338,11 @@ onEnter.atlas = () => {
       onclick: () => (isKnown ? openGerm(g) : toast(`Beat level ${g.level} to discover this germ.`)),
     },
     el('span', { class: 'pic' }, germPic(g.germ, isKnown ? g.color : '#3a4434')),
-    el('b', {}, isKnown ? germ.name : 'Undiscovered'),
-    el('small', {}, isKnown ? `Level ${g.level}${g.boss ? ' · boss' : ''}` : `Beat level ${g.level}`));
+    el('b', {}, isKnown ? germ.name.replace(/^(\w)\w+ /, '$1. ') : '???'),
+    g.boss ? el('i', { class: 'boss-dot', title: 'Boss' }) : null);
   };
   fill($('#atlas-list'), ...(w.playable ? germs.map(card) : waiting.map(([k]) => el('div', { class: 'germ-card unknown' },
-    el('span', { class: 'pic' }, germPic(k, '#3a4434')), el('b', {}, 'Undiscovered'), el('small', {}, 'Coming soon')))));
+    el('span', { class: 'pic' }, germPic(k, '#3a4434')), el('b', {}, '???')))));
 };
 
 function openGerm(g) {
@@ -1369,7 +1368,7 @@ $('#germ-modal').addEventListener('click', closeGerm);
 // ---------- Auszeichnungen: nur die Erfolge ----------
 onEnter.awards = () => {
   const got = ACHIEVEMENTS.filter((a) => store.hasAchievement(a.key)).length;
-  $('#ach-count').textContent = `${got} of ${ACHIEVEMENTS.length} achievements`;
+  $('#ach-count').textContent = `${got}/${ACHIEVEMENTS.length}`;
   const when = (ts) => new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   fill($('#ach-list'), ...ACHIEVEMENTS.map((a) => {
     const ts = store.achievementTime(a.key);

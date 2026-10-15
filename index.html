@@ -68,13 +68,14 @@
         </div>
         <div class="seg ed-tabs" id="ed-tabs" role="tablist" aria-label="Lab sections">
           <button role="tab" data-pane="traits" class="on" aria-selected="true">Traits</button>
-          <button role="tab" data-pane="ability" aria-selected="false">Ability · Move</button>
+          <button role="tab" data-pane="ability" aria-selected="false">Ability</button>
+          <button role="tab" data-pane="move" aria-selected="false">Move</button>
           <button role="tab" data-pane="body" aria-selected="false">Body</button>
         </div>
         <section class="group" data-pane="traits"><div class="list-card" id="ed-costed"></div></section>
         <section class="group" data-pane="ability" hidden><div class="group-label"><span>Abilities</span><span>Cost points</span></div><div class="list-card" id="ed-slots"></div></section>
       </div>
-      <section class="group" data-pane="ability" hidden><div class="group-label"><span>Movement</span><span>Free</span></div><div class="list-card"><button class="slot-row" id="ed-move-row"></button></div></section>
+      <section class="group" data-pane="move" hidden><div class="group-label"><span>Movement</span><span>Free</span></div><div class="list-card"><button class="slot-row" id="ed-move-row"></button></div></section>
       <section class="group" data-pane="body" hidden><div class="group-label"><span>Body</span><span>Free</span></div><div class="list-card" id="ed-free"></div></section>
       <p class="small warn" id="ed-warn" hidden></p>
     </section>
@@ -129,15 +130,15 @@
 
     <!-- Atlas -->
     <section class="screen" id="atlas" hidden>
-      <header class="page-head"><h1>Atlas</h1><p class="sub">Every germ you beat, sorted by where it really lives.</p></header>
-      <div class="chip-row" id="atlas-worlds" role="tablist" aria-label="Worlds"></div>
-      <div class="card" id="atlas-progress"></div>
+      <header class="bar tab-bar"><span class="bar-count mono" id="atlas-count"></span><h2>Atlas</h2><span></span></header>
+      <div class="seg world-seg" id="atlas-worlds" role="tablist" aria-label="Worlds"></div>
+      <p class="small muted habitat" id="atlas-progress"></p>
       <div id="atlas-list" class="germ-grid"></div>
     </section>
 
     <!-- Awards -->
     <section class="screen" id="awards">
-      <header class="page-head"><h1>Awards</h1><p class="sub" id="ach-count"></p></header>
+      <header class="bar tab-bar"><span class="bar-count mono" id="ach-count"></span><h2>Awards</h2><span></span></header>
       <div class="list-card" id="ach-list"></div>
     </section>
 
