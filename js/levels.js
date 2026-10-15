@@ -142,8 +142,9 @@ export const LEVELS = [
     note: 'After a long run the sweat has dried. Salt crystals crust the skin and little else is left – except around the crystals, where moisture keeps drawing food out.',
     desc: 'Brevibacterium loves salt – it is also used to make smelly cheese. Cutibacterium waits deep in the pores.',
     plate: { size: 'mittel', distribution: 'poren', amount: 'wenig', regen: 'langsam', elements: [{ type: 'salt', count: 6 }] },
-    boss: g('brevibacterium', '#c0a030', ['F2', 'D'], [5, 4, 6, 5, 5, 2, 0]),
-    opponents: [g('cacnes', '#a040a0', ['F3', 'B'], [4, 4, 5, 4, 4, 2, 1])],
+    // salzliebend und mit feiner Nase – sonst verhungern die Gegner auf der kargen Kruste von selbst
+    boss: g('brevibacterium', '#c0a030', ['F2', 'D'], [5, 4, 6, 5, 5, 2, 0], 'none', { chemotaxis: 9, mutations: ['salt_tolerant'] }),
+    opponents: [g('cacnes', '#a040a0', ['F3', 'B'], [4, 4, 5, 4, 4, 2, 1], 'none', { chemotaxis: 9, mutations: ['salt_tolerant'] })],
   },
   {
     name: 'Acid Mantle',
