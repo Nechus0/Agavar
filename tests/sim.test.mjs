@@ -184,7 +184,7 @@ import { starMask, starCount } from '../js/progression.js';
 import { analyze, ACHIEVEMENTS } from '../js/insights.js';
 
 test('Sterne, Bonuspunkt, Auswertung und Erfolge', () => {
-  assert.equal(careerPoints([1, 2], { 1: 7, 2: 3 }), START_POINTS + 2 * POINTS_PER_WIN + 1);
+  assert.equal(careerPoints([1, 2], { 1: 7, 2: 3 }), START_POINTS + 3 + 2); // 1 Punkt je Stern
   assert.equal(starCount(5), 2);
   const strong = { ...defaultGenome(), name: 'Stark', speed: 6, efficiency: 8, attack: 10, defense: 10, lifespan: 6 };
   const weak = { ...defaultGenome(), name: 'Schwach', program: ['P'] };

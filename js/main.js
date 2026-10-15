@@ -377,9 +377,9 @@ onEnter['level-detail'] = () => {
   fill($('#ld-goals'),
     el('div', { class: 'goal-stars' }, STAR_GOALS.map((g) => el('div', { class: `goal ${mask & g.bit ? 'done' : ''}`, title: g.bit === 4 ? challengeOf(lv).text : g.text },
       el('span', { class: 'star', 'aria-hidden': 'true' }, '★'), el('span', {}, starLabel(g, lv))))),
-    won.includes(n) ? null : el('div', { class: 'reward-line' }, 'First win:',
-      el('span', { class: 'plus' }, `+${POINTS_PER_WIN} point`),
-      ...rewardsOf(n).map((r) => el('span', { class: 'rw' }, rewardIcon(r), r.short || r.text))));
+    el('div', { class: 'reward-line' }, won.includes(n) ? '' : 'First win:',
+      el('span', { class: 'plus' }, '+1 point per ★'),
+      ...(won.includes(n) ? [] : rewardsOf(n)).map((r) => el('span', { class: 'rw' }, rewardIcon(r), r.short || r.text))));
 
   const pts = ptsOf(b);
   const free = pts - cost(b);
@@ -1106,15 +1106,14 @@ function showResult() {
         el('span', { class: 'state' }, got ? (newStars & g.bit ? 'New' : 'Earned') : old ? 'Earned before' : 'Missed'));
     }));
   }
-  const tripleNow = cfg.mode === 'level' && newStars && ((store.getBacterium(cfg.careerId)?.career.stars[cfg.level] || 0) & 7) === 7;
   // Neues kommt gesammelt in einem Fenster am Ende der Runde – nach Art sortiert
   const me = store.getBacterium(cfg.careerId);
-  const gain = (firstWin ? POINTS_PER_WIN : 0) + (tripleNow ? 1 : 0);
+  const gain = cfg.mode === 'level' ? starCount(newStars | (firstWin ? 1 : 0)) : 0; // 1 Punkt je neuem Stern
   const after = me ? ptsOf(me) : 0;
   const unlocks = {
     level: firstWin ? cfg.level : 0,
     mask,
-    points: gain ? { gain, before: after - gain, after, name: me ? me.name : '', triple: tripleNow } : null,
+    points: gain ? { gain, before: after - gain, after, name: me ? me.name : '' } : null,
     rewards: firstWin ? rewardsOf(cfg.level) : [],
     achievements: newAch,
     germs: newGerms,

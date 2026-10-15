@@ -6,7 +6,7 @@ import { STEP_MOVES, MOVE_BY_KEY } from './movement.js';
 
 const moveNames = (step) => (STEP_MOVES[step] || []).map((k) => `“${MOVE_BY_KEY[k].name}”`).join(' and ');
 
-// ein Bakterium lebt eine Welt lang: 12 Punkte zum Start, +1 je Level, +1 je Level mit drei Sternen (≈ 30 am Weltende)
+// ein Bakterium lebt eine Welt lang: 12 Punkte zum Start, +1 Punkt je Stern (Sieg, schnell, Herausforderung)
 export const START_POINTS = 12;
 export const POINTS_PER_WIN = 1;
 
@@ -44,9 +44,12 @@ export function getLimits(won) {
   return lim;
 }
 
-// Punkte einer Karriere: Startpunkte + Punkte pro gewonnenem Level + 1 Bonuspunkt je Level mit 3 Sternen
+// Punkte einer Karriere: Startpunkte + 1 Punkt je Stern in gewonnenen Leveln.
+// Die Level sind auf alle Sterne abgestimmt – wer viele Sterne liegen lässt, kommt bald nicht mehr weiter.
 export const careerPoints = (won, stars = {}) =>
-  START_POINTS + POINTS_PER_WIN * won.length + Object.values(stars).filter((m) => (m & 7) === 7).length;
+  START_POINTS + won.reduce((a, l) => a + Math.max(POINTS_PER_WIN, starCount((stars[l] || 0) | 1)), 0);
+// Budget für die Abstimmung: Level n mit allen (share = 1) oder einem Teil der Bonussterne der Level davor
+export const plannedBudget = (n, share = 1) => Math.round(START_POINTS + (n - 1) * (1 + 2 * share));
 
 // Sterne eines Levels: 1 = Sieg, 2 = Sieg in unter 12 h, 4 = zeitweise 25 % der Platte besiedelt
 export const STAR_GOALS = [

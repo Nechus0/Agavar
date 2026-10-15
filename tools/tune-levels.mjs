@@ -5,14 +5,15 @@
 import { Simulation } from '../js/sim.js';
 import { randomGenome, cost, normalize, COSTED, FREE, defaultGenome, stepEntry, parseStep, MAX_REPEAT } from '../js/genome.js';
 import { LEVELS, levelOpponents } from '../js/levels.js';
-import { getLimits, careerPoints } from '../js/progression.js';
+import { getLimits, plannedBudget } from '../js/progression.js';
 import { makeRng } from '../js/rng.js';
 
 const n = Number(process.argv[2]);
 const lv = LEVELS[n - 1];
 const won = Array.from({ length: n - 1 }, (_, k) => k + 1);
 const lim = getLimits(won);
-const budget = careerPoints(won) + Math.round(0.7 * (n - 1));
+// SHARE = Anteil der Bonussterne aus den Leveln davor (1 = alle Sterne)
+const budget = plannedBudget(n, process.env.SHARE === undefined ? 1 : Number(process.env.SHARE));
 const sim = (g, seed) => new Simulation({ genomes: [g, ...levelOpponents(lv, g)], ...lv.plate, seed }).run();
 const score = (g, seed) => { const s = sim(g, seed); if (s.winner === 1) return 1; const t = s.players.reduce((a, p) => a + p.count, 0); return t ? 0.5 * s.players[0].count / t : 0; };
 
