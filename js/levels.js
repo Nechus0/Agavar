@@ -124,7 +124,7 @@ export const LEVELS = [
     challenge: ['clean', 300],
     note: 'A dab of antiseptic cream sits in the middle of the cut. Nothing grows close to it – but the cream wears off. And whoever spreads the most gets the next dab.',
     desc: 'Corynebacterium jeikeium shrugs off almost every drug and hides in a tough biofilm. Staphylococcus epidermidis is back as well.',
-    plate: { size: 'mittel', distribution: 'gleichmaessig', amount: 'normal', regen: 'normal', elements: [{ type: 'disc', at: 0, where: 'center' }, { type: 'disc', at: 1700, where: 'leader', halo: 0.26 }] },
+    plate: { size: 'mittel', distribution: 'gleichmaessig', amount: 'normal', regen: 'normal', elements: [{ type: 'disc', at: 0, where: 'center' }, { type: 'disc', at: 2000, where: 'leader', halo: 0.22 }] },
     boss: g('cjeikeium', '#5858c4', ['F', 'P2'], [3, 4, 4, 4, 5, 2, 1], 'biofilm'),
     opponents: [g('sepidermidis', '#cc8040', ['F2', 'R'], [4, 3, 4, 4, 4, 2, 2])],
   },
@@ -211,7 +211,7 @@ export const LEVELS = [
 // (5 = +1 auf alle fünf). Der Spieler bringt durch Sterne zusätzliche Punkte mit; die Werte sind mit
 // tools/tune-levels.mjs so gewählt, dass ein gleichmäßig verteiltes „faules“ Bakterium meist verliert,
 // ein durchdachtes aber gewinnt.
-export const LEVEL_POWER = [0, 0, 10, 7, 6, 8, 7, 3, 15, 6, 2, 10, 10, 10, 10, 10, 7, 4, 10, 8];
+export const LEVEL_POWER = [0, 0, 10, 7, 6, 8, 7, 3, 15, 6, 2, 6, 10, 10, 10, 10, 7, 4, 10, 8];
 const TRAITS5 = ['defense', 'efficiency', 'attack', 'speed', 'lifespan'];
 const powerOverride = typeof process !== 'undefined' && process.env && process.env.POWER_LEVEL ? [Number(process.env.POWER_LEVEL), Number(process.env.POWER)] : null;
 LEVELS.forEach((lv, i) => {
