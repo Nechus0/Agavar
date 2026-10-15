@@ -257,6 +257,8 @@ export class Simulation {
         } else {
           f = nutrientField(dist, nx, ny, rng);
         }
+        // feines Rauschen (±4 %) je Feld, damit benachbarte Zellen nicht im Gleichtakt wachsen
+        f *= 0.96 + 0.08 * rng();
         this.nutrientMax[i] = f * amount;
         this.nutrient[i] = f * amount;
       }
@@ -574,7 +576,8 @@ export class Simulation {
       }
 
       // Teilung – nicht im Hemmhof: dort hält das Antibiotikum das Wachstum an, der Ring bleibt klar
-      if (energy[cur] >= ph.divideAt && !(abx && abx[cur] > 0.2) && !(salt && salt[cur] > 0.35)) {
+      // Teilungsschwelle leicht zufällig (±7 %), damit sich nicht alle Zellen im selben Takt teilen
+      if (energy[cur] >= ph.divideAt * 0.93 && energy[cur] >= ph.divideAt * (0.93 + 0.14 * rng()) && !(abx && abx[cur] > 0.2) && !(salt && salt[cur] > 0.35)) {
         const start = rng.int(8);
         const first = this.dir[cur];
         let target = -1, td = 0;
@@ -584,9 +587,10 @@ export class Simulation {
           if (j >= 0 && !owner[j]) { target = j; td = dd; break; }
         }
         if (target >= 0) {
-          const e = (energy[cur] - 2) / 2;
-          energy[cur] = e;
-          this._place(target, p, e, this.dir[cur], cur);
+          // Energie nicht ganz gleich aufteilen (±10 %) – die Töchter teilen sich dann versetzt
+          const e = (energy[cur] - 2) / 2, d = e * 0.1 * (rng() * 2 - 1);
+          energy[cur] = e + d;
+          this._place(target, p, e - d, this.dir[cur], cur);
         }
       }
     }
