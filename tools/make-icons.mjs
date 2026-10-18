@@ -98,9 +98,15 @@ function shape(u, v) {
     c = mix(c, mix(C2, [255, 150, 120], (v - 0.3) * 1.5), edge(b));
     c = mix(c, C4, edge(Math.max(a, b)));
   } else if (SH === 'mitosis') {
-    // eine Zelle in der Teilung: zwei Kreise, weich verschmolzen (Metaball), Verlauf Cyan → Koralle
-    const f = 0.021 / ((u - 0.355) ** 2 + (v - 0.5) ** 2) + 0.021 / ((u - 0.645) ** 2 + (v - 0.5) ** 2);
-    c = mix(c, lerp3([C1, C4, C2], (u - 0.2) / 0.6), smooth(1.0, 1.06, f));
+    // eine Zelle in der Teilung: zwei Kreise, an einer schmalen Taille verbunden (Metaball),
+    // scharfe Kante; diagonaler Verlauf Cyan → Indigo → Violett → Koralle wie bei Gemini
+    // zwei Kreise, mit kleiner weicher Rundung verbunden (smooth min) – deutliche Taille
+    const d1 = Math.hypot(u - 0.315, v - 0.5) - 0.19, d2 = Math.hypot(u - 0.685, v - 0.5) - 0.19, k = 0.08;
+    const hh = Math.max(0, Math.min(1, 0.5 + 0.5 * (d2 - d1) / k));
+    const dist = d2 + (d1 - d2) * hh - k * hh * (1 - hh);
+    const t = (u - 0.13) / 0.74 * 0.8 + (v - 0.3) / 0.4 * 0.2;
+    const grad = lerp3([[64, 214, 255], [80, 130, 255], [150, 100, 255], [255, 96, 150], [255, 112, 96]], t);
+    c = mix(c, grad, smooth(0.0012, -0.0012, dist));
   } else if (SH === 'swirl') {
     // Petrischale aus drei Kolonien, die sich wie ein Wirbel umeinander drehen (Drive-artig: drei Teile, ein Ganzes)
     const r = Math.hypot(dx, dy), ang = Math.atan2(dy, dx) + r * 4.2;
