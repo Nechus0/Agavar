@@ -81,6 +81,42 @@ function sample(u, v) {
   return c;
 }
 
+// Geometrische Varianten (ICON_SHAPE) im Stil moderner Symbol-Icons: klare Grundformen,
+// weiche Verläufe in den Kulturfarben, heller Grund.
+// Standard-Icon: „Teilung“ auf Weiß (gewählt); ICON_SHAPE=none erzeugt die Schalen-Variante
+const SH = process.env.ICON_SHAPE === 'none' ? null : process.env.ICON_SHAPE || 'mitosis';
+const C1 = [56, 200, 255], C2 = [255, 90, 110], C3 = [46, 242, 180], C4 = [139, 123, 255];
+const lerp3 = (cols, t) => { t = Math.max(0, Math.min(1, t)) * (cols.length - 1); const i = Math.min(cols.length - 2, Math.floor(t)); return mix(cols[i], cols[i + 1], t - i); };
+const BG_LIGHT = [250, 251, 253];
+function shape(u, v) {
+  const dx = u - 0.5, dy = v - 0.5;
+  let c = BG_LIGHT;
+  if (SH === 'venn') {
+    // zwei überlappende Zellen; die Überlappung (Kampfzone) violett
+    const a = Math.hypot(u - 0.40, v - 0.5) - 0.21, b = Math.hypot(u - 0.60, v - 0.5) - 0.21;
+    c = mix(c, mix(C1, [120, 230, 255], (v - 0.3) * 1.5), edge(a));
+    c = mix(c, mix(C2, [255, 150, 120], (v - 0.3) * 1.5), edge(b));
+    c = mix(c, C4, edge(Math.max(a, b)));
+  } else if (SH === 'mitosis') {
+    // eine Zelle in der Teilung: zwei Kreise, weich verschmolzen (Metaball), Verlauf Cyan → Koralle
+    const f = 0.021 / ((u - 0.355) ** 2 + (v - 0.5) ** 2) + 0.021 / ((u - 0.645) ** 2 + (v - 0.5) ** 2);
+    c = mix(c, lerp3([C1, C4, C2], (u - 0.2) / 0.6), smooth(1.0, 1.06, f));
+  } else if (SH === 'swirl') {
+    // Petrischale aus drei Kolonien, die sich wie ein Wirbel umeinander drehen (Drive-artig: drei Teile, ein Ganzes)
+    const r = Math.hypot(dx, dy), ang = Math.atan2(dy, dx) + r * 4.2;
+    const k = ((ang / (Math.PI * 2)) % 1 + 1) % 1;
+    const col = k < 1 / 3 ? C1 : k < 2 / 3 ? C2 : C3;
+    const gap = Math.min(...[0, 1 / 3, 2 / 3, 1].map((x) => Math.abs(k - x))) * r * 6.3;
+    c = mix(c, col, edge(r - 0.34) * smooth(0.004, 0.012, gap + (r < 0.02 ? 1 : 0)));
+  } else if (SH === 'spark') {
+    // vierzackiger Stern (Gemini-artig) mit Verlauf über alle Kulturfarben
+    const ax = Math.abs(dx), ay = Math.abs(dy);
+    const d = Math.pow(ax / 0.34, 0.55) + Math.pow(ay / 0.34, 0.55) - 1;
+    const ang = Math.atan2(dy, dx);
+    c = mix(c, lerp3([C1, C3, C4, C2, C1], (ang + Math.PI) / (2 * Math.PI)), edge(d * 0.08));
+  }
+  return c;
+}
 const OUT = process.env.ICON_OUT || 'icons';
 mkdirSync(OUT, { recursive: true });
 for (const [name, size] of [['icon-192.png', 192], ['icon-512.png', 512], ['apple-touch-icon.png', 180]]) {
@@ -88,7 +124,7 @@ for (const [name, size] of [['icon-192.png', 192], ['icon-512.png', 512], ['appl
   writeFileSync(`${OUT}/${name}`, png(size, (x, y) => {
     const acc = [0, 0, 0];
     for (let a = 0; a < SS; a++) for (let b = 0; b < SS; b++) {
-      const c = sample((x + (a + 0.5) / SS) / size, (y + (b + 0.5) / SS) / size);
+      const c = (SH ? shape : sample)((x + (a + 0.5) / SS) / size, (y + (b + 0.5) / SS) / size);
       acc[0] += c[0]; acc[1] += c[1]; acc[2] += c[2];
     }
     return acc.map((v) => Math.max(0, Math.min(255, Math.round(v / (SS * SS)))));
