@@ -35,56 +35,57 @@ function png(size, pixel) {
   return Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk('IHDR', ihdr), chunk('IDAT', deflateSync(raw)), chunk('IEND', Buffer.alloc(0))]);
 }
 
-// App-Icon: flach und minimal. Schwarzer Grund, eine klare Petrischale (heller Rand, kaum
-// sichtbares bläuliches Gel) und zwei Kolonien im Kampf – Cyan gegen Koralle –, die sich an einer
-// gezackten Front berühren. Keine Glanzlichter, nur klare Flächen; 4×4-fach abgetastet.
+// App-Icon: flach und minimal nach Apples Icon-Richtlinien – ein Motiv, kräftiger Hintergrund,
+// gefüllte Flächen statt Umrissen, keine eigenen Glanz- oder Schatteneffekte.
+// Motiv: eine klare Petrischale (gefüllte, leicht hellere Scheibe mit kräftigem Rand) und zwei
+// große Kolonien im Kampf – Cyan gegen Koralle, unterschiedlich hell, damit sie auch in der
+// getönten iOS-Darstellung zwei Formen bleiben. Hintergrund je nach Variante (ICON_VARIANT).
 const mix = (a, b, t) => a.map((x, i) => x + (b[i] - x) * Math.max(0, Math.min(1, t)));
 const smooth = (e0, e1, x) => { const t = Math.max(0, Math.min(1, (x - e0) / (e1 - e0))); return t * t * (3 - 2 * t); };
 const edge = (d) => smooth(0.003, -0.003, d); // weiche Kante einer Fläche (d < 0 = innen)
 
-const BG = [0, 0, 0];
-const GEL = [16, 30, 44];
-const RIM = [176, 214, 240];
-const CYAN = [56, 200, 255], CORAL = [255, 90, 110];
-const R_DISH = 0.40, RIM_W = 0.022;
+const VARIANTS = {
+  // dunkles Tintenblau mit Verlauf – hebt sich vom dunklen Homescreen ab, bleibt aber dunkel
+  ink: { top: [34, 52, 108], bot: [12, 18, 44], gel: [22, 34, 70], rim: [150, 196, 255] },
+  // dunkles Violett
+  violet: { top: [70, 40, 130], bot: [24, 12, 56], gel: [44, 26, 86], rim: [200, 176, 255] },
+  // hell: Mint-Cyan-Verlauf, Schale dunkel
+  light: { top: [150, 250, 220], bot: [56, 200, 255], gel: [10, 22, 40], rim: [255, 255, 255] },
+};
+const V = VARIANTS[process.env.ICON_VARIANT || 'ink'];
+const CYAN = [72, 210, 255], CORAL = [255, 92, 112];
+const R_DISH = 0.37, RIM_W = 0.035;
 
-// Kolonie als gewellter Kreis: Abstand zum Rand (negativ = innen)
 function blob(u, v, x, y, r, waves) {
   const ang = Math.atan2(v - y, u - x);
   let rr = r;
   for (const [f, amp, ph] of waves) rr *= 1 + amp * Math.sin(f * ang + ph);
   return Math.hypot(u - x, v - y) - rr;
 }
-// gezackte Front zwischen den beiden Kolonien (leicht schräge Linie)
-const front = (u, v) => (u - 0.5) + (v - 0.5) * 0.22 + 0.018 * Math.sin(v * 46) + 0.01 * Math.sin(v * 97 + 1);
+// Front zwischen den Kolonien: wenige, große Zacken (bleiben auch klein sichtbar)
+const front = (u, v) => (u - 0.5) + (v - 0.5) * 0.2 + 0.022 * Math.sin(v * 30);
 
 function sample(u, v) {
   const dx = u - 0.5, dy = v - 0.5, r = Math.hypot(dx, dy);
-  let c = BG;
-  // Gel der Schale: kaum sichtbar bläulich
-  c = mix(c, GEL, edge(r - R_DISH));
+  let c = mix(V.top, V.bot, smooth(0, 1, v));
+  // Schale: gefüllte Scheibe mit kräftigem, hellem Rand
+  c = mix(c, V.rim, edge(r - R_DISH - RIM_W));
+  c = mix(c, V.gel, edge(r - R_DISH));
   if (r < R_DISH) {
-    const a = blob(u, v, 0.40, 0.48, 0.215, [[5, 0.05, 0.3], [9, 0.025, 1.2]]);
-    const b = blob(u, v, 0.62, 0.53, 0.185, [[4, 0.06, 2.0], [7, 0.03, 0.4]]);
+    const a = blob(u, v, 0.40, 0.48, 0.20, [[5, 0.05, 0.3]]);
+    const b = blob(u, v, 0.61, 0.53, 0.17, [[4, 0.06, 2.0]]);
     const f = front(u, v);
-    // wo beide wachsen würden, entscheidet die Front
-    const inA = edge(a) * edge(f + 0.009), inB = edge(b) * edge(0.009 - f);
-    c = mix(c, CYAN, inA);
-    c = mix(c, CORAL, inB);
-    // ein paar vorgeschobene Zellen
-    for (const [sx, sy, sr, col] of [[0.19, 0.40, 0.013, CYAN], [0.24, 0.70, 0.011, CYAN], [0.47, 0.25, 0.010, CYAN], [0.78, 0.40, 0.013, CORAL], [0.76, 0.69, 0.011, CORAL], [0.58, 0.77, 0.010, CORAL]]) {
-      c = mix(c, col, edge(Math.hypot(u - sx, v - sy) - sr));
-    }
+    c = mix(c, CYAN, edge(a) * edge(f + 0.012));
+    c = mix(c, CORAL, edge(b) * edge(0.012 - f));
   }
-  // klarer heller Schalenrand
-  c = mix(c, RIM, edge(Math.abs(r - R_DISH) - RIM_W / 2));
   return c;
 }
 
-mkdirSync('icons', { recursive: true });
+const OUT = process.env.ICON_OUT || 'icons';
+mkdirSync(OUT, { recursive: true });
 for (const [name, size] of [['icon-192.png', 192], ['icon-512.png', 512], ['apple-touch-icon.png', 180]]) {
   const SS = 4;
-  writeFileSync(`icons/${name}`, png(size, (x, y) => {
+  writeFileSync(`${OUT}/${name}`, png(size, (x, y) => {
     const acc = [0, 0, 0];
     for (let a = 0; a < SS; a++) for (let b = 0; b < SS; b++) {
       const c = sample((x + (a + 0.5) / SS) / size, (y + (b + 0.5) / SS) / size);
